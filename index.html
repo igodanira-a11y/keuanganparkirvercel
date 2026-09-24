@@ -3936,7 +3936,7 @@ function editTransaksiModal(id){
         </div>
 
         <div class="btn-row">
-          <button type="submit" class="btn-sm btn-dark">Simpan Perubahan</button>
+          <button type="submit" class="btn-sm btn-dark" id="etSaveBtn"><span class="submit-spinner"></span><span id="etSaveLabel">Simpan Perubahan</span></button>
           <button type="button" class="btn-sm btn-outline" id="etCancel">Batal</button>
         </div>
       </form>
@@ -3994,6 +3994,11 @@ function editTransaksiModal(id){
       inputOleh: currentUser.name,
       role: currentUser.role
     };
+    const etSaveBtn = overlay.querySelector('#etSaveBtn');
+    const etSaveLabel = overlay.querySelector('#etSaveLabel');
+    etSaveBtn.classList.add('is-submitting');
+    etSaveBtn.disabled = true;
+    etSaveLabel.textContent = 'Menyimpan...';
     google.script.run.withSuccessHandler(res => {
       if (res.success) {
         overlay.remove();
@@ -4008,8 +4013,16 @@ function editTransaksiModal(id){
           ]
         });
       } else {
+        etSaveBtn.classList.remove('is-submitting');
+        etSaveBtn.disabled = false;
+        etSaveLabel.textContent = 'Simpan Perubahan';
         showDesktopToast({ title: 'Gagal memperbarui', message: res.message, type: 'error' });
       }
+    }).withFailureHandler(err => {
+      etSaveBtn.classList.remove('is-submitting');
+      etSaveBtn.disabled = false;
+      etSaveLabel.textContent = 'Simpan Perubahan';
+      showDesktopToast({ title: 'Gagal memperbarui', message: err.message, type: 'error' });
     }).updateTransaksiBatch(id, payload);
   });
 }
@@ -4739,7 +4752,7 @@ function openMasterModal(kind, recordIndex) {
     fields = `<div class="d-field"><label>Nama Kategori</label><input id="masterModalNama" value="${existing?.nama || ''}" required></div><div class="d-field"><label>Nama Tipe</label><select id="masterModalTipe" required>${(masterData.tipe || []).map(t => `<option ${t.toUpperCase() === existing?.tipe ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div class="d-field"><label>Lokasi</label><div class="multiselect" id="masterModalLokasiKategoriMS"><button type="button" class="multiselect-trigger"><span class="ms-summary"></span><span class="ms-caret">▾</span></button><div class="multiselect-panel"></div></div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Pilih satu atau beberapa lokasi. "ALL (Semua)" = kategori berlaku global di semua lokasi.</div></div>`;
   }
   else fields = `<div class="d-field"><label>Nama ${labels[kind]}</label><input id="masterModalNama" value="${existing?.nama || ''}" required></div>`;
-  overlay.innerHTML = `<div class="modal-box"><h3>${existing ? 'Edit' : 'Tambah'} Master ${labels[kind]}</h3><form id="masterModalForm"><div style="display:flex;flex-direction:column;gap:14px;">${fields}</div><div class="btn-row"><button type="submit" class="btn-sm btn-dark">Simpan</button><button type="button" class="btn-sm btn-outline" id="masterModalCancel">Batal</button></div></form></div>`;
+  overlay.innerHTML = `<div class="modal-box"><h3>${existing ? 'Edit' : 'Tambah'} Master ${labels[kind]}</h3><form id="masterModalForm"><div style="display:flex;flex-direction:column;gap:14px;">${fields}</div><div class="btn-row"><button type="submit" class="btn-sm btn-dark" id="masterModalSaveBtn"><span class="submit-spinner"></span><span id="masterModalSaveLabel">Simpan</span></button><button type="button" class="btn-sm btn-outline" id="masterModalCancel">Batal</button></div></form></div>`;
   document.body.appendChild(overlay);
 
   // Multi-select Lokasi untuk kategori: satu kategori bisa dikaitkan ke
@@ -4768,11 +4781,26 @@ function openMasterModal(kind, recordIndex) {
         payload.lokasi = selectedLokasi.includes('ALL') ? '' : selectedLokasi.join(', ');
       }
     }
+    const saveBtn = overlay.querySelector('#masterModalSaveBtn');
+    const saveLabel = overlay.querySelector('#masterModalSaveLabel');
+    saveBtn.classList.add('is-submitting');
+    saveBtn.disabled = true;
+    saveLabel.textContent = 'Menyimpan...';
     google.script.run.withSuccessHandler(res => {
-      if (!res.success) return showDesktopToast({ title: 'Gagal menyimpan master', message: res.message, type: 'error' });
+      if (!res.success) {
+        saveBtn.classList.remove('is-submitting');
+        saveBtn.disabled = false;
+        saveLabel.textContent = 'Simpan';
+        return showDesktopToast({ title: 'Gagal menyimpan master', message: res.message, type: 'error' });
+      }
       overlay.remove();
       refreshMasterData(() => { renderMasterPage(kind); loadDashboard(); });
       showDesktopToast({ title: existing ? 'Master diperbarui' : 'Master ditambahkan', message: labels[kind] + ' berhasil disimpan.' });
+    }).withFailureHandler(err => {
+      saveBtn.classList.remove('is-submitting');
+      saveBtn.disabled = false;
+      saveLabel.textContent = 'Simpan';
+      showDesktopToast({ title: 'Gagal menyimpan master', message: err.message, type: 'error' });
     }).saveMasterItem(kind, payload, currentUser);
   };
 }
