@@ -2,6 +2,9 @@
 <html lang="id">
 <head>
 <base target="_top">
+<!-- OPTIMASI LOGIN: buka koneksi ke Apps Script lebih awal (hemat DNS+TLS di request login pertama) -->
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <script>
 // ============================================================
 // SHIM google.script.run — dipakai saat aplikasi di-hosting di luar
@@ -152,6 +155,14 @@
     setHeight: function () {},
     setWidth: function () {}
   };
+
+  // OPTIMASI LOGIN — PRE-WARM: begitu halaman dibuka (sebelum user selesai
+  // mengetik username/password), minta server menghangatkan container Apps
+  // Script dan mengisi cache. Saat tombol Masuk ditekan, login() tinggal
+  // memakai cache. Dilewati kalau sesi "Ingat saya" akan dipulihkan otomatis.
+  try {
+    if (!(isRemembered() && getToken())) callServer('warmup', [], null, function () {});
+  } catch (e) {}
 })();
 </script>
 <meta charset="UTF-8">
