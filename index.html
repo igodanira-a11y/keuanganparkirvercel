@@ -658,13 +658,18 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
   display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
   margin:20px 0;padding:16px;background:var(--paper);border-radius:10px;border:1px solid var(--line);
 }
-.calc-summary .cs-item{text-align:center;}
+.calc-summary .cs-item{text-align:center;min-width:0;}
 .calc-summary .cs-label{font-size:11.5px;color:var(--muted);font-weight:500;margin-bottom:4px;}
-.calc-summary .cs-value{font-family:var(--font);font-size:17px;font-weight:700;}
+.calc-summary .cs-value{font-family:var(--font);font-size:15px;font-weight:700;white-space:nowrap;}
 .calc-summary .cs-value.income{color:var(--signal);}
 .calc-summary .cs-value.expense{color:var(--alert);}
 .calc-summary .cs-value.net.positive{color:var(--signal);}
 .calc-summary .cs-value.net.negative{color:var(--alert);}
+@media (max-width:420px){
+  .calc-summary{padding:12px;gap:6px;}
+  .calc-summary .cs-label{font-size:10px;}
+  .calc-summary .cs-value{font-size:12.5px;}
+}
 
 .filter-bar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
 .filter-bar select,.filter-bar input{
@@ -1523,7 +1528,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
       </div>
       <div class="panel" style="padding:0;overflow-x:auto;">
         <table>
-          <thead><tr><th style="width:60px;">No</th><th>Nama Kategori</th><th>Nama Tipe</th><th style="width:100px;">Aksi</th></tr></thead>
+          <thead><tr><th style="width:60px;">No</th><th>Nama Kategori</th><th>Nama Tipe</th><th>Lokasi</th><th style="width:100px;">Aksi</th></tr></thead>
           <tbody id="masterKategoriTbody"></tbody>
         </table>
       </div>
@@ -1947,7 +1952,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 // STATE
 // ============================================================
 let currentUser = null;
-let masterData = { perusahaan: [], tipe: [], kategori: [], kategoriByTipe: {}, lokasiMap: [] };
+let masterData = { perusahaan: [], tipe: [], kategori: [], kategoriByTipe: {}, kategoriByLokasiTipe: {}, lokasiMap: [] };
 let dItemCounter = 0;
 let mItemCounter = 0;
 
@@ -2318,6 +2323,7 @@ function initDesktopApp(){
   const perusahaanList = getAccessiblePerusahaan(currentUser);
   dPerusahaan.innerHTML = perusahaanList.map(p => `<option value="${p}">${p}</option>`).join('');
   dPerusahaan.addEventListener('change', updateDesktopLokasi);
+  document.getElementById('dLokasi').addEventListener('change', refreshDesktopItemKategori);
   updateDesktopLokasi();
 
   document.getElementById('dItemsContainer').innerHTML = '';
@@ -2356,10 +2362,18 @@ function switchPage(pageId) {
   if (pageId === 'master-kategori') loadMasterKategoriPage();
 }
 
-function kategoriOptions(tipe, selectedKategori){
+// Kategori sekarang bisa di-scope per Lokasi. Untuk sebuah lokasi, opsi kategori
+// adalah gabungan dari: (1) kategori yang khusus di-assign ke lokasi itu, dan
+// (2) kategori global (belum di-assign ke lokasi manapun di Master Kategori) —
+// supaya kategori lama yang belum diberi lokasi tetap muncul di semua lokasi.
+function kategoriOptions(tipe, lokasi, selectedKategori){
   const tipeKey = String(tipe || '').trim().toUpperCase();
-  const options = (masterData.kategoriByTipe && masterData.kategoriByTipe[tipeKey]) || [];
-  if (!options.length) return '<option value="">Belum ada kategori untuk tipe ini</option>';
+  const lokasiKey = String(lokasi || '').trim();
+  const byLokasiTipe = masterData.kategoriByLokasiTipe || {};
+  const perLokasi = (lokasiKey && byLokasiTipe[lokasiKey] && byLokasiTipe[lokasiKey][tipeKey]) || [];
+  const global = (byLokasiTipe['__GLOBAL__'] && byLokasiTipe['__GLOBAL__'][tipeKey]) || [];
+  const options = [...new Set([...perLokasi, ...global])].sort();
+  if (!options.length) return '<option value="">Belum ada kategori untuk lokasi/tipe ini</option>';
   return options.map(k => `<option value="${k}" ${k === selectedKategori ? 'selected' : ''}>${k}</option>`).join('');
 }
 
@@ -2378,7 +2392,7 @@ function addDesktopItem(){
     </div>
     <div class="d-field">
       <label>Kategori</label>
-      <select class="item-kategori">${kategoriOptions('PENDAPATAN')}</select>
+      <select class="item-kategori">${kategoriOptions('PENDAPATAN', document.getElementById('dLokasi')?.value)}</select>
     </div>
     <div class="d-field">
       <label>Nominal (Rp)</label>
@@ -2393,7 +2407,7 @@ function addDesktopItem(){
     updateDesktopCalcSummary();
   });
   wrap.querySelector('.item-tipe').addEventListener('change', (e) => {
-    wrap.querySelector('.item-kategori').innerHTML = kategoriOptions(e.target.value);
+    wrap.querySelector('.item-kategori').innerHTML = kategoriOptions(e.target.value, document.getElementById('dLokasi')?.value);
   });
   bindRibuanInput(wrap.querySelector('.item-nominal'));
   wrap.querySelector('.item-nominal').addEventListener('input', updateDesktopCalcSummary);
@@ -2425,6 +2439,18 @@ function updateDesktopLokasi(){
   const perusahaan = document.getElementById('dPerusahaan').value;
   const lokasi = lokasiUntukPerusahaan(perusahaan).sort();
   document.getElementById('dLokasi').innerHTML = lokasi.map(l => `<option value="${l}">${l}</option>`).join('');
+  refreshDesktopItemKategori();
+}
+
+// Dipanggil setiap kali Lokasi (input transaksi desktop) berubah, supaya opsi
+// Kategori pada tiap baris item mengikuti kategori khusus lokasi yang dipilih.
+function refreshDesktopItemKategori(){
+  const lokasi = document.getElementById('dLokasi')?.value || '';
+  document.querySelectorAll('#dItemsContainer .item-row').forEach(row => {
+    const tipe = row.querySelector('.item-tipe').value;
+    const current = row.querySelector('.item-kategori').value;
+    row.querySelector('.item-kategori').innerHTML = kategoriOptions(tipe, lokasi, current);
+  });
 }
 
 // Format angka ringkas untuk label sumbu Y (mis. 1.2jt, 850rb)
@@ -3922,12 +3948,22 @@ function editTransaksiModal(id){
   const perusahaanSel = overlay.querySelector('#etPerusahaan');
   const list = getAccessiblePerusahaan(currentUser);
   perusahaanSel.innerHTML = list.map(p => `<option value="${p}" ${p===g.perusahaan?'selected':''}>${p}</option>`).join('');
+  function refreshEtItemKategori(){
+    const lokasi = overlay.querySelector('#etLokasi')?.value || '';
+    overlay.querySelectorAll('#etItemsContainer .item-row').forEach(row => {
+      const tipe = row.querySelector('.item-tipe').value;
+      const current = row.querySelector('.item-kategori').value;
+      row.querySelector('.item-kategori').innerHTML = kategoriOptions(tipe, lokasi, current);
+    });
+  }
   function updateEtLokasi(){
     const perusahaan = perusahaanSel.value;
     const lokasi = [...new Set(masterData.lokasiMap.filter(x => x.perusahaan === perusahaan).map(x => x.lokasi))].sort();
     overlay.querySelector('#etLokasi').innerHTML = lokasi.map(l => `<option value="${l}" ${l===g.lokasi?'selected':''}>${l}</option>`).join('');
+    refreshEtItemKategori();
   }
   perusahaanSel.addEventListener('change', updateEtLokasi);
+  overlay.querySelector('#etLokasi').addEventListener('change', refreshEtItemKategori);
   updateEtLokasi();
 
   // Isi item-item yang sudah ada
@@ -3993,7 +4029,7 @@ function addEditItem(overlay, tipe, kategori, nominal){
     </div>
     <div class="d-field">
       <label>Kategori</label>
-      <select class="item-kategori">${kategoriOptions(tipe || 'PENDAPATAN', kategori)}</select>
+      <select class="item-kategori">${kategoriOptions(tipe || 'PENDAPATAN', overlay.querySelector('#etLokasi')?.value, kategori)}</select>
     </div>
     <div class="d-field">
       <label>Nominal (Rp)</label>
@@ -4008,7 +4044,7 @@ function addEditItem(overlay, tipe, kategori, nominal){
     updateEtCalcSummary(overlay);
   });
   wrap.querySelector('.item-tipe').addEventListener('change', (e) => {
-    wrap.querySelector('.item-kategori').innerHTML = kategoriOptions(e.target.value);
+    wrap.querySelector('.item-kategori').innerHTML = kategoriOptions(e.target.value, overlay.querySelector('#etLokasi')?.value);
   });
   bindRibuanInput(wrap.querySelector('.item-nominal'));
   wrap.querySelectorAll('.item-nominal, .item-tipe').forEach(el => {
@@ -4666,8 +4702,8 @@ function renderMasterKategori(){
   });
   window._masterActionRecords = { ...(window._masterActionRecords || {}), kategori: filtered };
   document.getElementById('masterKategoriTbody').innerHTML = filtered.length
-    ? filtered.map((item, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(item.nama)}</td><td>${item.tipe || (tipeByKategori[item.nama] || []).join(', ') || '—'}</td><td class="user-table-actions"><button type="button" title="Edit" aria-label="Edit" onclick="openMasterModal('kategori',${i})"><i class="fi fi-rr-edit"></i></button><button type="button" title="Hapus" aria-label="Hapus" data-action="delete" onclick="deleteMasterConfirm('kategori',${i})"><i class="fi fi-rr-trash"></i></button></td></tr>`).join('')
-    : `<tr><td colspan="4" class="empty-state">Belum ada data</td></tr>`;
+    ? filtered.map((item, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(item.nama)}</td><td>${item.tipe || (tipeByKategori[item.nama] || []).join(', ') || '—'}</td><td>${item.lokasi ? escapeHtml(item.lokasi) : '<em>Semua Lokasi</em>'}</td><td class="user-table-actions"><button type="button" title="Edit" aria-label="Edit" onclick="openMasterModal('kategori',${i})"><i class="fi fi-rr-edit"></i></button><button type="button" title="Hapus" aria-label="Hapus" data-action="delete" onclick="deleteMasterConfirm('kategori',${i})"><i class="fi fi-rr-trash"></i></button></td></tr>`).join('')
+    : `<tr><td colspan="5" class="empty-state">Belum ada data</td></tr>`;
 }
 
 function renderMasterTipe(){
@@ -4699,17 +4735,39 @@ function openMasterModal(kind, recordIndex) {
   overlay.className = 'modal-overlay show';
   let fields = '';
   if (kind === 'lokasi') fields = `<div class="d-field"><label>Perusahaan</label><select id="masterModalPerusahaan">${(masterData.perusahaan || []).map(p => `<option ${p === existing?.perusahaan ? 'selected' : ''}>${p}</option>`).join('')}</select></div><div class="d-field"><label>Lokasi</label><input id="masterModalLokasi" value="${existing?.lokasi || ''}" required></div>`;
-  else if (kind === 'kategori') fields = `<div class="d-field"><label>Nama Kategori</label><input id="masterModalNama" value="${existing?.nama || ''}" required></div><div class="d-field"><label>Nama Tipe</label><select id="masterModalTipe" required>${(masterData.tipe || []).map(t => `<option ${t.toUpperCase() === existing?.tipe ? 'selected' : ''}>${t}</option>`).join('')}</select></div>`;
+  else if (kind === 'kategori') {
+    fields = `<div class="d-field"><label>Nama Kategori</label><input id="masterModalNama" value="${existing?.nama || ''}" required></div><div class="d-field"><label>Nama Tipe</label><select id="masterModalTipe" required>${(masterData.tipe || []).map(t => `<option ${t.toUpperCase() === existing?.tipe ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div class="d-field"><label>Lokasi</label><div class="multiselect" id="masterModalLokasiKategoriMS"><button type="button" class="multiselect-trigger"><span class="ms-summary"></span><span class="ms-caret">▾</span></button><div class="multiselect-panel"></div></div><div style="font-size:12px;color:var(--muted);margin-top:4px;">Pilih satu atau beberapa lokasi. "ALL (Semua)" = kategori berlaku global di semua lokasi.</div></div>`;
+  }
   else fields = `<div class="d-field"><label>Nama ${labels[kind]}</label><input id="masterModalNama" value="${existing?.nama || ''}" required></div>`;
   overlay.innerHTML = `<div class="modal-box"><h3>${existing ? 'Edit' : 'Tambah'} Master ${labels[kind]}</h3><form id="masterModalForm"><div style="display:flex;flex-direction:column;gap:14px;">${fields}</div><div class="btn-row"><button type="submit" class="btn-sm btn-dark">Simpan</button><button type="button" class="btn-sm btn-outline" id="masterModalCancel">Batal</button></div></form></div>`;
   document.body.appendChild(overlay);
+
+  // Multi-select Lokasi untuk kategori: satu kategori bisa dikaitkan ke
+  // beberapa lokasi sekaligus (mis. 4 lokasi milik satu perusahaan).
+  let kategoriLokasiMS = null;
+  if (kind === 'kategori') {
+    const lokasiOpts = ['ALL', ...new Set((masterData.lokasiMap || []).map(l => l.lokasi))]
+      .sort((a, b) => a === 'ALL' ? -1 : b === 'ALL' ? 1 : a.localeCompare(b));
+    const initialLokasi = existing?.lokasi
+      ? existing.lokasi.split(',').map(s => s.trim()).filter(Boolean)
+      : ['ALL'];
+    kategoriLokasiMS = initMultiSelect(overlay, 'masterModalLokasiKategoriMS', lokasiOpts, initialLokasi);
+  }
+
   overlay.querySelector('#masterModalCancel').onclick = () => overlay.remove();
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   overlay.querySelector('#masterModalForm').onsubmit = e => {
     e.preventDefault();
     const payload = { rowId: existing?.rowId || 0 };
     if (kind === 'lokasi') { payload.perusahaan = overlay.querySelector('#masterModalPerusahaan').value; payload.lokasi = overlay.querySelector('#masterModalLokasi').value; }
-    else { payload.nama = overlay.querySelector('#masterModalNama').value; if (kind === 'kategori') payload.tipe = overlay.querySelector('#masterModalTipe').value; }
+    else {
+      payload.nama = overlay.querySelector('#masterModalNama').value;
+      if (kind === 'kategori') {
+        payload.tipe = overlay.querySelector('#masterModalTipe').value;
+        const selectedLokasi = kategoriLokasiMS.getValue();
+        payload.lokasi = selectedLokasi.includes('ALL') ? '' : selectedLokasi.join(', ');
+      }
+    }
     google.script.run.withSuccessHandler(res => {
       if (!res.success) return showDesktopToast({ title: 'Gagal menyimpan master', message: res.message, type: 'error' });
       overlay.remove();
@@ -4764,7 +4822,7 @@ function loadMasterKategoriPage(){
   if (el && !el.dataset.bound){ el.dataset.bound = '1'; el.addEventListener('input', renderMasterKategori); }
   const refreshBtn = document.getElementById('mKategoriRefreshBtn');
   if (refreshBtn && !refreshBtn.dataset.bound){ refreshBtn.dataset.bound = '1'; refreshBtn.addEventListener('click', () => loadMasterKategoriPage()); }
-  document.getElementById('masterKategoriTbody').innerHTML = `<tr><td colspan="3" class="empty-state">Memuat data...</td></tr>`;
+  document.getElementById('masterKategoriTbody').innerHTML = `<tr><td colspan="5" class="empty-state">Memuat data...</td></tr>`;
   refreshMasterData(renderMasterKategori);
 }
 
@@ -4871,7 +4929,20 @@ function initMobileApp(){
     } else if (warn) {
       warn.remove();
     }
+    refreshMobileItemKategori();
   }
+
+  // Dipanggil setiap kali Lokasi (input transaksi mobile) berubah, supaya opsi
+  // Kategori pada tiap baris item mengikuti kategori khusus lokasi yang dipilih.
+  function refreshMobileItemKategori(){
+    const lokasi = mLokasi.value || '';
+    document.querySelectorAll('#mItemsContainer .m-item-row').forEach(row => {
+      const tipe = row.querySelector('.m-item-tipe').value;
+      const current = row.querySelector('.m-item-kategori').value;
+      row.querySelector('.m-item-kategori').innerHTML = kategoriOptions(tipe, lokasi, current);
+    });
+  }
+  mLokasi.addEventListener('change', refreshMobileItemKategori);
 
   if (accessiblePerusahaan.length > 1) {
     mPerusahaanField.style.display = '';
@@ -4984,7 +5055,7 @@ function addMobileItem(){
     </div>
     <div class="m-field">
       <label>Kategori</label>
-      <select class="m-item-kategori">${kategoriOptions('PENDAPATAN')}</select>
+      <select class="m-item-kategori">${kategoriOptions('PENDAPATAN', document.getElementById('mLokasi')?.value)}</select>
     </div>
     <div class="m-field">
       <label>Nominal</label>
@@ -5002,7 +5073,7 @@ function addMobileItem(){
     updateMobileCalcSummary();
   });
   wrap.querySelector('.m-item-tipe').addEventListener('change', (e) => {
-    wrap.querySelector('.m-item-kategori').innerHTML = kategoriOptions(e.target.value);
+    wrap.querySelector('.m-item-kategori').innerHTML = kategoriOptions(e.target.value, document.getElementById('mLokasi')?.value);
   });
   bindRibuanInput(wrap.querySelector('.m-item-nominal'));
   wrap.querySelectorAll('.m-item-nominal, .m-item-tipe').forEach(el => {
