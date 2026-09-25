@@ -1194,7 +1194,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
         <input type="checkbox" id="rememberMe">
         <span>Ingat saya</span>
       </label>
-      <button type="submit" class="btn-primary" id="loginBtn">Masuk</button>
+      <button type="submit" class="btn-primary" id="loginBtn"><span class="submit-spinner"></span><span id="loginBtnLabel">Masuk</span></button>
     </form>
   </div>
 </div>
@@ -2064,14 +2064,16 @@ let mItemCounter = 0;
 //   withSubmitGuard(btnEl, labelEl, 'Menyimpan...', 'Label Asli', fn)
 //   withSubmitGuard(btnEl, null, null, null, fn)   // tanpa label
 function withSubmitGuard(btn, labelEl, loadingText, originalText, asyncFn) {
-  if (!btn) { asyncFn(); return; }
+  if (!btn) { asyncFn(function(){}); return; }
   if (btn._submitting) return;            // cegah double-click / re-entry
   btn._submitting = true;
   btn.disabled = true;
+  btn.classList.add('is-submitting');
   if (labelEl && loadingText) labelEl.textContent = loadingText;
   const release = () => {
     btn._submitting = false;
     btn.disabled = false;
+    btn.classList.remove('is-submitting');
     if (labelEl && originalText) labelEl.textContent = originalText;
   };
   // asyncFn boleh return Promise (async) atau bukan
@@ -2323,34 +2325,33 @@ document.getElementById('loginForm').addEventListener('submit', function(e){
   const password = document.getElementById('loginPassword').value;
   const rememberMe = document.getElementById('rememberMe').checked;
   const btn = document.getElementById('loginBtn');
+  const label = document.getElementById('loginBtnLabel');
   const errBox = document.getElementById('loginError');
   errBox.classList.add('hidden');
   if (window.__auth) window.__auth.setRememberMe(rememberMe);
-  btn.innerHTML = '<span class="spinner" style="border-color:rgba(255,255,255,0.4);border-top-color:#fff;display:inline-block;"></span>';
-  btn.disabled = true;
 
-  google.script.run
-    .withSuccessHandler(res => {
-      btn.textContent = 'Masuk';
-      btn.disabled = false;
-      if (res.success) {
-        currentUser = res.user;
-        if (window.__auth) window.__auth.rememberUser(res.user);
-        // OPTIMASI: login() sekarang menumpangkan hasil getInitialData() di
-        // res.initialData (1 round-trip, bukan 2) — lihat loadApp().
-        loadApp(res.initialData);
-      } else {
-        errBox.textContent = res.message || 'Login gagal.';
+  withSubmitGuard(btn, label, 'Memproses...', 'Masuk', (release) => {
+    google.script.run
+      .withSuccessHandler(res => {
+        release();
+        if (res.success) {
+          currentUser = res.user;
+          if (window.__auth) window.__auth.rememberUser(res.user);
+          // OPTIMASI: login() sekarang menumpangkan hasil getInitialData() di
+          // res.initialData (1 round-trip, bukan 2) — lihat loadApp().
+          loadApp(res.initialData);
+        } else {
+          errBox.textContent = res.message || 'Login gagal.';
+          errBox.classList.remove('hidden');
+        }
+      })
+      .withFailureHandler(err => {
+        release();
+        errBox.textContent = 'Terjadi kesalahan: ' + err.message;
         errBox.classList.remove('hidden');
-      }
-    })
-    .withFailureHandler(err => {
-      btn.textContent = 'Masuk';
-      btn.disabled = false;
-      errBox.textContent = 'Terjadi kesalahan: ' + err.message;
-      errBox.classList.remove('hidden');
-    })
-    .login(username, password);
+      })
+      .login(username, password);
+  });
 });
 
 function loadApp(preloadedInit){
@@ -4001,12 +4002,12 @@ function showDeleteConfirm(message, onConfirm){
   const close = () => overlay.remove();
   overlay.querySelector('[data-delete-cancel]').onclick = close;
   overlay.querySelector('[data-delete-confirm]').onclick = function() {
-    // Disable tombol SEBELUM menutup overlay & menjalankan aksi,
-    // sehingga double-click tidak bisa mengirim request duplikat.
-    this.disabled = true;
-    this.textContent = 'Menghapus...';
-    close();
-    onConfirm();
+    // Guard yang sama dengan tombol simpan lainnya, supaya double-click
+    // tidak bisa memicu aksi (hapus) dua kali.
+    withSubmitGuard(this, null, null, null, () => {
+      close();
+      onConfirm();
+    });
   };
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 }
@@ -4128,34 +4129,29 @@ function editTransaksiModal(id){
     };
     const etSaveBtn = overlay.querySelector('#etSaveBtn');
     const etSaveLabel = overlay.querySelector('#etSaveLabel');
-    etSaveBtn.classList.add('is-submitting');
-    etSaveBtn.disabled = true;
-    etSaveLabel.textContent = 'Menyimpan...';
-    google.script.run.withSuccessHandler(res => {
-      if (res.success) {
-        overlay.remove();
-        fetchTransaksiTable();
-        loadDashboard();
-        showDesktopToast({
-          title: 'Transaksi diperbarui',
-          lines: [
-            { label: 'Pendapatan', value: fmtRupiah(res.totalPendapatan) },
-            { label: 'Pengeluaran', value: fmtRupiah(res.totalPengeluaran) },
-            { label: 'Selisih', value: fmtRupiah(res.saldo), emphasis: true }
-          ]
-        });
-      } else {
-        etSaveBtn.classList.remove('is-submitting');
-        etSaveBtn.disabled = false;
-        etSaveLabel.textContent = 'Simpan Perubahan';
-        showDesktopToast({ title: 'Gagal memperbarui', message: res.message, type: 'error' });
-      }
-    }).withFailureHandler(err => {
-      etSaveBtn.classList.remove('is-submitting');
-      etSaveBtn.disabled = false;
-      etSaveLabel.textContent = 'Simpan Perubahan';
-      showDesktopToast({ title: 'Gagal memperbarui', message: err.message, type: 'error' });
-    }).updateTransaksiBatch(id, payload);
+    withSubmitGuard(etSaveBtn, etSaveLabel, 'Menyimpan...', 'Simpan Perubahan', (release) => {
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          overlay.remove();
+          fetchTransaksiTable();
+          loadDashboard();
+          showDesktopToast({
+            title: 'Transaksi diperbarui',
+            lines: [
+              { label: 'Pendapatan', value: fmtRupiah(res.totalPendapatan) },
+              { label: 'Pengeluaran', value: fmtRupiah(res.totalPengeluaran) },
+              { label: 'Selisih', value: fmtRupiah(res.saldo), emphasis: true }
+            ]
+          });
+        } else {
+          release();
+          showDesktopToast({ title: 'Gagal memperbarui', message: res.message, type: 'error' });
+        }
+      }).withFailureHandler(err => {
+        release();
+        showDesktopToast({ title: 'Gagal memperbarui', message: err.message, type: 'error' });
+      }).updateTransaksiBatch(id, payload);
+    });
   });
 }
 
@@ -4331,99 +4327,88 @@ async function submitDesktopTransaksi(e){
   const btn = document.getElementById('dSubmitBtn');
   const label = document.getElementById('dSubmitLabel');
   const status = document.getElementById('dSubmitStatus');
-  // Guard: tolak re-entry jika request sebelumnya masih in-flight
-  if (btn._submitting) return;
-  btn._submitting = true;
   status.textContent = '';
   status.className = 'submit-status';
-  btn.classList.add('is-submitting');
-  label.textContent = 'Menyimpan...';
-  btn.disabled = true;
-  // Cari ejaan resmi dari masterData.lokasiMap — ID tidak dikirim dari client.
-  const _dSelPerusahaan = document.getElementById('dPerusahaan').value;
-  const _dSelLokasi = document.getElementById('dLokasi').value;
-  const _dLokasiEntry = masterData.lokasiMap.find(
-    x => normalizeNama(x.perusahaan) === normalizeNama(_dSelPerusahaan) &&
-         normalizeNama(x.lokasi) === normalizeNama(_dSelLokasi)
-  );
 
-  let fotoEncoded = [];
-  try {
-    label.textContent = 'Memproses foto...';
-    fotoEncoded = await encodeFotoManager(dFotoManager);
-  } catch (err) {
-    btn.classList.remove('is-submitting');
-    label.textContent = 'Simpan Transaksi';
-    btn.disabled = false;
-    showDesktopToast({ title: 'Foto gagal diproses', message: err.message || String(err), type: 'error' });
-    return;
-  }
-  label.textContent = 'Menyimpan...';
+  withSubmitGuard(btn, label, 'Menyimpan...', 'Simpan Transaksi', async (release) => {
+    // Cari ejaan resmi dari masterData.lokasiMap — ID tidak dikirim dari client.
+    const _dSelPerusahaan = document.getElementById('dPerusahaan').value;
+    const _dSelLokasi = document.getElementById('dLokasi').value;
+    const _dLokasiEntry = masterData.lokasiMap.find(
+      x => normalizeNama(x.perusahaan) === normalizeNama(_dSelPerusahaan) &&
+           normalizeNama(x.lokasi) === normalizeNama(_dSelLokasi)
+    );
 
-  const payload = {
-    tanggal: document.getElementById('dTanggal').value,
-    perusahaan: _dLokasiEntry ? _dLokasiEntry.perusahaan : _dSelPerusahaan,
-    lokasi: _dLokasiEntry ? _dLokasiEntry.lokasi : _dSelLokasi,
-    keterangan: document.getElementById('dKeterangan').value,
-    items: items,
-    inputOleh: currentUser.name,
-    role: currentUser.role,
-    foto: fotoEncoded
-  };
-  const releaseDesktopBtn = () => {
-    btn._submitting = false;
-    btn.classList.remove('is-submitting');
-    label.textContent = 'Simpan Transaksi';
-    btn.disabled = false;
-  };
-  google.script.run.withSuccessHandler(res => {
-    releaseDesktopBtn();
-    if (res.success) {
-      const lokasiEntry = masterData.lokasiMap.find(x => x.perusahaan === payload.perusahaan && x.lokasi === payload.lokasi);
-      const idLokasi = lokasiEntry?.idLokasi || '';
-      const keteranganStruk = idLokasi
-        ? (payload.keterangan ? idLokasi + ' ' + payload.keterangan : idLokasi)
-        : payload.keterangan;
-      const receiptData = {
-        batchId: res.batchId,
-        tanggal: res.tanggal,
-        waktu: res.waktu,
-        perusahaan: payload.perusahaan,
-        lokasi: payload.lokasi,
-        keterangan: keteranganStruk,
-        inputOleh: payload.inputOleh,
-        items: payload.items,
-        totalPendapatan: res.totalPendapatan,
-        totalPengeluaran: res.totalPengeluaran,
-        saldo: res.saldo,
-        fotoUrls: res.fotoUrls || []
-      };
-      document.getElementById('dItemsContainer').innerHTML = '';
-      dItemCounter = 0;
-      addDesktopItem();
-      document.getElementById('dKeterangan').value = '';
-      dFotoManager.reset();
-      loadDashboard();
-      fetchTransaksiTable();
-      status.textContent = 'Transaksi berhasil disimpan.';
-      status.classList.add('success');
-      try {
-        showReceiptModal(receiptData);
-      } catch (err) {
-        console.error('Gagal menampilkan struk:', err);
-        showDesktopToast({ title: 'Struk gagal ditampilkan', message: err.message, type: 'error' });
-      }
-    } else {
-      status.textContent = res.message || 'Transaksi gagal disimpan.';
-      status.classList.add('error');
-      showDesktopToast({ title: 'Gagal menyimpan', message: res.message, type: 'error' });
+    let fotoEncoded = [];
+    try {
+      label.textContent = 'Memproses foto...';
+      fotoEncoded = await encodeFotoManager(dFotoManager);
+    } catch (err) {
+      release();
+      showDesktopToast({ title: 'Foto gagal diproses', message: err.message || String(err), type: 'error' });
+      return;
     }
-  }).withFailureHandler(err => {
-    releaseDesktopBtn();
-    status.textContent = 'Gagal terhubung ke server. Coba lagi.';
-    status.className = 'submit-status error';
-    showDesktopToast({ title: 'Gagal menyimpan', message: err.message, type: 'error' });
-  }).simpanTransaksiBatch(payload);
+    label.textContent = 'Menyimpan...';
+
+    const payload = {
+      tanggal: document.getElementById('dTanggal').value,
+      perusahaan: _dLokasiEntry ? _dLokasiEntry.perusahaan : _dSelPerusahaan,
+      lokasi: _dLokasiEntry ? _dLokasiEntry.lokasi : _dSelLokasi,
+      keterangan: document.getElementById('dKeterangan').value,
+      items: items,
+      inputOleh: currentUser.name,
+      role: currentUser.role,
+      foto: fotoEncoded
+    };
+    google.script.run.withSuccessHandler(res => {
+      release();
+      if (res.success) {
+        const lokasiEntry = masterData.lokasiMap.find(x => x.perusahaan === payload.perusahaan && x.lokasi === payload.lokasi);
+        const idLokasi = lokasiEntry?.idLokasi || '';
+        const keteranganStruk = idLokasi
+          ? (payload.keterangan ? idLokasi + ' ' + payload.keterangan : idLokasi)
+          : payload.keterangan;
+        const receiptData = {
+          batchId: res.batchId,
+          tanggal: res.tanggal,
+          waktu: res.waktu,
+          perusahaan: payload.perusahaan,
+          lokasi: payload.lokasi,
+          keterangan: keteranganStruk,
+          inputOleh: payload.inputOleh,
+          items: payload.items,
+          totalPendapatan: res.totalPendapatan,
+          totalPengeluaran: res.totalPengeluaran,
+          saldo: res.saldo,
+          fotoUrls: res.fotoUrls || []
+        };
+        document.getElementById('dItemsContainer').innerHTML = '';
+        dItemCounter = 0;
+        addDesktopItem();
+        document.getElementById('dKeterangan').value = '';
+        dFotoManager.reset();
+        loadDashboard();
+        fetchTransaksiTable();
+        status.textContent = 'Transaksi berhasil disimpan.';
+        status.classList.add('success');
+        try {
+          showReceiptModal(receiptData);
+        } catch (err) {
+          console.error('Gagal menampilkan struk:', err);
+          showDesktopToast({ title: 'Struk gagal ditampilkan', message: err.message, type: 'error' });
+        }
+      } else {
+        status.textContent = res.message || 'Transaksi gagal disimpan.';
+        status.classList.add('error');
+        showDesktopToast({ title: 'Gagal menyimpan', message: res.message, type: 'error' });
+      }
+    }).withFailureHandler(err => {
+      release();
+      status.textContent = 'Gagal terhubung ke server. Coba lagi.';
+      status.className = 'submit-status error';
+      showDesktopToast({ title: 'Gagal menyimpan', message: err.message, type: 'error' });
+    }).simpanTransaksiBatch(payload);
+  });
 }
 
 // Menampilkan struk transaksi setelah berhasil disimpan, lengkap dengan
@@ -4798,9 +4783,6 @@ function openUserModal(user){
     }
     const saveBtn = overlay.querySelector('#umSaveBtn');
     const saveLabel = overlay.querySelector('#umSaveLabel');
-    saveBtn.classList.add('is-submitting');
-    saveBtn.disabled = true;
-    saveLabel.textContent = 'Menyimpan';
     const selectedPerusahaan = perusahaanMS.getValue();
     const selectedLokasi = lokasiMS.getValue();
     const payload = {
@@ -4813,23 +4795,21 @@ function openUserModal(user){
       lokasi: selectedLokasi.includes('ALL') ? 'ALL' : selectedLokasi.join(', '),
       aktif: true
     };
-    google.script.run.withSuccessHandler(res => {
-      if (res.success) {
-        overlay.remove();
-        loadUsersPage();
-        showDesktopToast({ title: isEdit ? 'User diperbarui' : 'User ditambahkan', message: `${escapeHtml(payload.nama)} kini punya akses sebagai ${payload.role}.` });
-      } else {
-        saveBtn.classList.remove('is-submitting');
-        saveBtn.disabled = false;
-        saveLabel.textContent = 'Simpan';
-        showDesktopToast({ title: 'Gagal menyimpan user', message: res.message, type: 'error' });
-      }
-    }).withFailureHandler(err => {
-      saveBtn.classList.remove('is-submitting');
-      saveBtn.disabled = false;
-      saveLabel.textContent = 'Simpan';
-      showDesktopToast({ title: 'Gagal menyimpan user', message: err.message, type: 'error' });
-    }).simpanUser(payload, currentUser);
+    withSubmitGuard(saveBtn, saveLabel, 'Menyimpan', 'Simpan', (release) => {
+      google.script.run.withSuccessHandler(res => {
+        if (res.success) {
+          overlay.remove();
+          loadUsersPage();
+          showDesktopToast({ title: isEdit ? 'User diperbarui' : 'User ditambahkan', message: `${escapeHtml(payload.nama)} kini punya akses sebagai ${payload.role}.` });
+        } else {
+          release();
+          showDesktopToast({ title: 'Gagal menyimpan user', message: res.message, type: 'error' });
+        }
+      }).withFailureHandler(err => {
+        release();
+        showDesktopToast({ title: 'Gagal menyimpan user', message: err.message, type: 'error' });
+      }).simpanUser(payload, currentUser);
+    });
   };
 }
 
@@ -4924,25 +4904,20 @@ function openMasterModal(kind, recordIndex) {
     }
     const saveBtn = overlay.querySelector('#masterModalSaveBtn');
     const saveLabel = overlay.querySelector('#masterModalSaveLabel');
-    saveBtn.classList.add('is-submitting');
-    saveBtn.disabled = true;
-    saveLabel.textContent = 'Menyimpan...';
-    google.script.run.withSuccessHandler(res => {
-      if (!res.success) {
-        saveBtn.classList.remove('is-submitting');
-        saveBtn.disabled = false;
-        saveLabel.textContent = 'Simpan';
-        return showDesktopToast({ title: 'Gagal menyimpan master', message: res.message, type: 'error' });
-      }
-      overlay.remove();
-      refreshMasterData(() => { renderMasterPage(kind); loadDashboard(); });
-      showDesktopToast({ title: existing ? 'Master diperbarui' : 'Master ditambahkan', message: labels[kind] + ' berhasil disimpan.' });
-    }).withFailureHandler(err => {
-      saveBtn.classList.remove('is-submitting');
-      saveBtn.disabled = false;
-      saveLabel.textContent = 'Simpan';
-      showDesktopToast({ title: 'Gagal menyimpan master', message: err.message, type: 'error' });
-    }).saveMasterItem(kind, payload, currentUser);
+    withSubmitGuard(saveBtn, saveLabel, 'Menyimpan...', 'Simpan', (release) => {
+      google.script.run.withSuccessHandler(res => {
+        if (!res.success) {
+          release();
+          return showDesktopToast({ title: 'Gagal menyimpan master', message: res.message, type: 'error' });
+        }
+        overlay.remove();
+        refreshMasterData(() => { renderMasterPage(kind); loadDashboard(); });
+        showDesktopToast({ title: existing ? 'Master diperbarui' : 'Master ditambahkan', message: labels[kind] + ' berhasil disimpan.' });
+      }).withFailureHandler(err => {
+        release();
+        showDesktopToast({ title: 'Gagal menyimpan master', message: err.message, type: 'error' });
+      }).saveMasterItem(kind, payload, currentUser);
+    });
   };
 }
 
@@ -5304,103 +5279,91 @@ async function submitMobileTransaksi(e){
   const btn = document.getElementById('mSubmitBtn');
   const label = document.getElementById('mSubmitLabel');
   const status = document.getElementById('mSubmitStatus');
-  // Guard: tolak re-entry jika request sebelumnya masih in-flight
-  if (btn._submitting) return;
-  btn._submitting = true;
   status.textContent = '';
   status.className = 'submit-status';
-  btn.classList.add('is-submitting');
-  label.textContent = 'Menyimpan...';
-  btn.disabled = true;
 
-  // mPerusahaan.value selalu terisi (lihat initMobileApp — select diisi meski hidden)
-  const selectedPerusahaan = document.getElementById('mPerusahaan').value;
-  const selectedLokasi = document.getElementById('mLokasi').value;
-  // Cari ejaan resmi dari masterData.lokasiMap — ID tidak dikirim dari client,
-  // server akan resolve sendiri dari nama dengan normalisasi.
-  const _mLokasiEntry = masterData.lokasiMap.find(
-    x => normalizeNama(x.perusahaan) === normalizeNama(selectedPerusahaan) &&
-         normalizeNama(x.lokasi) === normalizeNama(selectedLokasi)
-  );
-  const mTanggalVal = document.getElementById('mTanggalTransaksi')?.value || new Date().toISOString().substring(0,10);
+  withSubmitGuard(btn, label, 'Menyimpan...', 'Simpan Transaksi', async (release) => {
+    // mPerusahaan.value selalu terisi (lihat initMobileApp — select diisi meski hidden)
+    const selectedPerusahaan = document.getElementById('mPerusahaan').value;
+    const selectedLokasi = document.getElementById('mLokasi').value;
+    // Cari ejaan resmi dari masterData.lokasiMap — ID tidak dikirim dari client,
+    // server akan resolve sendiri dari nama dengan normalisasi.
+    const _mLokasiEntry = masterData.lokasiMap.find(
+      x => normalizeNama(x.perusahaan) === normalizeNama(selectedPerusahaan) &&
+           normalizeNama(x.lokasi) === normalizeNama(selectedLokasi)
+    );
+    const mTanggalVal = document.getElementById('mTanggalTransaksi')?.value || new Date().toISOString().substring(0,10);
 
-  let fotoEncoded = [];
-  try {
-    label.textContent = 'Memproses foto...';
-    fotoEncoded = await encodeFotoManager(mFotoManager);
-  } catch (err) {
-    btn.classList.remove('is-submitting');
-    label.textContent = 'Simpan Transaksi';
-    btn.disabled = false;
-    showToast('Foto gagal diproses: ' + (err.message || err), true);
-    return;
-  }
-  label.textContent = 'Menyimpan...';
-
-  const payload = {
-    tanggal: mTanggalVal,
-    perusahaan: _mLokasiEntry ? _mLokasiEntry.perusahaan : selectedPerusahaan,
-    lokasi: _mLokasiEntry ? _mLokasiEntry.lokasi : selectedLokasi,
-    keterangan: document.getElementById('mKeterangan').value,
-    items: items,
-    inputOleh: currentUser.name,
-    role: currentUser.role,
-    foto: fotoEncoded
-  };
-
-  const releaseMobileBtn = () => {
-    btn._submitting = false;
-    btn.classList.remove('is-submitting');
-    label.textContent = 'Simpan Transaksi';
-    btn.disabled = false;
-  };
-  google.script.run.withSuccessHandler(res => {
-    releaseMobileBtn();
-    if (res.success) {
-      const lokasiEntry = masterData.lokasiMap.find(x => x.perusahaan === payload.perusahaan && x.lokasi === payload.lokasi);
-      const idLokasi = lokasiEntry?.idLokasi || '';
-      const keteranganStruk = idLokasi
-        ? (payload.keterangan ? idLokasi + ' ' + payload.keterangan : idLokasi)
-        : payload.keterangan;
-      const receiptData = {
-        batchId: res.batchId,
-        tanggal: res.tanggal,
-        waktu: res.waktu,
-        perusahaan: payload.perusahaan,
-        lokasi: payload.lokasi,
-        keterangan: keteranganStruk,
-        inputOleh: payload.inputOleh,
-        items: payload.items,
-        totalPendapatan: res.totalPendapatan,
-        totalPengeluaran: res.totalPengeluaran,
-        saldo: res.saldo,
-        fotoUrls: res.fotoUrls || []
-      };
-      document.getElementById('mItemsContainer').innerHTML = '';
-      mItemCounter = 0;
-      addMobileItem();
-      document.getElementById('mKeterangan').value = '';
-      mFotoManager.reset();
-      status.textContent = 'Transaksi berhasil disimpan.';
-      status.classList.add('success');
-      loadMobileRecent();
-      try {
-        showReceiptModal(receiptData);
-      } catch (err) {
-        console.error('Gagal menampilkan struk:', err);
-        showToast('Transaksi tersimpan, tapi struk gagal ditampilkan (' + err.message + ')', true);
-      }
-    } else {
-      status.textContent = res.message || 'Transaksi gagal disimpan.';
-      status.classList.add('error');
-      showToast('Gagal: ' + res.message, true);
+    let fotoEncoded = [];
+    try {
+      label.textContent = 'Memproses foto...';
+      fotoEncoded = await encodeFotoManager(mFotoManager);
+    } catch (err) {
+      release();
+      showToast('Foto gagal diproses: ' + (err.message || err), true);
+      return;
     }
-  }).withFailureHandler(err => {
-    releaseMobileBtn();
-    status.textContent = 'Gagal terhubung ke server. Coba lagi.';
-    status.className = 'submit-status error';
-    showToast('Gagal menyimpan: ' + err.message, true);
-  }).simpanTransaksiBatch(payload);
+    label.textContent = 'Menyimpan...';
+
+    const payload = {
+      tanggal: mTanggalVal,
+      perusahaan: _mLokasiEntry ? _mLokasiEntry.perusahaan : selectedPerusahaan,
+      lokasi: _mLokasiEntry ? _mLokasiEntry.lokasi : selectedLokasi,
+      keterangan: document.getElementById('mKeterangan').value,
+      items: items,
+      inputOleh: currentUser.name,
+      role: currentUser.role,
+      foto: fotoEncoded
+    };
+
+    google.script.run.withSuccessHandler(res => {
+      release();
+      if (res.success) {
+        const lokasiEntry = masterData.lokasiMap.find(x => x.perusahaan === payload.perusahaan && x.lokasi === payload.lokasi);
+        const idLokasi = lokasiEntry?.idLokasi || '';
+        const keteranganStruk = idLokasi
+          ? (payload.keterangan ? idLokasi + ' ' + payload.keterangan : idLokasi)
+          : payload.keterangan;
+        const receiptData = {
+          batchId: res.batchId,
+          tanggal: res.tanggal,
+          waktu: res.waktu,
+          perusahaan: payload.perusahaan,
+          lokasi: payload.lokasi,
+          keterangan: keteranganStruk,
+          inputOleh: payload.inputOleh,
+          items: payload.items,
+          totalPendapatan: res.totalPendapatan,
+          totalPengeluaran: res.totalPengeluaran,
+          saldo: res.saldo,
+          fotoUrls: res.fotoUrls || []
+        };
+        document.getElementById('mItemsContainer').innerHTML = '';
+        mItemCounter = 0;
+        addMobileItem();
+        document.getElementById('mKeterangan').value = '';
+        mFotoManager.reset();
+        status.textContent = 'Transaksi berhasil disimpan.';
+        status.classList.add('success');
+        loadMobileRecent();
+        try {
+          showReceiptModal(receiptData);
+        } catch (err) {
+          console.error('Gagal menampilkan struk:', err);
+          showToast('Transaksi tersimpan, tapi struk gagal ditampilkan (' + err.message + ')', true);
+        }
+      } else {
+        status.textContent = res.message || 'Transaksi gagal disimpan.';
+        status.classList.add('error');
+        showToast('Gagal: ' + res.message, true);
+      }
+    }).withFailureHandler(err => {
+      release();
+      status.textContent = 'Gagal terhubung ke server. Coba lagi.';
+      status.className = 'submit-status error';
+      showToast('Gagal menyimpan: ' + err.message, true);
+    }).simpanTransaksiBatch(payload);
+  });
 }
 
 // Cache riwayat transaksi mobile agar tombol PDF & detail bisa mengaksesnya
