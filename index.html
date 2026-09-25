@@ -164,6 +164,95 @@
     if (!(isRemembered() && getToken())) callServer('warmup', [], null, function () {});
   } catch (e) {}
 })();
+
+// ============================================================
+// FRONTEND SESSION CACHE — mengurangi round-trip ke GAS
+// ============================================================
+// Data Master (perusahaan/lokasi/tipe/kategori) dan Dashboard Stats sangat
+// jarang berubah dalam satu sesi kerja. Menyimpannya di memori browser
+// (bukan sessionStorage — tidak perlu persist antar tab) berarti navigasi
+// antar menu tidak trigger request ulang ke server selama TTL belum habis.
+//
+// Penggunaan:
+//   window.__fc.get('masterData')            → data atau null kalau miss/stale
+//   window.__fc.set('masterData', data, 120) → simpan 120 detik
+//   window.__fc.invalidate('masterData')     → buang paksa (mis. setelah simpan)
+//   window.__fc.invalidateAll()              → buang semua (mis. saat logout)
+//
+// Key yang dikelola cache ini:
+//   'masterData'     — hasil getMasterData() — TTL 300 detik
+//   'dashboardStats' — hasil getDashboardStats() — TTL 120 detik
+//   'monitoring'     — hasil getLokasiMonitoring() — TTL 60 detik
+//   'transaksi_PAGE' — hasil getTransaksi() per halaman — TTL 60 detik
+// ============================================================
+(function () {
+  var store = {};
+
+  function get(key) {
+    var entry = store[key];
+    if (!entry) return null;
+    if (Date.now() > entry.exp) { delete store[key]; return null; }
+    return entry.data;
+  }
+
+  function set(key, data, ttlSeconds) {
+    store[key] = { data: data, exp: Date.now() + (ttlSeconds || 120) * 1000 };
+  }
+
+  function invalidate(key) {
+    delete store[key];
+  }
+
+  function invalidateAll() {
+    store = {};
+  }
+
+  // Invalidasi key yang berkaitan transaksi (dashboard, monitoring, laporan, dll)
+  // — dipanggil setelah simpan/edit/hapus transaksi berhasil.
+  function invalidateTransaksiRelated() {
+    Object.keys(store).forEach(function(k) {
+      if (k.indexOf('transaksi') === 0 || k === 'dashboardStats' || k === 'monitoring') {
+        delete store[k];
+      }
+    });
+    // Laporan: buang semua key laporan bulan ini dan bulan lalu
+    var now = new Date();
+    for (var i = 0; i <= 1; i++) {
+      var d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      var bulan = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+      Object.keys(store).forEach(function(k) {
+        if (k.indexOf('laporan_' + bulan) === 0) delete store[k];
+      });
+    }
+  }
+
+  window.__fc = { get: get, set: set, invalidate: invalidate, invalidateAll: invalidateAll, invalidateTransaksiRelated: invalidateTransaksiRelated };
+})();
+
+// ============================================================
+// HELPER: panggil server dengan frontend cache
+// ============================================================
+// Gunakan cachedCall() alih-alih google.script.run langsung untuk fungsi
+// baca (getMasterData, getDashboardStats, getLokasiMonitoring) yang hasilnya
+// jarang berubah. Fungsi tulis (simpanTransaksi, dll) tetap bypass cache.
+//
+// Contoh penggunaan:
+//   cachedCall('getMasterData', [], 'masterData', 300, function(data) { ... });
+//   cachedCall('getDashboardStats', [currentUser], 'dashboardStats', 120, cb);
+function cachedCall(fnName, args, cacheKey, ttlSeconds, onSuccess, onFailure) {
+  var cached = window.__fc ? window.__fc.get(cacheKey) : null;
+  if (cached) {
+    if (onSuccess) onSuccess(cached);
+    return;
+  }
+  var runner = google.script.run
+    .withSuccessHandler(function(result) {
+      if (window.__fc && result && !result.error) window.__fc.set(cacheKey, result, ttlSeconds || 120);
+      if (onSuccess) onSuccess(result);
+    });
+  if (onFailure) runner = runner.withFailureHandler(onFailure);
+  runner[fnName].apply(runner, args || []);
+}
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
@@ -4778,7 +4867,7 @@ function openMasterModal(kind, recordIndex) {
       if (kind === 'kategori') {
         payload.tipe = overlay.querySelector('#masterModalTipe').value;
         const selectedLokasi = kategoriLokasiMS.getValue();
-        payload.lokasi = selectedLokasi.includes('ALL') ? 'ALL' : selectedLokasi.join(', ');
+        payload.lokasi = selectedLokasi.includes('ALL') ? '' : selectedLokasi.join(', ');
       }
     }
     const saveBtn = overlay.querySelector('#masterModalSaveBtn');
