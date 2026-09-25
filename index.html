@@ -4778,7 +4778,7 @@ function openMasterModal(kind, recordIndex) {
       if (kind === 'kategori') {
         payload.tipe = overlay.querySelector('#masterModalTipe').value;
         const selectedLokasi = kategoriLokasiMS.getValue();
-        payload.lokasi = selectedLokasi.includes('ALL') ? '' : selectedLokasi.join(', ');
+        payload.lokasi = selectedLokasi.includes('ALL') ? 'ALL' : selectedLokasi.join(', ');
       }
     }
     const saveBtn = overlay.querySelector('#masterModalSaveBtn');
