@@ -2054,6 +2054,39 @@ let mItemCounter = 0;
 // "<img src=x onerror=...>" misalnya, kode tsb akan otomatis dijalankan di
 // browser siapa pun yang membuka data itu (stored XSS). escapeHtml() dipakai
 // untuk semua teks bebas sebelum masuk ke template HTML di bawah.
+// ============================================================
+// SUBMIT GUARD — mencegah double-submit / double-click
+// ============================================================
+// Membungkus setiap aksi kirim ke server. Selama request in-flight,
+// tombol di-disable dan flag _submitting diset supaya re-entry apapun
+// (double-click, Enter, programatik) langsung diabaikan.
+// Penggunaan:
+//   withSubmitGuard(btnEl, labelEl, 'Menyimpan...', 'Label Asli', fn)
+//   withSubmitGuard(btnEl, null, null, null, fn)   // tanpa label
+function withSubmitGuard(btn, labelEl, loadingText, originalText, asyncFn) {
+  if (!btn) { asyncFn(); return; }
+  if (btn._submitting) return;            // cegah double-click / re-entry
+  btn._submitting = true;
+  btn.disabled = true;
+  if (labelEl && loadingText) labelEl.textContent = loadingText;
+  const release = () => {
+    btn._submitting = false;
+    btn.disabled = false;
+    if (labelEl && originalText) labelEl.textContent = originalText;
+  };
+  // asyncFn boleh return Promise (async) atau bukan
+  try {
+    const result = asyncFn(release);
+    if (result && typeof result.then === 'function') {
+      result.catch(release);
+    }
+    // Kalau bukan Promise, release dipanggil oleh caller lewat argumen release
+  } catch (e) {
+    release();
+    throw e;
+  }
+}
+
 function escapeHtml(value){
   return String(value === null || value === undefined ? '' : value)
     .replace(/&/g, '&amp;')
@@ -3349,30 +3382,9 @@ function renderLogTable(){
   const aksiColor = { LOGIN: '#3b82f6', TAMBAH: '#16a34a', EDIT: '#d97706', HAPUS: '#dc2626' };
   renderPagination('log', 6, (item) => {
     const color = aksiColor[item['Aksi']] || 'var(--muted)';
-
-    // Tanggal & Waktu kadang terbaca sebagai Date oleh Sheets lalu diformat
-    // sebagai "1899-12-30 HH:mm:ss" (epoch Sheets). Solusi: ambil dari
-    // Timestamp (ISO string lengkap) sebagai sumber utama yang selalu benar.
-    let tglDisplay = '', jamDisplay = '';
-    const ts = item['Timestamp'] || '';
-    if (ts && ts.length >= 10) {
-      // Timestamp bisa berupa ISO "2026-09-25T10:50:57..." atau "2026-09-25 10:50:57"
-      tglDisplay = ts.substring(0, 10);
-      jamDisplay = ts.substring(11, 19);
-    } else {
-      // Fallback: pakai Tanggal/Waktu tapi filter nilai 1899
-      const tgl = String(item['Tanggal'] || '');
-      const wkt = String(item['Waktu'] || '');
-      tglDisplay = tgl.startsWith('1899') ? '' : tgl.substring(0, 10);
-      jamDisplay = wkt.startsWith('1899') ? '' : wkt.substring(0, 8);
-    }
-
     return `
     <tr>
-      <td style="font-size:12.5px;color:var(--muted);">
-        <span style="display:block;white-space:nowrap;">${tglDisplay}</span>
-        <span style="display:block;white-space:nowrap;">${jamDisplay}</span>
-      </td>
+      <td style="font-size:12.5px;color:var(--muted);white-space:nowrap;">${item['Tanggal'] || ''} ${item['Waktu'] || ''}</td>
       <td style="font-weight:500;">${escapeHtml(item['Nama'] || '-')}</td>
       <td style="text-transform:capitalize;">${item['Role'] || '-'}</td>
       <td><span style="font-size:11.5px;font-weight:700;color:${color};background:${color}1a;padding:3px 8px;border-radius:5px;">${item['Aksi'] || ''}</span></td>
@@ -3807,7 +3819,10 @@ function handleImportXlsx(file){
     </div>`;
     document.body.appendChild(overlay);
     overlay.querySelector('#cancelImportBtn').onclick = () => overlay.remove();
-    overlay.querySelector('#confirmImportBtn').onclick = () => {
+    overlay.querySelector('#confirmImportBtn').onclick = function() {
+      // Disable tombol langsung supaya tidak bisa diklik dua kali
+      this.disabled = true;
+      this.textContent = 'Mengimpor...';
       overlay.remove();
       let done = 0, failed = 0, updated = 0, inserted = 0;
       const total = payloads.length;
@@ -3985,7 +4000,14 @@ function showDeleteConfirm(message, onConfirm){
   document.body.appendChild(overlay);
   const close = () => overlay.remove();
   overlay.querySelector('[data-delete-cancel]').onclick = close;
-  overlay.querySelector('[data-delete-confirm]').onclick = () => { close(); onConfirm(); };
+  overlay.querySelector('[data-delete-confirm]').onclick = function() {
+    // Disable tombol SEBELUM menutup overlay & menjalankan aksi,
+    // sehingga double-click tidak bisa mengirim request duplikat.
+    this.disabled = true;
+    this.textContent = 'Menghapus...';
+    close();
+    onConfirm();
+  };
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
 }
 
@@ -4309,6 +4331,9 @@ async function submitDesktopTransaksi(e){
   const btn = document.getElementById('dSubmitBtn');
   const label = document.getElementById('dSubmitLabel');
   const status = document.getElementById('dSubmitStatus');
+  // Guard: tolak re-entry jika request sebelumnya masih in-flight
+  if (btn._submitting) return;
+  btn._submitting = true;
   status.textContent = '';
   status.className = 'submit-status';
   btn.classList.add('is-submitting');
@@ -4345,10 +4370,14 @@ async function submitDesktopTransaksi(e){
     role: currentUser.role,
     foto: fotoEncoded
   };
-  google.script.run.withSuccessHandler(res => {
+  const releaseDesktopBtn = () => {
+    btn._submitting = false;
     btn.classList.remove('is-submitting');
     label.textContent = 'Simpan Transaksi';
     btn.disabled = false;
+  };
+  google.script.run.withSuccessHandler(res => {
+    releaseDesktopBtn();
     if (res.success) {
       const lokasiEntry = masterData.lokasiMap.find(x => x.perusahaan === payload.perusahaan && x.lokasi === payload.lokasi);
       const idLokasi = lokasiEntry?.idLokasi || '';
@@ -4390,9 +4419,7 @@ async function submitDesktopTransaksi(e){
       showDesktopToast({ title: 'Gagal menyimpan', message: res.message, type: 'error' });
     }
   }).withFailureHandler(err => {
-    btn.classList.remove('is-submitting');
-    label.textContent = 'Simpan Transaksi';
-    btn.disabled = false;
+    releaseDesktopBtn();
     status.textContent = 'Gagal terhubung ke server. Coba lagi.';
     status.className = 'submit-status error';
     showDesktopToast({ title: 'Gagal menyimpan', message: err.message, type: 'error' });
@@ -4457,6 +4484,8 @@ function showReceiptModal(data){
 // baris yang bisa terpotong di kanan maupun di bawah, apa pun isi datanya.
 function downloadReceiptPDF(data, tglLabel, btnEl){
   if (!window.jspdf) return;
+  if (btnEl._submitting) return;          // cegah double-click
+  btnEl._submitting = true;
   const originalLabel = btnEl.innerHTML;
   btnEl.disabled = true;
   btnEl.innerHTML = 'Menyiapkan...';
@@ -4582,9 +4611,11 @@ function downloadReceiptPDF(data, tglLabel, btnEl){
     draw(pdf, false);
     pdf.save(`Struk-${data.batchId}.pdf`);
 
+    btnEl._submitting = false;
     btnEl.disabled = false;
     btnEl.innerHTML = originalLabel;
   } catch (err) {
+    btnEl._submitting = false;
     btnEl.disabled = false;
     btnEl.innerHTML = originalLabel;
     showDesktopToast({ title: 'Gagal membuat PDF', message: err.message, type: 'error' });
@@ -5273,6 +5304,9 @@ async function submitMobileTransaksi(e){
   const btn = document.getElementById('mSubmitBtn');
   const label = document.getElementById('mSubmitLabel');
   const status = document.getElementById('mSubmitStatus');
+  // Guard: tolak re-entry jika request sebelumnya masih in-flight
+  if (btn._submitting) return;
+  btn._submitting = true;
   status.textContent = '';
   status.className = 'submit-status';
   btn.classList.add('is-submitting');
@@ -5314,10 +5348,14 @@ async function submitMobileTransaksi(e){
     foto: fotoEncoded
   };
 
-  google.script.run.withSuccessHandler(res => {
+  const releaseMobileBtn = () => {
+    btn._submitting = false;
     btn.classList.remove('is-submitting');
     label.textContent = 'Simpan Transaksi';
     btn.disabled = false;
+  };
+  google.script.run.withSuccessHandler(res => {
+    releaseMobileBtn();
     if (res.success) {
       const lokasiEntry = masterData.lokasiMap.find(x => x.perusahaan === payload.perusahaan && x.lokasi === payload.lokasi);
       const idLokasi = lokasiEntry?.idLokasi || '';
@@ -5349,10 +5387,6 @@ async function submitMobileTransaksi(e){
       try {
         showReceiptModal(receiptData);
       } catch (err) {
-        // Sebelumnya kalau ada error di sini, struk-nya gagal muncul TANPA
-        // pesan apa pun ke user (cuma notifikasi "berhasil disimpan" yang
-        // sempat kelihatan). Sekarang errornya ditangkap supaya kelihatan
-        // di layar dan gampang dilacak penyebabnya.
         console.error('Gagal menampilkan struk:', err);
         showToast('Transaksi tersimpan, tapi struk gagal ditampilkan (' + err.message + ')', true);
       }
@@ -5362,9 +5396,7 @@ async function submitMobileTransaksi(e){
       showToast('Gagal: ' + res.message, true);
     }
   }).withFailureHandler(err => {
-    btn.classList.remove('is-submitting');
-    label.textContent = 'Simpan Transaksi';
-    btn.disabled = false;
+    releaseMobileBtn();
     status.textContent = 'Gagal terhubung ke server. Coba lagi.';
     status.className = 'submit-status error';
     showToast('Gagal menyimpan: ' + err.message, true);
