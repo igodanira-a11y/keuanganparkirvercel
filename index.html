@@ -390,6 +390,10 @@ a{color:inherit;}
   font-size:15px;
   margin-top:8px;
   transition:opacity .15s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
 }
 .btn-primary:hover{opacity:0.88;}
 .btn-primary:active{transform:scale(0.99);}
@@ -675,6 +679,24 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .tag.expense{background:var(--alert-soft);color:var(--alert);}
 .tag.mixed{background:#eef0ed;color:var(--muted);}
 
+/* pengajuan edit transaksi */
+.st-badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap;}
+.st-badge.menunggu{background:#fdf1d3;color:#8a5a00;}
+.st-badge.disetujui{background:var(--signal-soft);color:var(--signal);}
+.st-badge.ditolak{background:var(--alert-soft);color:var(--alert);}
+.d-nav-badge{margin-left:auto;background:var(--alert);color:#fff;font-size:11px;font-weight:700;border-radius:20px;padding:1px 7px;min-width:20px;text-align:center;}
+.pj-note{border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.5;margin-bottom:14px;}
+.pj-note.pending{background:#fdf1d3;color:#8a5a00;}
+.pj-note.rejected{background:var(--alert-soft);color:var(--alert);}
+.pj-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px;}
+.pj-col{border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0;}
+.pj-col.baru{border-color:var(--signal);}
+.pj-col h4{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+.pj-col.baru h4{color:var(--signal);}
+.pj-diff{background:#fdf1d3;border-radius:4px;padding:1px 5px;}
+.detail-table tr.pj-diff-row td{background:#fdf1d3;}
+@media (max-width:720px){.pj-grid{grid-template-columns:1fr;}}
+
 /* forms in desktop */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .form-grid .full{grid-column:1/-1;}
@@ -699,7 +721,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .multiselect-option input{width:auto;margin:0;accent-color:var(--ink);}
 .multiselect-empty{padding:8px;font-size:13px;color:var(--muted);}
 .btn-row{display:flex;gap:10px;margin-top:20px;}
-.btn-sm{padding:9px 16px;border-radius:7px;font-size:13px;font-weight:600;}
+.btn-sm{padding:9px 16px;border-radius:7px;font-size:13px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
 .btn-dark{background:var(--ink);color:#fff;}
 .btn-outline{background:transparent;border:1.5px solid var(--line);color:var(--ink);}
 .btn-outline:hover{border-color:var(--ink);}
@@ -1217,6 +1239,11 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 9h16v11H4z"/><path d="M9 13h6"/></svg>
         Transaksi
       </button>
+      <button class="d-nav-item" data-page="pengajuan-edit" id="navPengajuanEdit" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Pengajuan Edit
+        <span class="d-nav-badge" id="pengajuanBadge" style="display:none;">0</span>
+      </button>
       <button class="d-nav-item" data-page="input">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
         Input Transaksi
@@ -1380,7 +1407,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
       </div>
       <div class="panel" style="margin-bottom:12px;padding:14px 16px;">
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;gap:10px;align-items:end;">
-          <div>
+          <div style="flex:1 1 150px;min-width:130px;">
             <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Perusahaan</label>
             <div class="sd-wrap" id="sd-filterPerusahaan">
               <button type="button" class="sd-trigger" data-placeholder="Semua perusahaan">
@@ -1397,7 +1424,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
               <select id="filterPerusahaan" multiple style="display:none;"><option value="">Semua perusahaan</option></select>
             </div>
           </div>
-          <div>
+          <div style="flex:1 1 140px;min-width:120px;">
             <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Lokasi</label>
             <div class="sd-wrap" id="sd-filterLokasi">
               <button type="button" class="sd-trigger" data-placeholder="Semua lokasi">
@@ -1431,11 +1458,11 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
               </select>
             </div>
           </div>
-          <div>
+          <div style="flex:0 0 150px;min-width:130px;">
             <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Dari Tanggal</label>
             <input type="date" id="filterFrom" style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:7px;font-size:13px;background:var(--paper);">
           </div>
-          <div>
+          <div style="flex:0 0 150px;min-width:130px;">
             <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Sampai Tanggal</label>
             <input type="date" id="filterTo" style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:7px;font-size:13px;background:var(--paper);">
           </div>
@@ -1462,6 +1489,64 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
             </select>
           </div>
           <div class="pagination-controls" id="transaksiPaginationControls"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PENGAJUAN EDIT -->
+    <div class="d-page" id="page-pengajuan-edit">
+      <div class="d-header">
+        <div><h2>Pengajuan Edit Transaksi</h2><p>Review perubahan yang diajukan user. Data baru masuk ke Riwayat Transaksi hanya setelah disetujui.</p></div>
+        <button class="btn-sm btn-outline" onclick="loadPengajuanEditPage()">Refresh</button>
+      </div>
+      <div class="panel" style="margin-bottom:12px;padding:14px 16px;">
+        <div style="display:flex;flex-wrap:nowrap;gap:10px;align-items:flex-end;overflow-x:auto;">
+          <div style="flex:0 0 150px;min-width:130px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Status</label>
+            <select id="pjFilterStatus" style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:7px;font-size:13px;background:var(--paper);">
+              <option value="MENUNGGU" selected>Menunggu review</option>
+              <option value="DISETUJUI">Disetujui</option>
+              <option value="DITOLAK">Ditolak</option>
+              <option value="">Semua</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Dari Tanggal</label>
+            <input type="date" id="pjFilterDari" style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:7px;font-size:13px;background:var(--paper);">
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Sampai Tanggal</label>
+            <input type="date" id="pjFilterSampai" style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:7px;font-size:13px;background:var(--paper);">
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Perusahaan</label>
+            <select id="pjFilterPerusahaan" style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:7px;font-size:13px;background:var(--paper);">
+              <option value="">Semua Perusahaan</option>
+            </select>
+          </div>
+          <div>
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Lokasi</label>
+            <select id="pjFilterLokasi" style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:7px;font-size:13px;background:var(--paper);">
+              <option value="">Semua Lokasi</option>
+            </select>
+          </div>
+          <div style="flex:1 1 140px;min-width:120px;">
+            <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Diajukan Oleh</label>
+            <input type="text" id="pjFilterUser" placeholder="Cari username..." style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:7px;font-size:13px;background:var(--paper);">
+          </div>
+          <div style="flex:0 0 auto;display:flex;align-items:flex-end;">
+            <button type="button" class="btn-sm btn-outline" id="pjFilterReset" style="white-space:nowrap;">Reset Filter</button>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="padding:0;overflow-x:auto;">
+        <table>
+          <thead><tr><th>Diajukan</th><th>ID Transaksi</th><th>Perusahaan / Lokasi</th><th>Diajukan oleh</th><th>Alasan</th><th>Status</th><th>Aksi</th></tr></thead>
+          <tbody id="pengajuanTbody"></tbody>
+        </table>
+        <div class="pagination-bar" id="pengajuanPaginationBar">
+          <div style="display:flex;align-items:center;gap:10px;"><span class="pagination-info" id="pengajuanPaginationInfo"></span></div>
+          <div class="pagination-controls" id="pengajuanPaginationControls"></div>
         </div>
       </div>
     </div>
@@ -1776,6 +1861,9 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
               <option value="TAMBAH">Tambah</option>
               <option value="EDIT">Edit</option>
               <option value="HAPUS">Hapus</option>
+              <option value="AJUKAN_EDIT">Ajukan Edit</option>
+              <option value="SETUJUI_EDIT">Setujui Edit</option>
+              <option value="TOLAK_EDIT">Tolak Edit</option>
             </select>
           </div>
           <div>
@@ -1786,6 +1874,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
               <option value="Transaksi">Transaksi</option>
               <option value="Master Data">Master Data</option>
               <option value="User Management">User Management</option>
+              <option value="Pengajuan Edit">Pengajuan Edit</option>
             </select>
           </div>
           <div>
@@ -2411,6 +2500,7 @@ function initDesktopApp(){
       btn.classList.add('active');
       document.getElementById('page-' + btn.dataset.page).classList.add('active');
       if (btn.dataset.page === 'transaksi') loadTransaksiPage();
+      if (btn.dataset.page === 'pengajuan-edit') loadPengajuanEditPage();
       if (btn.dataset.page === 'users') loadUsersPage();
       if (btn.dataset.page === 'monitoring') initMonitoringPage();
       if (btn.dataset.page === 'log-aktivitas') loadLogAktivitasPage();
@@ -2460,6 +2550,12 @@ function initDesktopApp(){
   document.getElementById('desktopInputForm').addEventListener('submit', submitDesktopTransaksi);
 
   loadDashboard();
+
+  // Menu review pengajuan edit hanya untuk superadmin.
+  if (currentUser.role === 'superadmin') {
+    document.getElementById('navPengajuanEdit').style.display = '';
+    refreshPengajuanBadge();
+  }
 }
 
 function switchPage(pageId) {
@@ -2475,6 +2571,7 @@ function switchPage(pageId) {
   const page = document.getElementById('page-' + pageId);
   if (page) page.classList.add('active');
   if (pageId === 'transaksi') loadTransaksiPage();
+  if (pageId === 'pengajuan-edit') loadPengajuanEditPage();
   if (pageId === 'users') loadUsersPage();
   if (pageId === 'monitoring') initMonitoringPage();
   if (pageId === 'log-aktivitas') loadLogAktivitasPage();
@@ -3246,7 +3343,8 @@ let currentTransaksiGroups = {};
 const _pgState = {
   transaksi: { page: 1, pageSize: 25, data: [] },
   monitoring: { page: 1, pageSize: 25, data: [] },
-  log: { page: 1, pageSize: 25, data: [] }
+  log: { page: 1, pageSize: 25, data: [] },
+  pengajuan: { page: 1, pageSize: 25, data: [] }
 };
 
 function renderPagination(key, colSpan, renderRowFn) {
@@ -3315,6 +3413,287 @@ function _pgGo(key, colSpan, val, isNext) {
   if (key === 'transaksi') renderTransaksiTable();
   else if (key === 'monitoring') renderMonitoringTable();
   else if (key === 'log') renderLogTable();
+  else if (key === 'pengajuan') renderPengajuanTable();
+}
+
+// ============================================================
+// PENGAJUAN EDIT TRANSAKSI (superadmin)
+// ============================================================
+// User (mobile) mengajukan perubahan; data baru TIDAK langsung masuk ke
+// Riwayat Transaksi. Di sini superadmin membandingkan data lama vs usulan,
+// lalu menyetujui (perubahan diterapkan) atau menolak (transaksi tetap).
+let currentPengajuan = {};
+
+function updatePengajuanBadge(count){
+  const el = document.getElementById('pengajuanBadge');
+  if (!el) return;
+  el.textContent = count > 99 ? '99+' : String(count || 0);
+  el.style.display = count > 0 ? '' : 'none';
+}
+
+function refreshPengajuanBadge(){
+  google.script.run
+    .withSuccessHandler(res => { if (res && !res.error) updatePengajuanBadge(res.pendingCount || 0); })
+    .withFailureHandler(() => {})
+    .getPengajuanEdit({ countOnly: true });
+}
+
+function pengajuanStatusBadge(status){
+  const map = {
+    MENUNGGU:  ['menunggu',  'Menunggu'],
+    DIPROSES:  ['menunggu',  'Diproses'],
+    DISETUJUI: ['disetujui', 'Disetujui'],
+    DITOLAK:   ['ditolak',   'Ditolak']
+  };
+  const m = map[status] || ['menunggu', status || '-'];
+  return `<span class="st-badge ${m[0]}">${m[1]}</span>`;
+}
+
+function loadPengajuanEditPage(){
+  const sel = document.getElementById('pjFilterStatus');
+  if (!sel._init) {
+    sel._init = true;
+    // Status filter — fetch ulang dari server (bisa kombinasi dengan filter lain)
+    sel.addEventListener('change', fetchPengajuanTable);
+
+    // Filter client-side (tanggal, perusahaan, lokasi, user) — tidak perlu round-trip
+    ['pjFilterDari','pjFilterSampai','pjFilterLokasi','pjFilterUser'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', applyPengajuanFilter);
+    });
+    const userEl = document.getElementById('pjFilterUser');
+    if (userEl) userEl.addEventListener('input', applyPengajuanFilter);
+
+    const perusahaanSel = document.getElementById('pjFilterPerusahaan');
+    if (perusahaanSel) {
+      perusahaanSel.addEventListener('change', () => {
+        populatePjLokasiFilter();
+        applyPengajuanFilter();
+      });
+    }
+
+    const resetBtn = document.getElementById('pjFilterReset');
+    if (resetBtn) resetBtn.addEventListener('click', () => {
+      document.getElementById('pjFilterStatus').value = 'MENUNGGU';
+      document.getElementById('pjFilterDari').value = '';
+      document.getElementById('pjFilterSampai').value = '';
+      document.getElementById('pjFilterPerusahaan').value = '';
+      document.getElementById('pjFilterUser').value = '';
+      populatePjLokasiFilter();
+      fetchPengajuanTable();
+    });
+  }
+  populatePjPerusahaanFilter();
+  populatePjLokasiFilter();
+  fetchPengajuanTable();
+}
+
+function populatePjPerusahaanFilter(){
+  const sel = document.getElementById('pjFilterPerusahaan');
+  if (!sel) return;
+  const cur = sel.value;
+  const list = (masterData.perusahaan || []).slice().sort();
+  sel.innerHTML = '<option value="">Semua Perusahaan</option>' +
+    list.map(p => `<option value="${escapeHtml(p)}" ${p === cur ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('');
+}
+
+function populatePjLokasiFilter(){
+  const sel = document.getElementById('pjFilterLokasi');
+  if (!sel) return;
+  const perusahaan = (document.getElementById('pjFilterPerusahaan') || {}).value || '';
+  const list = [...new Set(
+    (masterData.lokasiMap || [])
+      .filter(x => !perusahaan || x.perusahaan === perusahaan)
+      .map(x => x.lokasi)
+  )].sort();
+  sel.innerHTML = '<option value="">Semua Lokasi</option>' +
+    list.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
+}
+
+function applyPengajuanFilter(){
+  _pgState.pengajuan.page = 1;
+  renderPengajuanTable();
+}
+
+function fetchPengajuanTable(){
+  const tbody = document.getElementById('pengajuanTbody');
+  tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Memuat data...</td></tr>';
+  google.script.run
+    .withSuccessHandler(res => {
+      if (res.error) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--alert);">${escapeHtml(res.error)}</td></tr>`;
+        return;
+      }
+      currentPengajuan = {};
+      (res.data || []).forEach(p => { currentPengajuan[p.id] = p; });
+      updatePengajuanBadge(res.pendingCount || 0);
+      _pgState.pengajuan.data = res.data || [];
+      _pgState.pengajuan.page = 1;
+      renderPengajuanTable();
+    })
+    .withFailureHandler(err => {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-state" style="color:var(--alert);">Gagal memuat pengajuan: ${escapeHtml(err.message)}</td></tr>`;
+    })
+    .getPengajuanEdit({ status: document.getElementById('pjFilterStatus').value });
+}
+
+function renderPengajuanTable(){
+  const dari    = (document.getElementById('pjFilterDari')        || {}).value || '';
+  const sampai  = (document.getElementById('pjFilterSampai')      || {}).value || '';
+  const prushn  = (document.getElementById('pjFilterPerusahaan')  || {}).value || '';
+  const lokasi  = (document.getElementById('pjFilterLokasi')      || {}).value || '';
+  const userQ   = ((document.getElementById('pjFilterUser')       || {}).value || '').toLowerCase().trim();
+
+  const allData = _pgState.pengajuan.data || [];
+  const filtered = allData.filter(p => {
+    const tglTrx = (p.baru && p.baru.tanggal) ? p.baru.tanggal : (p.lama && p.lama.tanggal ? p.lama.tanggal : '');
+    if (dari   && tglTrx && tglTrx < dari)   return false;
+    if (sampai && tglTrx && tglTrx > sampai) return false;
+    if (prushn && p.perusahaan !== prushn)    return false;
+    if (lokasi && p.lokasi !== lokasi)        return false;
+    if (userQ  && !(p.diajukanOleh || '').toLowerCase().includes(userQ)) return false;
+    return true;
+  });
+
+  // Render dengan data yang sudah difilter — ganti sementara _pgState agar renderPagination bisa pakai
+  const origData = _pgState.pengajuan.data;
+  _pgState.pengajuan.data = filtered;
+  renderPagination('pengajuan', 7, (p) => {
+    const menunggu = p.status === 'MENUNGGU';
+    return `
+    <tr>
+      <td style="white-space:nowrap;font-size:12.5px;color:var(--muted);">${escapeHtml(p.waktu)}</td>
+      <td style="font-family:monospace;font-size:12px;color:var(--muted);">${escapeHtml(p.idTransaksi)}</td>
+      <td>${escapeHtml(p.perusahaan)}<div style="font-size:12px;color:var(--muted);">${escapeHtml(p.lokasi)}</div></td>
+      <td>${escapeHtml(p.diajukanOleh)}</td>
+      <td style="max-width:260px;color:var(--muted);">${escapeHtml(p.alasan)}</td>
+      <td>${pengajuanStatusBadge(p.status)}</td>
+      <td><button type="button" class="btn-sm ${menunggu ? 'btn-dark' : 'btn-outline'}" style="padding:6px 12px;" onclick="reviewPengajuanModal('${p.id}')">${menunggu ? 'Review' : 'Detail'}</button></td>
+    </tr>`;
+  });
+  _pgState.pengajuan.data = origData;
+}
+
+function reviewPengajuanModal(id){
+  const p = currentPengajuan[id];
+  if (!p) return;
+  const lama = p.lama || { items: [] };
+  const baru = p.baru || { items: [] };
+
+  const beda = (a, b) => String(a == null ? '' : a).trim() !== String(b == null ? '' : b).trim() ? ' pj-diff' : '';
+  const nilai = items => (items || []).reduce((s, it) => s + (it.tipe === 'PENDAPATAN' ? 1 : -1) * (Number(it.nominal) || 0), 0);
+  const fmtNet = n => (n < 0 ? '-' : '') + fmtRupiah(Math.abs(n));
+  const itemRows = (items, other) => (items || []).map((it, i) => {
+    const o = (other || [])[i];
+    const berubah = !o || o.tipe !== it.tipe || o.kategori !== it.kategori || Number(o.nominal) !== Number(it.nominal);
+    return `<tr class="${berubah ? 'pj-diff-row' : ''}">
+      <td>${escapeHtml(it.kategori)}</td>
+      <td><span class="tag ${it.tipe === 'PENDAPATAN' ? 'income' : 'expense'}">${it.tipe === 'PENDAPATAN' ? 'Pendapatan' : 'Pengeluaran'}</span></td>
+      <td>${fmtRupiah(it.nominal)}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="3" style="text-align:center;color:var(--muted);">Tidak ada item</td></tr>';
+
+  const kolom = (judul, cls, d, o) => `
+    <div class="pj-col ${cls}">
+      <h4>${judul}</h4>
+      <div class="detail-info-list" style="margin-bottom:10px;">
+        <div class="detail-info-row"><span class="detail-label">Tanggal</span><span class="detail-value"><span class="${beda(d.tanggal, o.tanggal)}">${escapeHtml(d.tanggal || '-')}</span></span></div>
+        <div class="detail-info-row"><span class="detail-label">Lokasi</span><span class="detail-value"><span class="${beda(d.lokasi, o.lokasi)}">${escapeHtml(d.lokasi || '-')}</span></span></div>
+        <div class="detail-info-row"><span class="detail-label">Keterangan</span><span class="detail-value"><span class="${beda(d.keterangan, o.keterangan)}">${escapeHtml(d.keterangan || '-')}</span></span></div>
+      </div>
+      <table class="detail-table" style="margin-bottom:10px;">
+        <thead><tr><th>Kategori</th><th>Tipe</th><th>Nominal</th></tr></thead>
+        <tbody>${itemRows(d.items, o.items)}</tbody>
+      </table>
+      <div class="detail-info-row"><span class="detail-label">Nilai transaksi</span><span class="detail-value"><span class="${nilai(d.items) !== nilai(o.items) ? 'pj-diff' : ''}">${fmtNet(nilai(d.items))}</span></span></div>
+    </div>`;
+
+  const menunggu = p.status === 'MENUNGGU';
+  const footer = menunggu ? `
+    <div style="margin-bottom:4px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">Catatan review (wajib jika menolak)</label>
+      <textarea id="pjCatatan" rows="2" style="width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:7px;font-size:13px;background:var(--paper);font-family:inherit;resize:vertical;"></textarea>
+    </div>
+    <div class="btn-row">
+      <button type="button" class="btn-sm btn-outline" id="pjCloseBtn">Tutup</button>
+      <button type="button" class="btn-sm btn-danger" id="pjRejectBtn" style="margin-left:auto;">Tolak</button>
+      <button type="button" class="btn-sm btn-dark" id="pjApproveBtn">Setujui &amp; Terapkan</button>
+    </div>` : `
+    <div class="detail-info-list" style="margin-top:4px;">
+      <div class="detail-info-row"><span class="detail-label">Status</span><span class="detail-value">${pengajuanStatusBadge(p.status)}</span></div>
+      <div class="detail-info-row"><span class="detail-label">Direview oleh</span><span class="detail-value">${escapeHtml(p.direviewOleh || '-')}</span></div>
+      <div class="detail-info-row"><span class="detail-label">Waktu review</span><span class="detail-value">${escapeHtml(p.waktuReview || '-')}</span></div>
+      <div class="detail-info-row"><span class="detail-label">Catatan</span><span class="detail-value">${escapeHtml(p.catatanReview || '-')}</span></div>
+    </div>
+    <div class="btn-row"><button type="button" class="btn-sm btn-outline" id="pjCloseBtn">Tutup</button></div>`;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay show';
+  overlay.innerHTML = `
+    <div class="modal-box" style="max-width:880px;">
+      <div class="detail-header">
+        <h3>Review Pengajuan Edit</h3>
+        <span class="detail-id-chip">${escapeHtml(p.idTransaksi)}</span>
+      </div>
+      <div class="detail-info-list" style="margin-bottom:14px;">
+        <div class="detail-info-row"><span class="detail-label">Diajukan oleh</span><span class="detail-value">${escapeHtml(p.diajukanOleh)} · ${escapeHtml(p.waktu)}</span></div>
+        <div class="detail-info-row"><span class="detail-label">Perusahaan</span><span class="detail-value">${escapeHtml(p.perusahaan)}</span></div>
+        <div class="detail-info-row"><span class="detail-label">Alasan</span><span class="detail-value">${escapeHtml(p.alasan)}</span></div>
+      </div>
+      <div class="pj-grid">
+        ${kolom('Data saat ini', '', lama, baru)}
+        ${kolom('Usulan perubahan', 'baru', baru, lama)}
+      </div>
+      ${footer}
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const close = () => overlay.remove();
+  overlay.querySelector('#pjCloseBtn').onclick = close;
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+  if (!menunggu) return;
+
+  let busy = false;
+  const setBusy = (b) => {
+    busy = b;
+    overlay.querySelectorAll('#pjCloseBtn,#pjRejectBtn,#pjApproveBtn').forEach(x => { x.disabled = b; });
+  };
+  const kirim = (keputusan) => {
+    if (busy) return;
+    const catatan = overlay.querySelector('#pjCatatan').value.trim();
+    if (keputusan === 'TOLAK' && !catatan) {
+      showDesktopToast({ title: 'Catatan wajib diisi', message: 'Tulis alasan penolakan agar user tahu apa yang perlu diperbaiki.', type: 'error' });
+      return;
+    }
+    setBusy(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        if (!res.success) {
+          setBusy(false);
+          showDesktopToast({ title: 'Gagal memproses pengajuan', message: res.message, type: 'error' });
+          fetchPengajuanTable();
+          return;
+        }
+        close();
+        fetchPengajuanTable();
+        if (keputusan === 'SETUJU') {
+          loadDashboard();
+          showDesktopToast({
+            title: 'Pengajuan disetujui',
+            message: 'Perubahan sudah diterapkan dan masuk ke Riwayat Transaksi.' + (res.supabaseSynced === false ? ' (Sinkron Supabase gagal — cek Log Aktivitas.)' : '')
+          });
+        } else {
+          showDesktopToast({ title: 'Pengajuan ditolak', message: 'Transaksi tetap seperti semula.' });
+        }
+      })
+      .withFailureHandler(err => {
+        setBusy(false);
+        showDesktopToast({ title: 'Gagal memproses pengajuan', message: err.message, type: 'error' });
+      })
+      .reviewPengajuanEdit(id, keputusan, catatan, currentUser);
+  };
+  overlay.querySelector('#pjApproveBtn').onclick = () => kirim('SETUJU');
+  overlay.querySelector('#pjRejectBtn').onclick = () => kirim('TOLAK');
 }
 
 // ============================================================
@@ -3380,7 +3759,7 @@ function fetchLogAktivitasTable(){
 }
 
 function renderLogTable(){
-  const aksiColor = { LOGIN: '#3b82f6', TAMBAH: '#16a34a', EDIT: '#d97706', HAPUS: '#dc2626' };
+  const aksiColor = { LOGIN: '#3b82f6', TAMBAH: '#16a34a', EDIT: '#d97706', HAPUS: '#dc2626', AJUKAN_EDIT: '#7c3aed', SETUJUI_EDIT: '#16a34a', TOLAK_EDIT: '#dc2626' };
   renderPagination('log', 6, (item) => {
     const color = aksiColor[item['Aksi']] || 'var(--muted)';
     return `
@@ -5377,6 +5756,13 @@ function loadMobileRecent(){
   document.getElementById('mRecentList').innerHTML = '<div class="empty-state">Memuat...</div>';
   document.getElementById('mHistoryPaginationBar').style.display = 'none';
 
+  // Status pengajuan edit milik user (untuk badge & tombol di riwayat). Gagal = diabaikan.
+  google.script.run.withSuccessHandler(pr => {
+    mobilePengajuanByTrx = {};
+    ((pr && pr.data) || []).forEach(x => { if (!mobilePengajuanByTrx[x.idTransaksi]) mobilePengajuanByTrx[x.idTransaksi] = x; });
+    renderMobileHistoryList();
+  }).withFailureHandler(() => {}).getPengajuanEdit({});
+
   google.script.run.withSuccessHandler(res => {
     const myRows = (res.data || []).filter(r => r['Input Oleh'] === currentUser.name);
     // Kelompokkan per transaksi (Batch ID), sama seperti menu Transaksi di
@@ -5409,6 +5795,7 @@ function renderMobileHistoryList(){
           <div class="cat">${label}</div>
           <div class="loc">${escapeHtml(g.lokasi)}</div>
           <div class="date">${g.tanggal}</div>
+          ${pengajuanBadgeMobile(mobilePengajuanByTrx[g.id]) ? '<div style="margin-top:6px;">' + pengajuanBadgeMobile(mobilePengajuanByTrx[g.id]) + '</div>' : ''}
         </div>
         <div class="m-ri-right ${net>=0?'income':'expense'}">${net<0?'-':'+'} ${fmtRupiah(Math.abs(net))}</div>
         <button type="button" class="m-ri-pdf-btn" title="Download PDF struk" onclick="event.stopPropagation();downloadMobileReceiptPDF('${g.id}')">
@@ -5460,6 +5847,13 @@ function _pgGoMobile(val, isNext){
 function viewMobileTransaksi(id){
   const g = mobileRecentGroups[id];
   if (!g) return;
+  const pj = mobilePengajuanByTrx[id];
+  const pjMenunggu = pengajuanPending(pj);
+  const pjNotice = pjMenunggu
+    ? `<div class="pj-note pending">Pengajuan edit Anda (${escapeHtml(pj.waktu)}) menunggu review admin. Data transaksi belum berubah.</div>`
+    : (pj && pj.status === 'DITOLAK'
+        ? `<div class="pj-note rejected"><b>Pengajuan edit terakhir ditolak.</b>${pj.catatanReview ? '<br>Catatan: ' + escapeHtml(pj.catatanReview) : ''}</div>`
+        : '');
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay show';
   overlay.innerHTML = `
@@ -5498,7 +5892,9 @@ function viewMobileTransaksi(id){
         </div>
       </div>
       ` : ''}
-      <div class="btn-row">
+      ${pjNotice}
+      <button type="button" class="btn-sm btn-outline" id="mViewEditBtn" style="width:100%;margin-bottom:4px;" ${pjMenunggu ? 'disabled' : ''}>${pjMenunggu ? 'Menunggu review admin' : 'Ajukan Edit'}</button>
+      <div class="btn-row" style="margin-top:10px;">
         <button type="button" class="btn-sm btn-outline" id="mViewCloseBtn" style="flex:1;">Tutup</button>
         <button type="button" class="btn-sm btn-dark" id="mViewPdfBtn" style="flex:1;">Download PDF</button>
       </div>
@@ -5508,7 +5904,208 @@ function viewMobileTransaksi(id){
   bindFotoGrid(overlay);
   overlay.querySelector('#mViewCloseBtn').onclick = () => overlay.remove();
   overlay.querySelector('#mViewPdfBtn').onclick = () => downloadMobileReceiptPDF(id);
+  overlay.querySelector('#mViewEditBtn').onclick = () => { overlay.remove(); ajukanEditMobileModal(id); };
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ============================================================
+// PENGAJUAN EDIT (mobile / role user)
+// ============================================================
+// User tidak mengedit transaksi langsung. Perubahan dikirim sebagai pengajuan
+// dan baru masuk ke riwayat setelah disetujui superadmin.
+// Pengajuan terbaru per transaksi: { [idTransaksi]: pengajuan }
+let mobilePengajuanByTrx = {};
+let pjItemCounter = 0;
+
+function pengajuanPending(pj){
+  return !!pj && (pj.status === 'MENUNGGU' || pj.status === 'DIPROSES');
+}
+
+// Badge di daftar riwayat: hanya untuk yang menunggu review / ditolak.
+function pengajuanBadgeMobile(pj){
+  if (pengajuanPending(pj)) return '<span class="st-badge menunggu">Menunggu review</span>';
+  if (pj && pj.status === 'DITOLAK') return '<span class="st-badge ditolak">Edit ditolak</span>';
+  return '';
+}
+
+function lokasiBolehUser(perusahaan){
+  let list = lokasiUntukPerusahaan(perusahaan);
+  if (currentUser.lokasi !== 'ALL') {
+    const assigned = new Set(String(currentUser.lokasi).split(',').map(l => normalizeNama(l.trim())).filter(Boolean));
+    list = list.filter(l => assigned.has(normalizeNama(l)));
+  }
+  return [...new Set(list)].sort();
+}
+
+function updatePengajuanCalc(overlay){
+  let net = 0;
+  overlay.querySelectorAll('#pjItemsContainer .m-item-row').forEach((row, i) => {
+    const nominal = parseRibuan(row.querySelector('.m-item-nominal').value);
+    net += row.querySelector('.m-item-tipe').value === 'PENDAPATAN' ? nominal : -nominal;
+    const badge = row.querySelector('.m-item-badge');
+    if (badge) badge.textContent = 'Item ' + (i + 1);
+  });
+  const netEl = overlay.querySelector('#pjCsNet');
+  netEl.textContent = (net < 0 ? '-' : '') + fmtRupiah(Math.abs(net));
+  netEl.classList.remove('positive', 'negative');
+  netEl.classList.add(net >= 0 ? 'positive' : 'negative');
+  const removeBtns = overlay.querySelectorAll('#pjItemsContainer .m-item-remove');
+  removeBtns.forEach(b => { b.disabled = removeBtns.length <= 1; });
+}
+
+function addPengajuanItem(overlay, tipe, kategori, nominal){
+  pjItemCounter++;
+  const lokasi = overlay.querySelector('#pjLokasi').value;
+  const wrap = document.createElement('div');
+  wrap.className = 'm-item-row';
+  wrap.innerHTML = `
+    <div class="m-item-row-head">
+      <span class="m-item-badge">Item</span>
+      <button type="button" class="m-item-remove" title="Hapus item">&times;</button>
+    </div>
+    <div class="m-field">
+      <label>Tipe</label>
+      <select class="m-item-tipe">
+        <option value="PENDAPATAN" ${tipe === 'PENGELUARAN' ? '' : 'selected'}>Pendapatan</option>
+        <option value="PENGELUARAN" ${tipe === 'PENGELUARAN' ? 'selected' : ''}>Pengeluaran</option>
+      </select>
+    </div>
+    <div class="m-field">
+      <label>Kategori</label>
+      <select class="m-item-kategori">${kategoriOptions(tipe || 'PENDAPATAN', lokasi, kategori)}</select>
+    </div>
+    <div class="m-field">
+      <label>Nominal</label>
+      <div class="m-nominal-wrap">
+        <span>Rp</span>
+        <input type="text" inputmode="numeric" class="m-item-nominal" placeholder="0" value="${nominal ? formatRibuan(nominal) : ''}" required>
+      </div>
+    </div>`;
+  overlay.querySelector('#pjItemsContainer').appendChild(wrap);
+
+  // Kategori lama yang sudah tidak ada di Master tetap dipertahankan (jangan diam-diam diganti).
+  const katSel = wrap.querySelector('.m-item-kategori');
+  if (kategori && ![...katSel.options].some(o => o.value === kategori)) {
+    katSel.insertAdjacentHTML('afterbegin', `<option value="${escapeHtml(kategori)}">${escapeHtml(kategori)}</option>`);
+  }
+  if (kategori) katSel.value = kategori;
+
+  wrap.querySelector('.m-item-remove').addEventListener('click', () => {
+    wrap.remove();
+    updatePengajuanCalc(overlay);
+  });
+  wrap.querySelector('.m-item-tipe').addEventListener('change', (e) => {
+    katSel.innerHTML = kategoriOptions(e.target.value, overlay.querySelector('#pjLokasi').value);
+  });
+  bindRibuanInput(wrap.querySelector('.m-item-nominal'));
+  wrap.querySelectorAll('.m-item-nominal, .m-item-tipe').forEach(el => {
+    el.addEventListener('input', () => updatePengajuanCalc(overlay));
+    el.addEventListener('change', () => updatePengajuanCalc(overlay));
+  });
+  updatePengajuanCalc(overlay);
+}
+
+function ajukanEditMobileModal(id){
+  const g = mobileRecentGroups[id];
+  if (!g) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay show';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <h3 style="margin-bottom:8px;">Ajukan Edit Transaksi</h3>
+      <p style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:16px;">Perubahan tidak langsung berlaku. Data baru masuk ke riwayat setelah disetujui admin.</p>
+      <form id="pjForm">
+        <div class="m-field">
+          <label>Tanggal</label>
+          <input type="date" id="pjTanggal" value="${escapeHtml(g.tanggal)}" required>
+        </div>
+        <div class="m-field">
+          <label>Lokasi</label>
+          <select id="pjLokasi" required></select>
+        </div>
+        <label style="display:block;font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:8px;">Rincian item</label>
+        <div id="pjItemsContainer"></div>
+        <button type="button" class="m-add-item-btn" id="pjAddItemBtn">+ Tambah item</button>
+        <div class="m-calc-summary">
+          <div class="m-cs-row net"><span class="lbl">Total Pembayaran</span><span class="val net" id="pjCsNet">Rp 0</span></div>
+        </div>
+        <div class="m-field">
+          <label>Alasan pengajuan edit</label>
+          <textarea id="pjAlasan" rows="2" placeholder="Jelaskan kenapa data perlu diubah..." required></textarea>
+        </div>
+        <div class="submit-status" id="pjStatus" aria-live="polite"></div>
+        <div class="btn-row" style="margin-top:10px;">
+          <button type="submit" class="btn-sm btn-dark" id="pjSubmitBtn" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;"><span class="submit-spinner"></span><span id="pjSubmitLabel">Kirim Pengajuan</span></button>
+          <button type="button" class="btn-sm btn-outline" id="pjCancelBtn" style="flex:1;">Batal</button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const lokasiSel = overlay.querySelector('#pjLokasi');
+  const lokasiList = lokasiBolehUser(g.perusahaan);
+  if (!lokasiList.includes(g.lokasi)) lokasiList.push(g.lokasi);
+  lokasiSel.innerHTML = lokasiList.map(l => `<option value="${escapeHtml(l)}" ${l === g.lokasi ? 'selected' : ''}>${escapeHtml(l)}</option>`).join('');
+  lokasiSel.addEventListener('change', () => {
+    overlay.querySelectorAll('#pjItemsContainer .m-item-row').forEach(row => {
+      const cur = row.querySelector('.m-item-kategori').value;
+      row.querySelector('.m-item-kategori').innerHTML = kategoriOptions(row.querySelector('.m-item-tipe').value, lokasiSel.value, cur);
+    });
+  });
+
+  pjItemCounter = 0;
+  g.items.forEach(it => addPengajuanItem(overlay, it['Tipe'], it['Kategori'], it['Nominal']));
+  overlay.querySelector('#pjAddItemBtn').addEventListener('click', () => addPengajuanItem(overlay));
+
+  overlay.querySelector('#pjCancelBtn').onclick = () => overlay.remove();
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+
+  overlay.querySelector('#pjForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const status = overlay.querySelector('#pjStatus');
+    status.textContent = '';
+    status.className = 'submit-status';
+
+    const items = [];
+    overlay.querySelectorAll('#pjItemsContainer .m-item-row').forEach(row => {
+      const nominal = parseRibuan(row.querySelector('.m-item-nominal').value);
+      if (nominal > 0) {
+        items.push({
+          tipe: row.querySelector('.m-item-tipe').value,
+          kategori: row.querySelector('.m-item-kategori').value,
+          nominal: nominal
+        });
+      }
+    });
+    const alasan = overlay.querySelector('#pjAlasan').value.trim();
+    const gagal = (msg) => { status.textContent = msg; status.className = 'submit-status error'; };
+    if (!items.length) { gagal('Isi minimal satu item dengan nominal.'); return; }
+    if (alasan.length < 5) { gagal('Alasan pengajuan wajib diisi (minimal 5 karakter).'); return; }
+
+    const payload = {
+      tanggal: overlay.querySelector('#pjTanggal').value,
+      lokasi: lokasiSel.value,
+      keterangan: g.keterangan === '-' ? '' : g.keterangan,
+      items: items
+    };
+    const btn = overlay.querySelector('#pjSubmitBtn');
+    const label = overlay.querySelector('#pjSubmitLabel');
+    withSubmitGuard(btn, label, 'Mengirim...', 'Kirim Pengajuan', (release) => {
+      google.script.run.withSuccessHandler(res => {
+        if (res && res.success) {
+          overlay.remove();
+          showToast('Pengajuan terkirim. Menunggu review admin.');
+          loadMobileRecent();
+        } else {
+          release();
+          gagal((res && res.message) || 'Gagal mengirim pengajuan.');
+        }
+      }).withFailureHandler(err => {
+        release();
+        gagal('Gagal terhubung ke server: ' + err.message);
+      }).ajukanEditTransaksi(id, payload, alasan, currentUser);
+    });
+  });
 }
 
 function downloadMobileReceiptPDF(id){
