@@ -951,7 +951,10 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .delete-confirm-message{font-size:13.5px;color:var(--muted);line-height:1.55;margin-bottom:20px;}
 .delete-confirm-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:0;}
 .btn-danger{background:var(--alert);color:#fff;}
+.btn-danger{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:96px;}
 .btn-danger:hover{opacity:.88;}
+.btn-danger:disabled{opacity:.75;cursor:not-allowed;}
+.delete-confirm-actions .btn-outline:disabled{opacity:.5;cursor:not-allowed;}
 
 /* ============= MOBILE APP ============= */
 #mobileApp{display:none;min-height:100vh;background:var(--paper);}
@@ -4418,27 +4421,33 @@ function showDeleteConfirm(message, onConfirm){
       <p class="delete-confirm-message">${message}</p>
       <div class="delete-confirm-actions">
         <button type="button" class="btn-sm btn-outline" data-delete-cancel>Batal</button>
-        <button type="button" class="btn-sm btn-danger" data-delete-confirm>Hapus</button>
+        <button type="button" class="btn-sm btn-danger" data-delete-confirm><span class="submit-spinner"></span><span data-delete-label>Hapus</span></button>
       </div>
     </div>
   `;
   document.body.appendChild(overlay);
   const close = () => overlay.remove();
-  overlay.querySelector('[data-delete-cancel]').onclick = close;
+  const cancelBtn = overlay.querySelector('[data-delete-cancel]');
+  const labelEl = overlay.querySelector('[data-delete-label]');
+  let busy = false;
+  cancelBtn.onclick = () => { if (!busy) close(); };
   overlay.querySelector('[data-delete-confirm]').onclick = function() {
-    // Guard yang sama dengan tombol simpan lainnya, supaya double-click
-    // tidak bisa memicu aksi (hapus) dua kali.
-    withSubmitGuard(this, null, null, null, () => {
-      close();
-      onConfirm();
+    // Guard yang sama dengan tombol simpan lainnya (anti double-click).
+    // Modal TETAP terbuka dengan spinner sampai server selesai;
+    // caller memanggil done() untuk menutupnya.
+    withSubmitGuard(this, labelEl, 'Menghapus...', 'Hapus', (release) => {
+      busy = true;
+      cancelBtn.disabled = true;
+      onConfirm(() => { busy = false; close(); });
     });
   };
-  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.addEventListener('click', e => { if (e.target === overlay && !busy) close(); });
 }
 
 function deleteTransaksiConfirm(id){
-  showDeleteConfirm('Hapus transaksi ini? Semua item di dalamnya akan terhapus.', () => {
+  showDeleteConfirm('Hapus transaksi ini? Semua item di dalamnya akan terhapus.', (done) => {
     google.script.run.withSuccessHandler(res => {
+      done();
       if (res.success) {
         fetchTransaksiTable();
         loadDashboard();
@@ -4446,6 +4455,9 @@ function deleteTransaksiConfirm(id){
       } else {
         showDesktopToast({ title: 'Gagal menghapus', message: res.message, type: 'error' });
       }
+    }).withFailureHandler(err => {
+      done();
+      showDesktopToast({ title: 'Gagal menghapus', message: (err && err.message) || 'Terjadi kesalahan, coba lagi.', type: 'error' });
     }).hapusTransaksi(id, currentUser);
   });
 }
@@ -5053,14 +5065,18 @@ function loadUsersPage(){
 }
 
 function deleteUserConfirm(id){
-  showDeleteConfirm('Hapus user ini? Akses user akan dicabut.', () => {
+  showDeleteConfirm('Hapus user ini? Akses user akan dicabut.', (done) => {
     google.script.run.withSuccessHandler(res => {
+      done();
       if (res.success) {
         loadUsersPage();
         showDesktopToast({ title: 'User dihapus', message: 'Akses user telah dicabut.' });
       } else {
         showDesktopToast({ title: 'Gagal menghapus', message: res.message, type: 'error' });
       }
+    }).withFailureHandler(err => {
+      done();
+      showDesktopToast({ title: 'Gagal menghapus', message: (err && err.message) || 'Terjadi kesalahan, coba lagi.', type: 'error' });
     }).hapusUser(id, currentUser);
   });
 }
@@ -5349,11 +5365,15 @@ function deleteMasterConfirm(kind, recordIndex) {
   const record = (window._masterActionRecords?.[kind] || [])[recordIndex];
   if (!record) return;
   const labels = { perusahaan: 'perusahaan', lokasi: 'lokasi', tipe: 'tipe', kategori: 'kategori' };
-  showDeleteConfirm('Hapus ' + labels[kind] + ' ini? Data yang sudah dihapus tidak dapat dikembalikan.', () => {
+  showDeleteConfirm('Hapus ' + labels[kind] + ' ini? Data yang sudah dihapus tidak dapat dikembalikan.', (done) => {
     google.script.run.withSuccessHandler(res => {
+      done();
       if (!res.success) return showDesktopToast({ title: 'Gagal menghapus master', message: res.message, type: 'error' });
       refreshMasterData(() => { renderMasterPage(kind); loadDashboard(); });
       showDesktopToast({ title: 'Master dihapus', message: 'Data ' + labels[kind] + ' berhasil dihapus.' });
+    }).withFailureHandler(err => {
+      done();
+      showDesktopToast({ title: 'Gagal menghapus master', message: (err && err.message) || 'Terjadi kesalahan, coba lagi.', type: 'error' });
     }).deleteMasterItem(kind, record.rowId, currentUser);
   });
 }
