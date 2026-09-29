@@ -2134,15 +2134,15 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
       <div style="display:flex;gap:10px;">
         <div class="m-field" style="flex:1;margin-bottom:0;">
           <label>Dari tanggal</label>
-          <div class="m-date-input"><input type="date" id="mFilterFrom"></div>
+          <div class="m-date-input"><input type="date" id="mFilterFrom"><span>dd/mm/tttt</span></div>
         </div>
         <div class="m-field" style="flex:1;margin-bottom:0;">
           <label>Sampai tanggal</label>
-          <div class="m-date-input"><input type="date" id="mFilterTo"></div>
+          <div class="m-date-input"><input type="date" id="mFilterTo"><span>dd/mm/tttt</span></div>
         </div>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button type="button" class="btn-sm btn-outline" id="mResetFilterBtn" style="flex:0 0 auto;">Reset</button>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button type="button" class="btn-sm btn-outline" id="mResetFilterBtn" style="flex:0 0 auto;padding:9px 18px;">Reset</button>
       </div>
     </div>
     <div class="m-recent">
@@ -5578,6 +5578,7 @@ function initMobileApp(){
 
   const mobileFilterChanged = () => {
     if (!clampMobileFilterRange()) return;
+    syncMobileDatePlaceholders();
     loadMobileRecent();
   };
   document.getElementById('mFilterFrom').addEventListener('change', mobileFilterChanged);
