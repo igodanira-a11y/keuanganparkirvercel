@@ -539,6 +539,7 @@ a{color:inherit;}
   margin-bottom:14px;
 }
 .stat-card .sc-icon svg{width:18px;height:18px;}
+.stat-card .sc-icon .rp-ico{font-size:14px;font-weight:600;letter-spacing:-0.02em;line-height:1;font-family:inherit;}
 .stat-card.income .sc-icon{background:var(--signal-soft);color:var(--signal);}
 .stat-card.expense .sc-icon{background:var(--alert-soft);color:var(--alert);}
 .stat-card.saldo .sc-icon{background:var(--blue-soft);color:var(--blue);}
@@ -1373,10 +1374,10 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 
       <!-- KPI Stat Cards -->
       <div class="stat-row" id="statRow">
-        <div class="stat-card income"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div><div class="label">Pendapatan Bulan Ini</div><div class="value">—</div></div>
-        <div class="stat-card expense"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg></div><div class="label">Pengeluaran Bulan Ini</div><div class="value">—</div></div>
-        <div class="stat-card saldo"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><div class="label">Saldo Bersih</div><div class="value">—</div></div>
-        <div class="stat-card neutral"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><div class="label">Total Transaksi</div><div class="value">—</div></div>
+        <div class="stat-card income"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16c3 0 4-5 7-5s3 3 5 3 3-5 6-8"/><path d="M16 6h5v5"/></svg></div><div class="label">Pendapatan Bulan Ini</div><div class="value">—</div></div>
+        <div class="stat-card expense"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8c3 0 4 5 7 5s3-3 5-3 3 5 6 8"/><path d="M16 18h5v-5"/></svg></div><div class="label">Pengeluaran Bulan Ini</div><div class="value">—</div></div>
+        <div class="stat-card saldo"><div class="sc-icon"><span class="rp-ico">Rp</span></div><div class="label">Saldo Bersih</div><div class="value">—</div></div>
+        <div class="stat-card neutral"><div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12a1 1 0 0 1 1 1V20l-2.5-1.6L14 20l-2-1.6L10 20l-2.5-1.6L5 20V4.5a1 1 0 0 1 1-1z"/><path d="M9 8.5h6M9 12.5h6"/></svg></div><div class="label">Total Transaksi</div><div class="value">—</div></div>
       </div>
 
       <!-- Row 2: Tren Saldo Bersih Tahunan (full width, 1 baris penuh) -->
@@ -2953,25 +2954,25 @@ function loadDashboard(){
     const saldoClass = s.saldo >= 0 ? 'saldo' : 'expense';
     statRow.innerHTML = `
       <div class="stat-card income">
-        <div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+        <div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 16c3 0 4-5 7-5s3 3 5 3 3-5 6-8"/><path d="M16 6h5v5"/></svg></div>
         <div class="label">Pendapatan Bulan Ini</div>
         <div class="value">${fmtRupiah(s.totalPendapatan)}</div>
         <div class="sub">Akumulasi seluruh lokasi</div>
       </div>
       <div class="stat-card expense">
-        <div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg></div>
+        <div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8c3 0 4 5 7 5s3-3 5-3 3 5 6 8"/><path d="M16 18h5v-5"/></svg></div>
         <div class="label">Pengeluaran Bulan Ini</div>
         <div class="value">${fmtRupiah(s.totalPengeluaran)}</div>
         <div class="sub">Total biaya operasional</div>
       </div>
       <div class="stat-card ${saldoClass}">
-        <div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+        <div class="sc-icon"><span class="rp-ico">Rp</span></div>
         <div class="label">Saldo Bersih</div>
         <div class="value" style="color:${saldoColor};">${s.saldo < 0 ? '-' : ''}${fmtRupiah(Math.abs(s.saldo))}</div>
         <div class="sub">Pendapatan dikurang pengeluaran</div>
       </div>
       <div class="stat-card neutral">
-        <div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+        <div class="sc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12a1 1 0 0 1 1 1V20l-2.5-1.6L14 20l-2-1.6L10 20l-2.5-1.6L5 20V4.5a1 1 0 0 1 1-1z"/><path d="M9 8.5h6M9 12.5h6"/></svg></div>
         <div class="label">Total Transaksi</div>
         <div class="value">${s.totalRecord}</div>
         <div class="sub">Transaksi bulan berjalan</div>
