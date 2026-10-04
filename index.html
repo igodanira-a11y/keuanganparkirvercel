@@ -2748,11 +2748,15 @@ function initMobileHome(){
       openMSheet('Akun', [{label:'Keluar', danger:true, fn:logout}], currentUser.name + ' · ' + currentUser.role);
     } else mGo(b.dataset.k);
   });
-  document.body.appendChild(nav);
+  document.getElementById('desktopApp').appendChild(nav);
   const h = new Date().getHours();
   document.getElementById('mhHi').textContent = h < 11 ? 'Selamat pagi' : h < 15 ? 'Selamat siang' : h < 18 ? 'Selamat sore' : 'Selamat malam';
   updateMobileTitle('dashboard');
   setMPending(_mPending);
+}
+function teardownMobileHome(){
+  document.querySelectorAll('.m-home, .m-bnav, .m-sheet-ov').forEach(el => el.remove());
+  _mReady = false; _mSaldo = null; _mHide = false; _mPending = 0;
 }
 function renderMobileHome(){
   if (!_mSaldo) return;
@@ -6603,6 +6607,7 @@ function logout(){
   if (window.__auth) window.__auth.setToken('');
   currentUser = null;
   if (window.__idleTimer) window.__idleTimer.stop();
+  teardownMobileHome();
   document.getElementById('desktopApp').style.display = 'none';
   document.getElementById('mobileApp').style.display = 'none';
   document.getElementById('loginScreen').classList.remove('hidden');
@@ -6620,6 +6625,7 @@ function logout(){
 window.handleSessionExpired = function(){
   currentUser = null;
   if (window.__idleTimer) window.__idleTimer.stop();
+  teardownMobileHome();
   document.getElementById('desktopApp').style.display = 'none';
   document.getElementById('mobileApp').style.display = 'none';
   document.getElementById('loginScreen').classList.remove('hidden');
