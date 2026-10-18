@@ -94,6 +94,22 @@
     }
   }
 
+  // Fungsi tulis -> prefix cache baca (lihat swrCall di bawah) yang harus
+  // dibuang begitu fungsi itu sukses. Prefix: 'trx' (riwayat desktop),
+  // 'mtrx' (riwayat mobile), 'dash' (dashboard), 'mon' (monitoring),
+  // 'lap' (laporan), 'master' (master data).
+  var TRX_KEYS = ['trx', 'mtrx', 'dash', 'mon', 'lap'];
+  var WRITE_INVALIDATES = {
+    simpanTransaksi: TRX_KEYS,
+    simpanTransaksiBatch: TRX_KEYS,
+    updateTransaksiBatch: TRX_KEYS,
+    hapusTransaksi: TRX_KEYS,
+    importTransaksiBatch: TRX_KEYS,
+    reviewPengajuanEdit: TRX_KEYS,
+    saveMasterItem: ['master'].concat(TRX_KEYS),
+    deleteMasterItem: ['master'].concat(TRX_KEYS)
+  };
+
   function callServer(fnName, args, onSuccess, onFailure) {
     fetch(APPS_SCRIPT_URL, {
       method: 'POST',
@@ -113,6 +129,14 @@
             setToken(data.result.token);
           }
           if (fnName === 'logout') setToken('');
+          // Setelah aksi tulis berhasil, buang cache baca yang terdampak
+          // SEBELUM callback dipanggil — supaya refresh tabel/dashboard yang
+          // dipicu callback itu mengambil data baru, bukan cache lama.
+          var invalidate = WRITE_INVALIDATES[fnName];
+          if (invalidate && window.swrInvalidate &&
+              !(data.result && data.result.success === false)) {
+            invalidate.forEach(function (prefix) { window.swrInvalidate(prefix); });
+          }
           if (onSuccess) onSuccess(data.result);
         } else {
           if (data.code === 'SESSION_EXPIRED') forceReLogin();
@@ -253,6 +277,130 @@ function cachedCall(fnName, args, cacheKey, ttlSeconds, onSuccess, onFailure) {
   if (onFailure) runner = runner.withFailureHandler(onFailure);
   runner[fnName].apply(runner, args || []);
 }
+
+// ============================================================
+// swrCall — cache "stale-while-revalidate" (konsep yang sama dengan TanStack Query)
+// ============================================================
+// Cara kerja:
+//   1. Kalau ada data di cache (memori atau localStorage), langsung tampilkan
+//      (onData dipanggil dengan meta.fromCache = true) — layar tidak menunggu.
+//   2. Kalau data itu masih "segar" (umur < opts.stale detik), selesai.
+//   3. Kalau sudah basi / belum ada, minta data baru ke server di latar
+//      belakang. Kalau hasilnya BERBEDA dari cache, onData dipanggil lagi
+//      (meta.fromCache = false). Kalau sama persis, tidak render ulang.
+//   4. Request yang sama yang sedang berjalan tidak dikirim dua kali (dedup).
+//
+// opts: { stale: detik (default 30), persist: true = simpan juga ke
+//         localStorage supaya instan saat halaman dibuka ulang (default true) }
+//
+// Invalidate: swrInvalidate('dash') membuang semua key berawalan 'dash'.
+// Ini dipanggil OTOMATIS oleh shim google.script.run setelah fungsi tulis
+// sukses (lihat WRITE_INVALIDATES), dan swrInvalidate() (tanpa argumen)
+// dipanggil saat logout supaya data keuangan tidak tertinggal di browser.
+(function () {
+  var LS_PREFIX = 'swr:';
+  var mem = {};       // key -> { t: timestamp, json: string }
+  var inflight = {};  // key -> Promise
+  var epoch = 0;      // naik setiap invalidate; respons dari request lama tidak ditulis ke cache
+
+  function lsRead(key) {
+    try {
+      var raw = localStorage.getItem(LS_PREFIX + key);
+      if (!raw) return null;
+      var obj = JSON.parse(raw);
+      return obj && typeof obj.json === 'string' ? obj : null;
+    } catch (e) { return null; }
+  }
+  function lsWrite(key, entry) {
+    try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(entry)); }
+    catch (e) { try { localStorage.removeItem(LS_PREFIX + key); } catch (_) {} } // kuota penuh -> cukup di memori
+  }
+  function readEntry(key, persist) {
+    if (mem[key]) return mem[key];
+    if (persist) {
+      var e = lsRead(key);
+      if (e) { mem[key] = e; return e; }
+    }
+    return null;
+  }
+
+  // Ambil data cache tanpa memicu request (null kalau tidak ada).
+  window.swrPeek = function (key) {
+    var e = readEntry(key, true);
+    if (!e) return null;
+    try { return JSON.parse(e.json); } catch (err) { return null; }
+  };
+
+  // Isi cache secara manual (mis. dari hasil getInitialData saat login).
+  window.swrSeed = function (key, data, persist) {
+    if (!data || data.error) return;
+    var entry = { t: Date.now(), json: JSON.stringify(data) };
+    mem[key] = entry;
+    if (persist !== false) lsWrite(key, entry);
+  };
+
+  window.swrInvalidate = function (prefix) {
+    prefix = prefix || '';
+    epoch++;
+    Object.keys(mem).forEach(function (k) { if (k.indexOf(prefix) === 0) delete mem[k]; });
+    Object.keys(inflight).forEach(function (k) { if (k.indexOf(prefix) === 0) delete inflight[k]; });
+    try {
+      Object.keys(localStorage).forEach(function (k) {
+        if (k.indexOf(LS_PREFIX + prefix) === 0) localStorage.removeItem(k);
+      });
+    } catch (e) {}
+    if (!prefix && window.__fc) window.__fc.invalidateAll();
+  };
+
+  window.swrCall = function (fnName, args, key, opts, onData, onError) {
+    opts = opts || {};
+    var staleMs = (opts.stale == null ? 30 : opts.stale) * 1000;
+    var persist = opts.persist !== false;
+
+    var cached = readEntry(key, persist);
+    var shownJson = null;
+    if (cached) {
+      shownJson = cached.json;
+      var data;
+      try { data = JSON.parse(cached.json); } catch (e) { data = null; }
+      if (data) onData(data, { fromCache: true });
+      else shownJson = null;
+      if (data && Date.now() - cached.t < staleMs) return; // masih segar
+    }
+
+    if (!inflight[key]) {
+      var startEpoch = epoch;
+      inflight[key] = new Promise(function (resolve, reject) {
+        google.script.run
+          .withSuccessHandler(function (res) {
+            var json = JSON.stringify(res === undefined ? null : res);
+            // Jangan cache error, dan jangan cache respons dari request yang
+            // dimulai SEBELUM ada aksi tulis (datanya sudah pasti basi).
+            if (res && !res.error && startEpoch === epoch) {
+              var entry = { t: Date.now(), json: json };
+              mem[key] = entry;
+              if (persist) lsWrite(key, entry);
+            }
+            resolve(json);
+          })
+          .withFailureHandler(reject)[fnName].apply(null, args || []);
+      });
+      var p = inflight[key];
+      p.then(function () { if (inflight[key] === p) delete inflight[key]; },
+             function () { if (inflight[key] === p) delete inflight[key]; });
+    }
+
+    inflight[key].then(function (json) {
+      if (json === shownJson) return; // sama dengan yang sudah tampil -> tidak render ulang
+      var res = JSON.parse(json);
+      if (shownJson && res && res.error) return; // cache sudah tampil, abaikan error sesaat
+      onData(res, { fromCache: false });
+    }).catch(function (err) {
+      if (!shownJson && onError) onError(err);
+      else if (!shownJson) console.error(err);
+    });
+  };
+})();
 </script>
 <meta charset="UTF-8">
 <meta name="theme-color" content="#05592d">
@@ -1409,7 +1557,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
           <span id="dbDateLabel" style="font-size:13px;color:var(--muted);font-weight:500;"></span>
-          <button class="btn-sm btn-outline" onclick="loadDashboard()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;">
+          <button class="btn-sm btn-outline" onclick="loadDashboard(true)" style="display:flex;align-items:center;gap:6px;padding:8px 14px;font-size:13px;">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             Refresh
           </button>
@@ -2549,10 +2697,16 @@ function loadApp(preloadedInit){
   // awal). Jalur auto-restore sesi (token dipulihkan dari localStorage saat
   // buka halaman lagi, tanpa memanggil login()) tetap fetch terpisah seperti
   // biasa, karena tidak ada response login() untuk ditumpangi.
+  // Masukkan hasil getInitialData ke cache SWR, supaya loadDashboard() &
+  // monitoring langsung memakai data ini tanpa request kedua.
+  const seedInit = (init) => {
+    if (!init || init.error) return;
+    if (init.masterData && !init.masterData.error) swrSeed('master', init.masterData);
+    if (init.dashboardStats) swrSeed(dashCacheKey(), init.dashboardStats);
+    if (init.monitoring && init.monitoring.tanggal) swrSeed(monCacheKey(init.monitoring.tanggal), init.monitoring);
+  };
   const applyInit = (init) => {
     masterData = init.masterData;
-    _preloadedDashboard = init.dashboardStats;
-    _preloadedMonitoring = init.monitoring;
     const isDesktop = (currentUser.role === 'superadmin' || currentUser.role === 'admin');
     if (isDesktop) {
       initDesktopApp();
@@ -2562,17 +2716,34 @@ function loadApp(preloadedInit){
     if (window.__idleTimer) window.__idleTimer.reset(); // mulai hitung idle 30 menit sejak app siap
   };
   if (preloadedInit) {
+    seedInit(preloadedInit);
     applyInit(preloadedInit);
     return;
   }
-  google.script.run.withSuccessHandler(applyInit).getInitialData(currentUser);
+  // Pulihkan sesi "Ingat saya": kalau master data dari kunjungan sebelumnya
+  // masih tersimpan, aplikasi langsung tampil memakai cache (dashboard juga
+  // ikut dari cache lewat swrCall), lalu data terbaru diambil di latar
+  // belakang. Tidak ada lagi layar kosong menunggu getInitialData.
+  const cachedMaster = swrPeek('master');
+  if (cachedMaster) {
+    applyInit({ masterData: cachedMaster });
+    google.script.run.withSuccessHandler(init => {
+      if (!init || init.error || !currentUser) return;
+      seedInit(init);
+      masterData = init.masterData;
+      if (document.getElementById('page-dashboard')?.classList.contains('active') &&
+          document.getElementById('desktopApp').style.display === 'block') {
+        loadDashboard();
+      }
+    }).withFailureHandler(() => {}).getInitialData(currentUser);
+    return;
+  }
+  google.script.run.withSuccessHandler(init => { seedInit(init); applyInit(init); }).getInitialData(currentUser);
 }
 
-// Data dashboard/monitoring hasil getInitialData() saat login — dipakai
-// SEKALI oleh loadDashboard() di render pertama supaya tidak fetch ulang,
-// lalu dikosongkan lagi (refresh berikutnya tetap fetch fresh seperti biasa).
-let _preloadedDashboard = null;
-let _preloadedMonitoring = null;
+// Key cache SWR per user (data dashboard/monitoring bergantung hak akses user).
+function dashCacheKey(){ return 'dash:' + (currentUser ? currentUser.username : ''); }
+function monCacheKey(tgl){ return 'mon:' + (currentUser ? currentUser.username : '') + ':' + tgl; }
 
 // ============================================================
 // DESKTOP APP
@@ -3101,7 +3272,7 @@ function renderTrendChart(sortedMonths, byBulan){
   });
 }
 
-function loadDashboard(){
+function loadDashboard(forceRefresh){
   // Greeting & date
   const now = new Date();
   const hour = now.getHours();
@@ -3186,13 +3357,12 @@ function loadDashboard(){
           : '<div class="empty-state">Belum ada data lokasi.</div>';
       }
     };
-    if (_preloadedMonitoring) {
-      renderMonitoringPanel(_preloadedMonitoring);
-      _preloadedMonitoring = null; // hanya dipakai sekali di render pertama
-    } else {
-      google.script.run.withSuccessHandler(renderMonitoringPanel)
-        .getLokasiMonitoring(currentUser, new Date().toISOString().substring(0,10));
-    }
+    // Tanggal LOKAL (bukan toISOString yang UTC — sebelum jam 07:00 WIB
+    // toISOString masih menghasilkan tanggal kemarin).
+    const tglHariIni = Utilities_formatDateLocal(new Date());
+    swrCall('getLokasiMonitoring', [currentUser, tglHariIni], monCacheKey(tglHariIni),
+      { stale: forceRefresh ? 0 : 30 },
+      mon => { if (mon && !mon.error) renderMonitoringPanel(mon); });
 
     // ── Kinerja Lokasi ──
     const bl = stats.byLokasi || [];
@@ -3281,12 +3451,12 @@ function loadDashboard(){
     }).join('') : '<tr><td colspan="6" class="empty-state">Belum ada transaksi bulan ini.</td></tr>';
   };
 
-  if (_preloadedDashboard) {
-    renderStats(_preloadedDashboard);
-    _preloadedDashboard = null; // hanya dipakai sekali di render pertama
-  } else {
-    google.script.run.withSuccessHandler(renderStats).getDashboardStats(currentUser);
-  }
+  // SWR: tampilkan dashboard dari cache seketika (kalau ada), lalu perbarui
+  // di latar belakang bila sudah lebih dari 60 detik (atau tombol Refresh).
+  swrCall('getDashboardStats', [currentUser], dashCacheKey(),
+    { stale: forceRefresh ? 0 : 60 },
+    stats => { if (stats && !stats.error && stats.summary) renderStats(stats); },
+    err => showDesktopToast({ title: 'Gagal memuat dashboard', message: err.message, type: 'error' }));
 }
 
 // ============================================================
@@ -3298,7 +3468,7 @@ function loadDashboard(){
 let _monitoringRawData = []; // cache data dari server
 
 function initMonitoringPage(){
-  const today = new Date().toISOString().substring(0,10);
+  const today = Utilities_formatDateLocal(new Date());
   const monInput = document.getElementById('monitoringTanggal');
   if (!monInput.value) monInput.value = today;
 
@@ -3307,7 +3477,7 @@ function initMonitoringPage(){
 
     // Hari ini: set tanggal lalu fetch
     document.getElementById('monitoringTodayBtn').addEventListener('click', () => {
-      monInput.value = new Date().toISOString().substring(0,10);
+      monInput.value = Utilities_formatDateLocal(new Date());
       loadMonitoringLokasi();
     });
     monInput.addEventListener('change', () => loadMonitoringLokasi(monInput.value));
@@ -3330,7 +3500,7 @@ function initMonitoringPage(){
 
 function loadMonitoringLokasi(tanggal){
   const tanggalInput = document.getElementById('monitoringTanggal');
-  const tgl = tanggal || tanggalInput.value || new Date().toISOString().substring(0,10);
+  const tgl = tanggal || tanggalInput.value || Utilities_formatDateLocal(new Date());
   tanggalInput.value = tgl;
 
   const tbody = document.getElementById('monitoringTbody');
@@ -3339,9 +3509,9 @@ function loadMonitoringLokasi(tanggal){
   tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Memuat data...</td></tr>';
   statRow.innerHTML = '';
 
-  google.script.run.withSuccessHandler(res => {
-    if (res.error) {
-      tbody.innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--alert);">Error: ${res.error}</td></tr>`;
+  swrCall('getLokasiMonitoring', [currentUser, tgl], monCacheKey(tgl), { stale: 30 }, res => {
+    if (!res || res.error) {
+      tbody.innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--alert);">Error: ${(res && res.error) || 'Data kosong'}</td></tr>`;
       return;
     }
 
@@ -3371,10 +3541,10 @@ function loadMonitoringLokasi(tanggal){
 
     renderMonitoringTable();
 
-  }).withFailureHandler(err => {
+  }, err => {
     document.getElementById('monitoringTbody').innerHTML =
       `<tr><td colspan="8" class="empty-state" style="color:var(--alert);">Gagal memuat: ${err.message}</td></tr>`;
-  }).getLokasiMonitoring(currentUser, tgl);
+  });
 }
 
 function updateMonLokasiFilter(){
@@ -3551,7 +3721,7 @@ function loadTransaksiPage(){
     pageSizeSel.addEventListener('change', () => {
       _pgState.transaksi.pageSize = Number(pageSizeSel.value);
       _pgState.transaksi.page = 1;
-      renderTransaksiTable();
+      fetchTransaksiTable({ pageNav: true });
     });
   }
 
@@ -3572,13 +3742,16 @@ const _pgState = {
 
 function renderPagination(key, colSpan, renderRowFn) {
   const state = _pgState[key];
-  const total = state.data.length;
+  // Mode server: state.data hanya berisi isi halaman yang sedang tampil, dan
+  // jumlah total datanya ada di state.serverTotal (dihitung database).
+  const serverMode = state.serverTotal !== undefined && state.serverTotal !== null;
+  const total = serverMode ? state.serverTotal : state.data.length;
   const pageSize = state.pageSize;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  if (state.page > totalPages) state.page = totalPages;
+  if (!serverMode && state.page > totalPages) state.page = totalPages;
 
   const start = (state.page - 1) * pageSize;
-  const pageData = state.data.slice(start, start + pageSize);
+  const pageData = serverMode ? state.data : state.data.slice(start, start + pageSize);
 
   const tbody = document.getElementById(key + 'Tbody');
   if (!tbody) return;
@@ -3593,7 +3766,7 @@ function renderPagination(key, colSpan, renderRowFn) {
   const infoEl = document.getElementById(key + 'PaginationInfo');
   if (infoEl) {
     infoEl.textContent = total > 0
-      ? `${start + 1}–${Math.min(start + pageSize, total)} dari ${total} data`
+      ? `${Math.min(start + 1, total)}–${Math.min(start + pageData.length, total)} dari ${total} data`
       : 'Tidak ada data';
   }
 
@@ -3628,12 +3801,14 @@ function renderPagination(key, colSpan, renderRowFn) {
 
 function _pgGo(key, colSpan, val, isNext) {
   const state = _pgState[key];
-  const totalPages = Math.max(1, Math.ceil(state.data.length / state.pageSize));
+  const total = (state.serverTotal !== undefined && state.serverTotal !== null) ? state.serverTotal : state.data.length;
+  const totalPages = Math.max(1, Math.ceil(total / state.pageSize));
   if (isNext) state.page = Math.min(state.page + 1, totalPages);
   else if (val === -1) state.page = Math.max(1, state.page - 1);
   else state.page = val;
 
-  if (key === 'transaksi') renderTransaksiTable();
+  // Riwayat Transaksi: halaman diminta ke server (bukan dipotong di browser).
+  if (key === 'transaksi') fetchTransaksiTable({ pageNav: true });
   else if (key === 'monitoring') renderMonitoringTable();
   else if (key === 'log') renderLogTable();
   else if (key === 'pengajuan') renderPengajuanTable();
@@ -3840,8 +4015,8 @@ function reviewPengajuanModal(id){
     </div>
     <div class="btn-row">
       <button type="button" class="btn-sm btn-outline" id="pjCloseBtn">Tutup</button>
-      <button type="button" class="btn-sm btn-danger" id="pjRejectBtn" style="margin-left:auto;">Tolak</button>
-      <button type="button" class="btn-sm btn-dark" id="pjApproveBtn">Setujui &amp; Terapkan</button>
+      <button type="button" class="btn-sm btn-danger" id="pjRejectBtn" style="margin-left:auto;"><span class="submit-spinner"></span><span data-label>Tolak</span></button>
+      <button type="button" class="btn-sm btn-dark" id="pjApproveBtn"><span class="submit-spinner"></span><span data-label>Setujui &amp; Terapkan</span></button>
     </div>` : `
     <div class="detail-info-list" style="margin-top:4px;">
       <div class="detail-info-row"><span class="detail-label">Status</span><span class="detail-value">${pengajuanStatusBadge(p.status)}</span></div>
@@ -3878,9 +4053,18 @@ function reviewPengajuanModal(id){
   if (!menunggu) return;
 
   let busy = false;
+  // b = false, atau keputusan yang sedang diproses ('SETUJU' / 'TOLAK'):
+  // tombol yang diklik menampilkan spinner + teks proses, semua tombol nonaktif.
   const setBusy = (b) => {
-    busy = b;
-    overlay.querySelectorAll('#pjCloseBtn,#pjRejectBtn,#pjApproveBtn').forEach(x => { x.disabled = b; });
+    busy = !!b;
+    overlay.querySelectorAll('#pjCloseBtn,#pjRejectBtn,#pjApproveBtn').forEach(x => { x.disabled = !!b; });
+    [['#pjApproveBtn', 'SETUJU', 'Menerapkan...', 'Setujui & Terapkan'],
+     ['#pjRejectBtn', 'TOLAK', 'Menolak...', 'Tolak']].forEach(([sel, k, proses, normal]) => {
+      const btn = overlay.querySelector(sel);
+      const aktif = b === k;
+      btn.classList.toggle('is-submitting', aktif);
+      btn.querySelector('[data-label]').textContent = aktif ? proses : normal;
+    });
   };
   const kirim = (keputusan) => {
     if (busy) return;
@@ -3889,7 +4073,7 @@ function reviewPengajuanModal(id){
       showDesktopToast({ title: 'Catatan wajib diisi', message: 'Tulis alasan penolakan agar user tahu apa yang perlu diperbaiki.', type: 'error' });
       return;
     }
-    setBusy(true);
+    setBusy(keputusan);
     google.script.run
       .withSuccessHandler(res => {
         if (!res.success) {
@@ -4051,6 +4235,7 @@ function loadLaporanBulananPage(){
   fetchLaporanBulanan();
 }
 
+let _lapFetchSeq = 0;
 function fetchLaporanBulanan(){
   const bulanKey = document.getElementById('lapTahun').value + '-' + document.getElementById('lapBulan').value;
   const filterPerusahaan = document.getElementById('lapFilterPerusahaan').value;
@@ -4059,10 +4244,15 @@ function fetchLaporanBulanan(){
   document.getElementById('lapLokasiTbody').innerHTML = '<tr><td colspan="8" class="empty-state">Memuat data...</td></tr>';
   document.getElementById('lapStatRow').innerHTML = '';
 
-  google.script.run
-  .withSuccessHandler(res => {
-    if (res.error) {
-      document.getElementById('lapLokasiTbody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--alert);">${res.error}</td></tr>`;
+  // Key hanya per bulan (+ user): filter perusahaan/lokasi dikerjakan di
+  // browser, jadi ganti filter = pakai cache yang sama, tanpa request baru.
+  // Data hasil swrCall selalu salinan baru, jadi aman dimodifikasi di bawah.
+  const seq = ++_lapFetchSeq;
+  swrCall('getLaporanBulanan', [currentUser, bulanKey], 'lap:' + currentUser.username + ':' + bulanKey,
+    { stale: 60, persist: false }, res => {
+    if (seq !== _lapFetchSeq) return;
+    if (!res || res.error) {
+      document.getElementById('lapLokasiTbody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--alert);">${escapeHtml((res && res.error) || 'Data kosong')}</td></tr>`;
       return;
     }
     // Filter sisi klien berdasarkan perusahaan & lokasi
@@ -4080,11 +4270,10 @@ function fetchLaporanBulanan(){
     _lapCurrentData._filterPerusahaan = filterPerusahaan;
     _lapCurrentData._filterLokasi = filterLokasi;
     renderLaporanBulanan(res);
-  })
-  .withFailureHandler(err => {
-    document.getElementById('lapLokasiTbody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--alert);">Gagal memuat laporan: ${err.message}</td></tr>`;
-  })
-  .getLaporanBulanan(currentUser, bulanKey);
+  }, err => {
+    if (seq !== _lapFetchSeq) return;
+    document.getElementById('lapLokasiTbody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--alert);">Gagal memuat laporan: ${escapeHtml(err.message)}</td></tr>`;
+  });
 }
 
 function _lapGrowthBadge(pct){
@@ -4224,7 +4413,8 @@ function groupTransaksiRows(rows){
   return order.map(id => groups[id]);
 }
 
-function fetchTransaksiTable(){
+// Filter riwayat transaksi sesuai pilihan di layar (dipakai tabel & export).
+function buildTrxFilter(){
   const selectedValues = id => [...document.getElementById(id).selectedOptions]
     .map(option => option.value).filter(Boolean);
   const perusahaan = selectedValues('filterPerusahaan');
@@ -4241,25 +4431,64 @@ function fetchTransaksiTable(){
   if (currentUser.role === 'superadmin' && !perusahaan.length) {
     filter.perusahaan = '';
   }
+  return filter;
+}
+
+// Riwayat transaksi PER HALAMAN dari server (getTransaksiPage).
+// Dulu semua baris ditarik sekaligus lalu dipotong di browser — makin lambat
+// seiring data bertambah. Sekarang server hanya mengirim isi 1 halaman.
+//
+// opts.pageNav = true -> hanya pindah halaman / ganti jumlah per halaman:
+//   total transaksi tidak dihitung ulang (pakai angka yang sudah ada).
+// Tanpa opts (filter berubah, refresh setelah simpan/edit/hapus):
+//   total dihitung ulang; halaman tetap kalau filternya sama, kembali ke
+//   halaman 1 kalau filternya berubah.
+let _trxFetchSeq = 0;
+let _trxLastFilterKey = null;
+function fetchTransaksiTable(opts){
+  opts = opts || {};
+  const st = _pgState.transaksi;
+  const base = buildTrxFilter();
+  const filterKey = JSON.stringify(base);
+  if (!opts.pageNav && filterKey !== _trxLastFilterKey) st.page = 1;
+  _trxLastFilterKey = filterKey;
+
+  const withTotal = !opts.pageNav || st.serverTotal === undefined || st.serverTotal === null;
+  const makeArgs = (page, wt) => [Object.assign({}, base, { page: page, pageSize: st.pageSize, withTotal: wt })];
+  const makeKey = (page, wt) => 'trx:' + filterKey + ':p' + page + ':s' + st.pageSize + (wt ? ':t' : '');
+
+  const seq = ++_trxFetchSeq;
   document.getElementById('transaksiTbody').innerHTML = '<tr><td colspan="8" class="empty-state">Memuat data...</td></tr>';
-  google.script.run
-  .withSuccessHandler(res => {
-    if (res.error) {
-      document.getElementById('transaksiTbody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--alert);">${res.error}</td></tr>`;
+  swrCall('getTransaksiPage', makeArgs(st.page, withTotal), makeKey(st.page, withTotal), { stale: 30, persist: false }, res => {
+    if (seq !== _trxFetchSeq) return; // filter/halaman sudah diganti, abaikan respons lama
+    if (!res || res.error) {
+      document.getElementById('transaksiTbody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--alert);">${escapeHtml((res && res.error) || 'Data kosong')}</td></tr>`;
+      document.getElementById('transaksiPaginationBar').style.display = 'none';
       return;
     }
-    const groups = groupTransaksiRows(res.data || []);
+    if (res.total !== null && res.total !== undefined) st.serverTotal = res.total;
+    if (st.serverTotal === undefined || st.serverTotal === null) st.serverTotal = 0;
+
+    // Setelah hapus, halaman yang sedang dibuka bisa jadi sudah tidak ada.
+    const totalPages = Math.max(1, Math.ceil(st.serverTotal / st.pageSize));
+    if (st.page > totalPages) { st.page = totalPages; fetchTransaksiTable({ pageNav: true }); return; }
+
+    const groups = groupTransaksiRows(res.rows || []);
     currentTransaksiGroups = {};
     groups.forEach(g => currentTransaksiGroups[g.id] = g);
-
-    _pgState.transaksi.data = groups;
-    _pgState.transaksi.page = 1;
+    st.data = groups;
     renderTransaksiTable();
-  })
-  .withFailureHandler(err => {
-    document.getElementById('transaksiTbody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--alert);">Gagal memuat transaksi: ${err.message}</td></tr>`;
-  })
-  .getTransaksi(filter);
+
+    // Ambil halaman berikutnya diam-diam di latar belakang, supaya klik
+    // "halaman berikutnya" terasa instan.
+    if (st.page < totalPages) {
+      swrCall('getTransaksiPage', makeArgs(st.page + 1, false), makeKey(st.page + 1, false),
+        { stale: 30, persist: false }, () => {}, () => {});
+    }
+  }, err => {
+    if (seq !== _trxFetchSeq) return;
+    document.getElementById('transaksiTbody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--alert);">Gagal memuat transaksi: ${escapeHtml(err.message)}</td></tr>`;
+  });
 }
 
 function renderTransaksiTable() {
@@ -4306,9 +4535,29 @@ function _xlsxStyleSheet(ws, headerRow){
   if (!ws['!cols']) ws['!cols'] = headerRow.map(() => ({ wch: 20 }));
 }
 
+// Export mengambil SEMUA transaksi sesuai filter (bukan hanya halaman yang
+// tampil). Ini satu-satunya tempat riwayat ditarik penuh, dan hanya saat
+// tombol Export ditekan.
 function exportTransaksiXlsx(){
-  const groups = _pgState.transaksi.data;
-  if (!groups.length) { showDesktopToast({ title: 'Tidak ada data', message: 'Pilih filter terlebih dahulu atau data kosong.', type: 'error' }); return; }
+  const btn = document.getElementById('btnExportTransaksi');
+  withSubmitGuard(btn, null, null, null, (release) => {
+    showDesktopToast({ title: 'Menyiapkan export...', message: 'Mengambil semua transaksi sesuai filter.' });
+    google.script.run.withSuccessHandler(res => {
+      release();
+      if (!res || res.error) {
+        showDesktopToast({ title: 'Export gagal', message: (res && res.error) || 'Data kosong.', type: 'error' });
+        return;
+      }
+      tulisExportTransaksiXlsx(groupTransaksiRows(res.data || []));
+    }).withFailureHandler(err => {
+      release();
+      showDesktopToast({ title: 'Export gagal', message: err.message, type: 'error' });
+    }).getTransaksi(Object.assign({}, buildTrxFilter(), { noLimit: true }));
+  });
+}
+
+function tulisExportTransaksiXlsx(groups){
+  if (!groups.length) { showDesktopToast({ title: 'Tidak ada data', message: 'Tidak ada transaksi untuk filter ini.', type: 'error' }); return; }
   const header = ['ID Transaksi','Tanggal','Perusahaan','Lokasi','Keterangan','Tipe','Kategori','Nominal','Input Oleh'];
   const rows = [];
   groups.forEach(g => {
@@ -5563,14 +5812,17 @@ function renderMasterPage(kind) {
 }
 
 // Ambil ulang data master terbaru dari sheet (menghindari data basi/cache lama)
+// SWR: halaman Master langsung tampil dari cache, lalu selalu dicek ulang ke
+// server (stale 0). callback bisa terpanggil 2x (cache, lalu data baru kalau
+// berbeda) — semua callback di sini hanya render ulang, jadi aman.
 function refreshMasterData(callback){
-  google.script.run.withSuccessHandler(md => {
-    masterData = md;
+  swrCall('getMasterData', [], 'master', { stale: 0 }, md => {
+    if (md && !md.error) masterData = md;
     if (callback) callback();
-  }).withFailureHandler(err => {
+  }, err => {
     console.error('Gagal memuat master data:', err);
     if (callback) callback();
-  }).getMasterData();
+  });
 }
 
 function loadMasterPerusahaanPage(){
@@ -5990,44 +6242,74 @@ async function submitMobileTransaksi(e){
 
 // Cache riwayat transaksi mobile agar tombol PDF & detail bisa mengaksesnya
 let mobileRecentGroups = {};
-const _pgStateMobile = { page: 1, pageSize: 10, data: [] };
+const _pgStateMobile = { page: 1, pageSize: 10, data: [], total: null, loaded: false };
 
-function loadMobileRecent(){
+// Riwayat mobile PER HALAMAN dari server (getTransaksiPage, mine: true).
+// Dulu: semua transaksi di lokasi user (termasuk milik user lain, tanpa batas
+// tanggal) ditarik ke HP lalu disaring di sini. Sekarang server langsung
+// mengirim 10 transaksi milik user ini untuk halaman yang dibuka saja.
+// opts.pageNav = true -> pindah halaman (total tidak dihitung ulang).
+let _mRecentSeq = 0;
+function loadMobileRecent(opts){
+  opts = (opts && opts.pageNav) ? opts : {};
+  const st = _pgStateMobile;
   const tglFrom = document.getElementById('mFilterFrom').value;
   const tglTo = document.getElementById('mFilterTo').value;
+  if (!opts.pageNav) { st.page = 1; st.total = null; st.loaded = false; }
 
   document.getElementById('mRecentList').innerHTML = '<div class="empty-state">Memuat...</div>';
-  document.getElementById('mHistoryPaginationBar').style.display = 'none';
+  if (!opts.pageNav) document.getElementById('mHistoryPaginationBar').style.display = 'none';
 
   // Status pengajuan edit milik user (untuk badge & tombol di riwayat). Gagal = diabaikan.
-  google.script.run.withSuccessHandler(pr => {
-    mobilePengajuanByTrx = {};
-    ((pr && pr.data) || []).forEach(x => { if (!mobilePengajuanByTrx[x.idTransaksi]) mobilePengajuanByTrx[x.idTransaksi] = x; });
-    renderMobileHistoryList();
-  }).withFailureHandler(() => {}).getPengajuanEdit({});
+  if (!opts.pageNav) {
+    google.script.run.withSuccessHandler(pr => {
+      mobilePengajuanByTrx = {};
+      ((pr && pr.data) || []).forEach(x => { if (!mobilePengajuanByTrx[x.idTransaksi]) mobilePengajuanByTrx[x.idTransaksi] = x; });
+      if (st.loaded) renderMobileHistoryList();
+    }).withFailureHandler(() => {}).getPengajuanEdit({});
+  }
 
-  google.script.run.withSuccessHandler(res => {
-    const myRows = (res.data || []).filter(r => r['Input Oleh'] === currentUser.name);
+  const withTotal = st.total === null || st.total === undefined;
+  const filter = {
+    role: currentUser.role, perusahaan: currentUser.perusahaan, lokasi: currentUser.lokasi,
+    tglFrom: tglFrom, tglTo: tglTo, mine: true,
+    page: st.page, pageSize: st.pageSize, withTotal: withTotal
+  };
+  const key = 'mtrx:' + currentUser.username + ':' + tglFrom + ':' + tglTo + ':p' + st.page + (withTotal ? ':t' : '');
+  const seq = ++_mRecentSeq;
+  // SWR + disimpan di localStorage: buka aplikasi lagi -> halaman pertama
+  // riwayat langsung tampil dari cache, lalu diperbarui di latar belakang.
+  swrCall('getTransaksiPage', [filter], key, { stale: 30 }, res => {
+    if (seq !== _mRecentSeq) return;
+    if (!res || res.error) {
+      document.getElementById('mRecentList').innerHTML = `<div class="empty-state">${escapeHtml((res && res.error) || 'Gagal memuat riwayat.')}</div>`;
+      return;
+    }
+    if (res.total !== null && res.total !== undefined) st.total = res.total;
+    if (st.total === null || st.total === undefined) st.total = 0;
     // Kelompokkan per transaksi (Batch ID), sama seperti menu Transaksi di
     // desktop — bukan per kategori/item — lalu tampilkan total bersihnya.
-    const myGroups = groupTransaksiRows(myRows);
-    // Simpan ke cache supaya tombol PDF & detail bisa mengakses data lengkap
+    const myGroups = groupTransaksiRows(res.rows || []);
+    // Simpan supaya tombol PDF & detail bisa mengakses data lengkap
     mobileRecentGroups = {};
     myGroups.forEach(g => { mobileRecentGroups[g.id] = g; });
-
-    _pgStateMobile.data = myGroups;
-    _pgStateMobile.page = 1;
+    st.data = myGroups;
+    st.loaded = true;
     renderMobileHistoryList();
-  }).getTransaksi({ role: currentUser.role, perusahaan: currentUser.perusahaan, lokasi: currentUser.lokasi, tglFrom: tglFrom, tglTo: tglTo, noLimit: true });
+  }, err => {
+    if (seq !== _mRecentSeq) return;
+    document.getElementById('mRecentList').innerHTML = `<div class="empty-state">Gagal memuat riwayat: ${escapeHtml(err.message)}</div>`;
+  });
 }
 
 function renderMobileHistoryList(){
-  const total = _pgStateMobile.data.length;
+  // _pgStateMobile.data = isi halaman yang sedang dibuka (dari server),
+  // _pgStateMobile.total = jumlah seluruh transaksi user (dari server).
+  const total = Number(_pgStateMobile.total) || 0;
   const pageSize = _pgStateMobile.pageSize;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  if (_pgStateMobile.page > totalPages) _pgStateMobile.page = totalPages;
   const start = (_pgStateMobile.page - 1) * pageSize;
-  const pageGroups = _pgStateMobile.data.slice(start, start + pageSize);
+  const pageGroups = _pgStateMobile.data;
 
   document.getElementById('mRecentList').innerHTML = pageGroups.length ? pageGroups.map(g => {
     const net = g.totalPendapatan - g.totalPengeluaran;
@@ -6079,11 +6361,11 @@ function renderMobileHistoryList(){
 }
 
 function _pgGoMobile(val, isNext){
-  const totalPages = Math.max(1, Math.ceil(_pgStateMobile.data.length / _pgStateMobile.pageSize));
+  const totalPages = Math.max(1, Math.ceil((Number(_pgStateMobile.total) || 0) / _pgStateMobile.pageSize));
   if (isNext) _pgStateMobile.page = Math.min(_pgStateMobile.page + 1, totalPages);
   else if (val === -1) _pgStateMobile.page = Math.max(1, _pgStateMobile.page - 1);
   else _pgStateMobile.page = val;
-  renderMobileHistoryList();
+  loadMobileRecent({ pageNav: true });
 }
 
 // Menampilkan rincian item dari satu transaksi (dipanggil saat baris riwayat di-tap)
@@ -6605,6 +6887,9 @@ function logout(){
   // (bukan cuma dihapus di browser) — best-effort, tidak perlu menunggu hasilnya.
   try { google.script.run.withSuccessHandler(()=>{}).withFailureHandler(()=>{}).logout(); } catch(e) {}
   if (window.__auth) window.__auth.setToken('');
+  // Buang semua cache data (memori + localStorage) — data keuangan tidak
+  // boleh tertinggal di browser setelah logout.
+  if (window.swrInvalidate) window.swrInvalidate();
   currentUser = null;
   if (window.__idleTimer) window.__idleTimer.stop();
   teardownMobileHome();
@@ -6623,6 +6908,7 @@ function logout(){
 // user ke layar login dengan pesan yang jelas, alih-alih membiarkan halaman
 // menampilkan error atau data yang sudah basi.
 window.handleSessionExpired = function(){
+  if (window.swrInvalidate) window.swrInvalidate();
   currentUser = null;
   if (window.__idleTimer) window.__idleTimer.stop();
   teardownMobileHome();
