@@ -2756,7 +2756,7 @@ function initDesktopApp(){
 
   // Nav
   document.querySelectorAll('.d-nav-item:not(.d-nav-parent)').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.onclick = (() => {
       document.querySelectorAll('.d-nav-item').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.d-nav-subitem').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.d-page').forEach(p => p.classList.remove('active'));
@@ -2773,13 +2773,13 @@ function initDesktopApp(){
   });
 
   // Master Data: toggle accordion
-  document.getElementById('masterNavToggle')?.addEventListener('click', () => {
+  document.getElementById('masterNavToggle').onclick = (() => {
     document.getElementById('masterNavGroup')?.classList.toggle('open');
   });
 
   // Master Data: sub nav items
   document.querySelectorAll('.d-nav-subitem').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.onclick = (() => {
       document.querySelectorAll('.d-nav-item').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.d-nav-subitem').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.d-page').forEach(p => p.classList.remove('active'));
@@ -2793,26 +2793,26 @@ function initDesktopApp(){
     });
   });
 
-  document.getElementById('dLogoutBtn').addEventListener('click', logout);
+  document.getElementById('dLogoutBtn').onclick = (logout);
   initMobileHome();
 
   // Populate perusahaan select (input form)
   const dPerusahaan = document.getElementById('dPerusahaan');
   const perusahaanList = getAccessiblePerusahaan(currentUser);
   dPerusahaan.innerHTML = perusahaanList.map(p => `<option value="${p}">${p}</option>`).join('');
-  dPerusahaan.addEventListener('change', updateDesktopLokasi);
-  document.getElementById('dLokasi').addEventListener('change', refreshDesktopItemKategori);
+  dPerusahaan.onchange = (updateDesktopLokasi);
+  document.getElementById('dLokasi').onchange = (refreshDesktopItemKategori);
   updateDesktopLokasi();
 
   document.getElementById('dItemsContainer').innerHTML = '';
   dItemCounter = 0;
   addDesktopItem();
-  document.getElementById('dAddItemBtn').addEventListener('click', addDesktopItem);
+  document.getElementById('dAddItemBtn').onclick = (addDesktopItem);
 
   if (!dFotoManager) dFotoManager = createFotoManager('dFotoInput', 'dFotoPreview', msg => showDesktopToast({ title: 'Maks foto tercapai', message: msg, type: 'error' }));
   else dFotoManager.reset();
 
-  document.getElementById('desktopInputForm').addEventListener('submit', submitDesktopTransaksi);
+  document.getElementById('desktopInputForm').onsubmit = (submitDesktopTransaksi);
 
   loadDashboard();
 
@@ -5889,9 +5889,9 @@ function initMobileApp(){
   document.getElementById('mUserName').textContent = currentUser.name;
   document.getElementById('mUserPerusahaan').textContent = currentUser.perusahaan === 'ALL' ? 'Semua Perusahaan' : currentUser.perusahaan;
 
-  document.getElementById('mLogoutBtn').addEventListener('click', logout);
+  document.getElementById('mLogoutBtn').onclick = (logout);
   document.querySelectorAll('.m-bottom-item').forEach(item => {
-    item.addEventListener('click', () => switchMobileView(item.dataset.mobileView));
+    item.onclick = (() => switchMobileView(item.dataset.mobileView));
   });
   switchMobileView('input');
 
@@ -5959,12 +5959,12 @@ function initMobileApp(){
       row.querySelector('.m-item-kategori').innerHTML = kategoriOptions(tipe, lokasi, current);
     });
   }
-  mLokasi.addEventListener('change', refreshMobileItemKategori);
+  mLokasi.onchange = (refreshMobileItemKategori);
 
   if (accessiblePerusahaan.length > 1) {
     mPerusahaanField.style.display = '';
     mPerusahaan.innerHTML = accessiblePerusahaan.map(p => `<option value="${p}">${p}</option>`).join('');
-    mPerusahaan.addEventListener('change', refreshMLokasi);
+    mPerusahaan.onchange = (refreshMLokasi);
   } else if (accessiblePerusahaan.length === 1) {
     mPerusahaanField.style.display = 'none';
     // Tetap isi select meski disembunyikan, supaya value-nya selalu tersedia
@@ -5982,12 +5982,12 @@ function initMobileApp(){
   document.getElementById('mItemsContainer').innerHTML = '';
   mItemCounter = 0;
   addMobileItem();
-  document.getElementById('mAddItemBtn').addEventListener('click', addMobileItem);
+  document.getElementById('mAddItemBtn').onclick = (addMobileItem);
 
   if (!mFotoManager) mFotoManager = createFotoManager(['mFotoInputGaleri', 'mFotoInputKamera'], 'mFotoPreview', msg => showToast(msg, true));
   else mFotoManager.reset();
 
-  document.getElementById('mobileInputForm').addEventListener('submit', submitMobileTransaksi);
+  document.getElementById('mobileInputForm').onsubmit = (submitMobileTransaksi);
 
   // Set tanggal transaksi default ke hari ini
   const mTanggalInput = document.getElementById('mTanggalTransaksi');
@@ -6002,7 +6002,7 @@ function initMobileApp(){
   resetMobileFilter();
 
   ['mFilterFrom', 'mFilterTo'].forEach(id => {
-    document.getElementById(id).addEventListener('input', syncMobileDatePlaceholders);
+    document.getElementById(id).oninput = (syncMobileDatePlaceholders);
   });
 
   const mobileFilterChanged = () => {
@@ -6010,9 +6010,9 @@ function initMobileApp(){
     syncMobileDatePlaceholders();
     loadMobileRecent();
   };
-  document.getElementById('mFilterFrom').addEventListener('change', mobileFilterChanged);
-  document.getElementById('mFilterTo').addEventListener('change', mobileFilterChanged);
-  document.getElementById('mResetFilterBtn').addEventListener('click', () => {
+  document.getElementById('mFilterFrom').onchange = (mobileFilterChanged);
+  document.getElementById('mFilterTo').onchange = (mobileFilterChanged);
+  document.getElementById('mResetFilterBtn').onclick = (() => {
     resetMobileFilter();
     loadMobileRecent();
   });
