@@ -1881,6 +1881,160 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 @keyframes muFade{from{opacity:0;}to{opacity:1;}}
 @media (min-width:600px){#mobileApp .m-header,#mobileApp .m-body{max-width:520px;margin-left:auto;margin-right:auto;}#mobileApp .m-header{border-radius:0 0 40px 40px;}}
 .foto-preview-meta{display:none;}
+/* ===== Mobile SUPERADMIN — desain "Forest Modern FinOps" v2 + notifikasi =====
+   Semua aturan di bawah dibatasi #desktopApp.m-sa (kelas dipasang hanya untuk
+   role superadmin di initMobileHome), jadi tampilan admin & desktop tidak berubah. */
+.m-only,.m-ntoast{display:none;}
+@media (max-width:900px){
+  #desktopApp.m-sa .m-only{display:block;}
+  #desktopApp.m-sa .d-only{display:none;}
+
+  /* Top bar */
+  #desktopApp.m-sa .mt-av{background:#003629;}
+  #desktopApp.m-sa .mt-av i{display:none;}
+  #desktopApp.m-sa .mt-bell .m-dot{background:#ba1a1a;}
+
+  /* Hero saldo: hijau hutan solid, tanpa ornamen */
+  #desktopApp.m-sa .mh-hero{background:#074728;padding:20px;box-shadow:0 12px 32px -4px rgba(0,54,41,.25),0 4px 12px rgba(0,0,0,.08);}
+  #desktopApp.m-sa .mh-glow,#desktopApp.m-sa .mh-deco,#desktopApp.m-sa .mh-ratio{display:none;}
+  #desktopApp.m-sa .mh-kicker{gap:8px;font-size:11px;font-weight:600;letter-spacing:.05em;color:#baeed9;}
+  #desktopApp.m-sa .mh-per{padding:2px 10px;border-radius:999px;background:rgba(255,255,255,.1);font-weight:500;letter-spacing:0;text-transform:none;color:#baeed9;}
+  #desktopApp.m-sa .mh-eye{width:32px;height:32px;border:none;background:rgba(255,255,255,.1);}
+  #desktopApp.m-sa .mh-amt{margin-top:14px;}
+  #desktopApp.m-sa .mh-amt .rp{font-size:20px;font-weight:700;color:#a4f3cb;}
+  #desktopApp.m-sa .mh-saldo{font-size:clamp(28px,8.6vw,32px);line-height:40px;}
+  #desktopApp.m-sa .mh-delta{margin-top:4px;color:rgba(186,238,217,.8);}
+  #desktopApp.m-sa .mh-chip{background:#a4f3cb;color:#003629;font-size:11px;padding:2px 8px;}
+  #desktopApp.m-sa .mh-pills{margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,.1);gap:8px;}
+  #desktopApp.m-sa .mh-pill.sa{display:flex;align-items:center;gap:10px;padding:10px;border:none;border-radius:16px;background:rgba(255,255,255,.1);backdrop-filter:none;-webkit-backdrop-filter:none;}
+  #desktopApp.m-sa .mh-pill.sa .sq{flex:none;width:32px;height:32px;border-radius:12px;background:rgba(255,255,255,.15);color:#a4f3cb;display:flex;align-items:center;justify-content:center;}
+  #desktopApp.m-sa .mh-pill.sa.out .sq{color:rgba(255,255,255,.7);}
+  #desktopApp.m-sa .mh-pill.sa .sq svg{width:18px;height:18px;}
+  #desktopApp.m-sa .mh-pill.sa .tx{display:flex;flex-direction:column;min-width:0;}
+  #desktopApp.m-sa .mh-pill.sa .k{margin:0;font-size:11px;font-weight:500;color:rgba(186,238,217,.8);}
+  #desktopApp.m-sa .mh-pill.sa b{font-size:13px;}
+
+  /* Banner pengajuan dipindah ke lonceng & halaman Notifikasi */
+  #desktopApp.m-sa .mh-alert{display:none !important;}
+
+  /* Fitur utama: satu kartu putih berisi grid 4 kolom */
+  #desktopApp.m-sa .mh-grid{background:#fff;border-radius:24px;padding:14px;gap:16px 8px;box-shadow:var(--f-sh1);}
+  #desktopApp.m-sa .mh-tile{background:none;box-shadow:none;padding:4px;gap:6px;border-radius:12px;}
+  #desktopApp.m-sa .mh-tile:active{background:var(--f-low);}
+  #desktopApp.m-sa .mh-tile .m-dot{top:0;right:10px;}
+
+  /* Urutan bagian Beranda: hero → setoran → fitur → tren → komposisi → kinerja */
+  #desktopApp.m-sa #page-dashboard.active{display:flex;flex-direction:column;}
+  #desktopApp.m-sa #page-dashboard > .panel-row,
+  #desktopApp.m-sa #page-dashboard > .panel-row-2{display:contents;}
+  #desktopApp.m-sa #page-dashboard .m-topbar{order:0;}
+  #desktopApp.m-sa #page-dashboard .m-home{order:1;}
+  #desktopApp.m-sa .m-sa-p{margin:0 0 20px !important;}
+  #desktopApp.m-sa .m-p-trend{order:2;display:flex;flex-direction:column;}
+  #desktopApp.m-sa .m-p-income{order:3;}
+  #desktopApp.m-sa .m-p-kinerja{order:4;}
+  #desktopApp.m-sa #page-dashboard .m-sync{order:9;}
+  #desktopApp.m-sa .m-p-expense,#desktopApp.m-sa .m-p-recent{display:none !important;}
+  #desktopApp.m-sa .m-sa-p .panel-header{align-items:flex-start;}
+  #desktopApp.m-sa .m-sa-p .panel-header h3{line-height:1.35;}
+  #desktopApp.m-sa .m-sub{font-size:12px;font-weight:400;line-height:16px;color:var(--muted);margin-top:1px;}
+  #desktopApp.m-sa .m-p-income .panel-badge,#desktopApp.m-sa .m-p-kinerja .panel-badge{display:none;}
+  #desktopApp.m-sa .m-p-trend .panel-badge{background:var(--f-low);font-weight:600;}
+  #desktopApp.m-sa .m-p-trend .m-legend{order:1;margin:0 0 6px !important;}
+  #desktopApp.m-sa .m-p-trend #dailyChart{order:2;}
+  #desktopApp.m-sa .m-p-trend .m-legend > span > span{border-radius:50% !important;}
+  #desktopApp.m-sa .m-all{display:inline-flex;flex:none;align-items:center;padding:4px 0 4px 8px;font-size:11px;font-weight:700;color:var(--f-secondary);background:none;}
+  #desktopApp.m-sa #perusahaanBars .mon-mini-row:nth-child(n+6){display:none;}
+
+  /* Bottom bar: menempel di bawah, sudut atas membulat */
+  #desktopApp.m-sa .m-bnav{left:0;right:0;bottom:0;height:auto;min-height:72px;padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));border-radius:24px 24px 0 0;border-top:1px solid rgba(192,201,195,.7);background:rgba(255,255,255,.92);box-shadow:0 -4px 20px -2px rgba(27,77,62,.05);justify-content:space-around;}
+  #desktopApp.m-sa .m-bn.active{background:#003629;}
+  #desktopApp.m-sa .m-bn.m-add{width:48px;height:48px;margin-top:-16px;background:#003629;box-shadow:0 8px 20px -2px rgba(0,54,41,.35);}
+  #desktopApp.m-sa .m-bn.m-add.active{background:var(--f-secondary);}
+  #desktopApp.m-sa .m-bn .m-dot.m-nt{top:1px;right:-2px;width:auto;min-width:18px;height:18px;padding:0 5px;border-radius:9px;font-size:10.5px;background:#ba1a1a;color:#fff;box-shadow:0 0 0 2px #fff;animation:ntPop .35s cubic-bezier(.2,1.6,.4,1);}
+  #desktopApp.m-sa .m-bn.active .m-dot.m-nt{box-shadow:0 0 0 2px #003629;}
+
+
+  /* ── Desain v2: ikon duotone, pil setoran, tren, donut ─────────── */
+  #desktopApp.m-sa .mh-tile .ic.duo{background:#e8f5ed;}
+  #desktopApp.m-sa .mh-tile .ic.duo svg{width:30px;height:30px;}
+  #desktopApp.m-sa .mh-inset .row span.late{padding:2px 8px;border-radius:999px;background:#ffdad6;color:#93000a;}
+  #desktopApp.m-sa .mh-inset .row span.late::before{display:none;}
+  #desktopApp.m-sa .m-p-trend #dailyChart,
+  #desktopApp.m-sa .m-p-trend .m-legend,
+  #desktopApp.m-sa .m-p-trend .panel-badge{display:none !important;}
+  #desktopApp.m-sa .sa-year{display:inline-flex;flex:none;align-items:center;gap:4px;position:relative;padding:6px 10px 6px 12px;border-radius:999px;background:var(--f-low);color:var(--ink);font-size:11px;font-weight:600;}
+  #desktopApp.m-sa .sa-year select{appearance:none;-webkit-appearance:none;border:none;background:none;font:inherit;color:inherit;padding:0;outline:none;}
+  #desktopApp.m-sa .sa-year select:disabled{opacity:1;}
+  #desktopApp.m-sa .sa-year svg{width:14px;height:14px;pointer-events:none;}
+  #desktopApp.m-sa .sa-year.single svg{opacity:.35;}
+  #desktopApp.m-sa .sa-trend{order:3;}
+  #desktopApp.m-sa .sa-legend{display:flex;gap:16px;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+  #desktopApp.m-sa .sa-legend span{display:flex;align-items:center;gap:6px;}
+  #desktopApp.m-sa .sa-legend i{width:10px;height:10px;border-radius:50%;background:#176b4c;}
+  #desktopApp.m-sa .sa-legend i.def{background:#c0c9c3;}
+  #desktopApp.m-sa .sa-plot{position:relative;width:100%;height:140px;}
+  #desktopApp.m-sa .sa-plot svg{display:block;overflow:visible;}
+  #desktopApp.m-sa .sa-peak{position:absolute;white-space:nowrap;padding:2px 10px;border-radius:999px;background:#003629;color:#fff;font-size:10px;font-weight:700;pointer-events:none;}
+  #desktopApp.m-sa .sa-peak.neg{background:#ba1a1a;}
+  #desktopApp.m-sa .sa-empty{height:100%;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted-light);}
+  #desktopApp.m-sa .sa-months{display:grid;grid-template-columns:repeat(12,1fr);margin-top:6px;font-size:10px;font-weight:600;color:var(--muted);text-align:center;}
+  #desktopApp.m-sa .sa-months .off{visibility:hidden;}
+  #desktopApp.m-sa .sa-months .on{visibility:visible;color:var(--f-primary);font-weight:700;}
+  #desktopApp.m-sa .sa-info{display:flex;flex:none;width:32px;height:32px;border-radius:50%;align-items:center;justify-content:center;background:var(--f-low);color:var(--muted);}
+  #desktopApp.m-sa .sa-info svg{width:18px;height:18px;}
+  #desktopApp.m-sa .sa-note{margin:-6px 0 12px;padding:10px 12px;border-radius:14px;background:var(--f-low);font-size:12px;line-height:1.45;color:var(--muted);}
+  #desktopApp.m-sa .sa-ring .pie-chart{width:176px;max-width:176px;}
+  #desktopApp.m-sa .sa-ring .pie-center b{font-size:18px;color:#003629;}
+  #desktopApp.m-sa .sa-ring .pie-center span{color:#176b4c;}
+
+  /* Halaman Notifikasi */
+  #page-notifikasi .nt-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 0 16px;}
+  #page-notifikasi .nt-head h2{font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--f-primary);}
+  #page-notifikasi .nt-head p{font-size:13px;color:var(--muted);margin-top:2px;}
+  #page-notifikasi .nt-readall{flex:none;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;background:var(--m-tint);color:var(--f-secondary);font-size:12px;font-weight:700;}
+  #page-notifikasi .nt-readall svg{width:16px;height:16px;}
+  #page-notifikasi .nt-readall:disabled{opacity:.45;}
+  #page-notifikasi .nt-pj{display:none;align-items:center;gap:12px;width:100%;text-align:left;margin-bottom:16px;padding:14px 16px;border-radius:20px;background:var(--m-wait-soft);color:#7a3e07;box-shadow:var(--f-sh1);}
+  #page-notifikasi .nt-pj .ic{flex:none;width:36px;height:36px;border-radius:12px;background:var(--m-wait);color:#fff;display:flex;align-items:center;justify-content:center;}
+  #page-notifikasi .nt-pj .ic svg{width:18px;height:18px;}
+  #page-notifikasi .nt-pj .tx{flex:1;min-width:0;}
+  #page-notifikasi .nt-pj b{display:block;font-size:13px;color:#5c2e05;}
+  #page-notifikasi .nt-pj small{display:block;font-size:11px;}
+  #page-notifikasi .nt-pj > svg{width:18px;height:18px;flex:none;}
+  #page-notifikasi .nt-sec{display:flex;align-items:center;gap:6px;margin:0 4px 8px;font-size:13px;font-weight:600;color:var(--ink);}
+  #page-notifikasi .nt-sec span{min-width:18px;height:18px;padding:0 6px;border-radius:9px;background:#ba1a1a;color:#fff;font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
+  #page-notifikasi .nt-card{display:flex;flex-direction:column;gap:2px;padding:6px;margin-bottom:20px;background:#fff;border-radius:24px;box-shadow:var(--f-sh1);}
+  #page-notifikasi .nt-item{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;padding:12px 10px;border-radius:18px;color:var(--ink);}
+  #page-notifikasi .nt-item:active{background:var(--f-low);}
+  #page-notifikasi .nt-item.unread{background:rgba(232,245,233,.7);}
+  #page-notifikasi .nt-item .ic{position:relative;width:40px;height:40px;border-radius:14px;background:var(--m-tint);color:var(--f-primary);display:flex;align-items:center;justify-content:center;}
+  #page-notifikasi .nt-item .ic svg{width:20px;height:20px;}
+  #page-notifikasi .nt-item.unread .ic::after{content:"";position:absolute;top:-2px;right:-2px;width:10px;height:10px;border-radius:50%;background:#ba1a1a;box-shadow:0 0 0 2px #fff;}
+  #page-notifikasi .nt-item .tx{display:flex;flex-direction:column;min-width:0;}
+  #page-notifikasi .nt-item .tx b{font-size:13px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #page-notifikasi .nt-item .tx small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #page-notifikasi .nt-item .tx small.by{color:var(--muted-light);margin-top:2px;}
+  #page-notifikasi .nt-item .rt{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+  #page-notifikasi .nt-item .rt b{font-size:13px;font-weight:700;color:var(--f-secondary);white-space:nowrap;font-variant-numeric:tabular-nums;}
+  #page-notifikasi .nt-item .rt b.neg{color:#ba1a1a;}
+  #page-notifikasi .nt-item .rt small{font-size:11px;color:var(--muted);white-space:nowrap;}
+  #page-notifikasi .nt-empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:40px 16px;color:var(--muted);font-size:13px;background:#fff;border-radius:24px;box-shadow:var(--f-sh1);}
+  #page-notifikasi .nt-empty .ic{width:56px;height:56px;border-radius:50%;background:var(--m-tint);color:var(--f-secondary);display:flex;align-items:center;justify-content:center;margin-bottom:4px;}
+  #page-notifikasi .nt-empty .ic svg{width:26px;height:26px;}
+  #page-notifikasi .nt-empty b{color:var(--ink);font-size:14px;}
+
+  /* Banner "transaksi baru masuk" */
+  .m-ntoast{display:flex;position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:16px;right:16px;z-index:1200;align-items:center;gap:12px;padding:12px 14px;border-radius:20px;background:#074728;color:#fff;text-align:left;font-family:'Plus Jakarta Sans',var(--font);box-shadow:0 16px 36px -8px rgba(0,54,41,.45),0 4px 10px rgba(0,0,0,.1);transform:translateY(-150%);opacity:0;transition:transform .35s cubic-bezier(.2,.9,.3,1.1),opacity .25s;}
+  .m-ntoast.show{transform:none;opacity:1;}
+  .m-ntoast .ic{flex:none;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.14);color:#a4f3cb;display:flex;align-items:center;justify-content:center;}
+  .m-ntoast .ic svg{width:18px;height:18px;}
+  .m-ntoast .tx{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .m-ntoast .tx b{font-size:13px;font-weight:700;}
+  .m-ntoast .tx small{font-size:11px;color:rgba(255,255,255,.75);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .m-ntoast .amt{flex:none;font-size:13px;font-weight:700;color:#a4f3cb;font-variant-numeric:tabular-nums;}
+  @keyframes ntPop{from{transform:scale(.4);}to{transform:none;}}
+}
 </style>
 </head>
 <body>
@@ -3321,7 +3475,20 @@ const MI = {
   chev:'<path d="M9 6l6 6-6 6"/>',
   down:'<path d="M6 9l6 6 6-6"/>',
   add:'<path d="M12 5v14M5 12h14"/>',
-  filter:'<path d="M4 5h16M7 12h10M10 19h4"/>'
+  filter:'<path d="M4 5h16M7 12h10M10 19h4"/>',
+  checkAll:'<path d="M18 7l-8.5 8.5L6 12"/><path d="M22 7l-8.5 8.5-1-1"/>',
+  inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>'
+};
+// Ikon fitur utama bergaya duotone (desain "Forest Modern FinOps" v2, superadmin).
+const MI_DUO = {
+  'transaksi':'<rect x="10" y="8" width="28" height="32" rx="6" fill="#a4f3cb"/><path d="M14 6H34C36.2 6 38 7.8 38 10V16H10V10C10 7.8 11.8 6 14 6Z" fill="#1b4d3e"/><rect x="16" y="22" width="16" height="3.5" rx="1.75" fill="#1b4d3e"/><rect x="16" y="29" width="10" height="3.5" rx="1.75" fill="#1b4d3e"/><circle cx="31" cy="31" r="2.5" fill="#1b4d3e"/>',
+  'monitoring':'<rect x="13" y="18" width="22" height="22" rx="4" fill="#a4f3cb"/><path d="M24 6L10 18L13 22L24 12L35 22L38 18L24 6Z" fill="#1b4d3e"/><rect x="18" y="24" width="12" height="5" rx="2" fill="#176b4c"/><rect x="18" y="32" width="12" height="8" rx="2" fill="#1b4d3e"/>',
+  'laporan-bulanan':'<rect x="8" y="12" width="32" height="28" rx="6" fill="#a4f3cb"/><path d="M8 17C8 13.7 10.7 11 14 11H34C37.3 11 40 13.7 40 17V20H8V17Z" fill="#1b4d3e"/><rect x="15" y="7" width="4" height="7" rx="2" fill="#1b4d3e"/><rect x="29" y="7" width="4" height="7" rx="2" fill="#1b4d3e"/><rect x="14" y="29" width="4.5" height="6" rx="1.5" fill="#1b4d3e"/><rect x="21.5" y="25" width="4.5" height="10" rx="1.5" fill="#1b4d3e"/><rect x="29" y="22" width="4.5" height="13" rx="1.5" fill="#1b4d3e"/>',
+  'pengajuan-edit':'<rect x="10" y="9" width="24" height="30" rx="5" fill="#a4f3cb"/><rect x="14" y="16" width="12" height="3" rx="1.5" fill="#1b4d3e"/><rect x="14" y="22" width="16" height="3" rx="1.5" fill="#1b4d3e"/><rect x="14" y="28" width="9" height="3" rx="1.5" fill="#1b4d3e"/><path d="M26 31L37 17C38.1 15.9 39.9 15.9 41 17C42.1 18.1 42.1 19.9 41 21L30 35L25 36L26 31Z" fill="#1b4d3e"/>',
+  'users':'<circle cx="32" cy="18" r="6" fill="#a4f3cb"/><path d="M24 37C24 32.5 27.5 29 32 29C36.5 29 40 32.5 40 37V39H24V37Z" fill="#a4f3cb"/><circle cx="20" cy="16" r="7" fill="#1b4d3e"/><path d="M9 37C9 31 14 26 20 26C26 26 31 31 31 37V39H9V37Z" fill="#1b4d3e"/>',
+  'master':'<rect x="8" y="8" width="13" height="13" rx="4" fill="#1b4d3e"/><rect x="27" y="8" width="13" height="13" rx="4" fill="#a4f3cb"/><rect x="8" y="27" width="13" height="13" rx="4" fill="#a4f3cb"/><rect x="27" y="27" width="13" height="13" rx="4" fill="#1b4d3e"/><circle cx="14.5" cy="14.5" r="2.5" fill="#a4f3cb"/><circle cx="33.5" cy="33.5" r="2.5" fill="#a4f3cb"/>',
+  'log-aktivitas':'<circle cx="24" cy="24" r="15" fill="#a4f3cb"/><path d="M24 10C31.7 10 38 16.3 38 24C38 31.7 31.7 38 24 38C17.5 38 12.05 33.5 10.5 27.5H15.8C17.1 30.7 20.3 33 24 33C29 33 33 29 33 24C33 19 29 15 24 15C20.9 15 18.2 16.6 16.6 19H20V23H10V13H14V16.8C16.4 12.7 20 10 24 10Z" fill="#1b4d3e"/><rect x="22" y="18" width="4" height="8" rx="2" fill="#1b4d3e"/><rect x="24" y="22" width="7" height="4" rx="2" fill="#1b4d3e"/>',
+  'refresh':'<circle cx="24" cy="24" r="15" fill="#a4f3cb"/><path d="M33.5 19.5A10.5 10.5 0 0 0 14.6 18.4" stroke="#1b4d3e" stroke-width="4" stroke-linecap="round"/><path d="M14.5 28.5A10.5 10.5 0 0 0 33.4 29.6" stroke="#1b4d3e" stroke-width="4" stroke-linecap="round"/><path d="M36.5 12.5V21H28Z" fill="#1b4d3e"/><path d="M11.5 35.5V27H20Z" fill="#1b4d3e"/>'
 };
 const mIco = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${MI[k]}</svg>`;
 let _mReady = false, _mSaldo = null, _mByBulan = null, _mHide = false, _mPending = 0, _mSyncAt = null;
@@ -3353,6 +3520,8 @@ function initMobileHome(){
   if (_mReady) return;
   _mReady = true;
   const isSuper = currentUser.role === 'superadmin';
+  // Desain "Forest Modern FinOps" v2 + notifikasi transaksi: khusus superadmin.
+  document.getElementById('desktopApp').classList.toggle('m-sa', isSuper);
   const firstName = String(currentUser.name || '').trim().split(/\s+/)[0] || currentUser.username;
   const page = document.getElementById('page-dashboard');
 
@@ -3364,10 +3533,12 @@ function initMobileHome(){
       <span class="mt-av" aria-hidden="true">${mIco('me')}<i></i></span>
       <span class="mt-txt"><small><i></i>Beranda</small><b><span id="mhHi">Halo</span> ${escapeHtml(firstName)}!</b></span>
     </div>
-    ${isSuper ? `<button type="button" class="mt-bell" id="mhBell" aria-label="Pengajuan edit menunggu">${mIco('bell')}<span class="m-dot" data-pg></span></button>` : ''}`;
+    `;
 
   // ── Fitur utama (grid 4 kolom) ──
   const tile = (k, ico, tone, label, fn, dot) => ({ k, ico, tone, label, fn, dot });
+  // Ikon duotone (desain v2) khusus superadmin.
+  const dt = k => `<svg viewBox="0 0 48 48" fill="none" aria-hidden="true">${MI_DUO[k]}</svg>`;
   const tiles = [
     tile('transaksi', 'trx', 't1', 'Riwayat Transaksi', () => mGo('transaksi')),
     tile('monitoring', 'mon', 't2', 'Monitoring Lokasi', () => mGo('monitoring')),
@@ -3396,14 +3567,16 @@ function initMobileHome(){
         <path d="M-20 180 Q 80 120, 200 160 T 420 100" stroke="#fff" stroke-width="1.5" opacity=".6"/>
       </svg>
       <div class="mh-hero-top">
-        <span class="mh-kicker"><span id="mhPeriod">Saldo bersih</span></span>
+        <span class="mh-kicker">${isSuper ? 'Saldo Bersih<span class="mh-per" id="mhPeriod"></span>' : '<span id="mhPeriod">Saldo bersih</span>'}</span>
         <button type="button" class="mh-eye" id="mhEye" aria-pressed="false" aria-label="Sembunyikan angka">${mIco('eye')}</button>
       </div>
       <div class="mh-amt"><span class="rp">Rp</span><span class="mh-saldo" id="mhSaldo">Memuat…</span></div>
       <div class="mh-delta" id="mhDelta" hidden><span class="mh-chip" id="mhDeltaChip"></span><span>vs bulan sebelumnya</span></div>
-      <div class="mh-pills">
+      <div class="mh-pills">${isSuper ? `
+        <div class="mh-pill sa"><span class="sq">${mIco('inArr')}</span><span class="tx"><span class="k">Pendapatan</span><b id="mhIn">–</b></span></div>
+        <div class="mh-pill sa out"><span class="sq">${mIco('outArr')}</span><span class="tx"><span class="k">Pengeluaran</span><b id="mhOut">–</b></span></div>` : `
         <div class="mh-pill"><span class="k">${mIco('inArr')}Pendapatan</span><b id="mhIn">–</b></div>
-        <div class="mh-pill out"><span class="k">${mIco('outArr')}Pengeluaran</span><b id="mhOut">–</b></div>
+        <div class="mh-pill out"><span class="k">${mIco('outArr')}Pengeluaran</span><b id="mhOut">–</b></div>`}
       </div>
       <div class="mh-ratio">
         <div class="row"><span>Kolektibilitas Operasional</span><b id="mhRatioTxt">–</b></div>
@@ -3437,7 +3610,8 @@ function initMobileHome(){
   tiles.forEach(it => {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'mh-tile';
-    b.innerHTML = `${it.dot ? '<span class="m-dot" data-pg></span>' : ''}<span class="ic ${it.tone}">${mIco(it.ico)}</span><span>${it.label}</span>`;
+    const duo = isSuper && MI_DUO[it.k];
+    b.innerHTML = `${it.dot ? '<span class="m-dot" data-pg></span>' : ''}<span class="ic ${duo ? 'duo' : it.tone}">${duo ? dt(it.k) : mIco(it.ico)}</span><span>${it.label}</span>`;
     b.onclick = it.fn;
     grid.appendChild(b);
   });
@@ -3456,18 +3630,20 @@ function initMobileHome(){
   document.getElementById('mhBanner').onclick = () => mGo('pengajuan-edit');
   document.getElementById('mhToday').onclick = () => mGo('monitoring');
   const bell = document.getElementById('mhBell');
-  if (bell) bell.onclick = () => mGo('pengajuan-edit');
+  if (bell) bell.onclick = () => mGo('notifikasi');
 
   // ── Bottom nav: pulau mengambang ──
   const nav = document.createElement('nav');
   nav.className = 'm-bnav';
   nav.setAttribute('aria-label', 'Navigasi utama');
   const nb = (k, ico, label, extra) => `<button type="button" class="m-bn${k === 'input' ? ' m-add' : ''}" data-k="${k}" aria-label="${label}">${mIco(ico)}<span class="lbl">${label}</span>${extra || ''}</button>`;
+  // Superadmin: slot di kanan tombol + = Notifikasi transaksi masuk (badge
+  // jumlah belum dibaca). Pengajuan edit tetap ada di Fitur Utama & lonceng atas.
   nav.innerHTML =
     nb('dashboard', 'home', 'Beranda') +
     nb('transaksi', 'trx', 'Transaksi') +
     nb('input', 'add', 'Input Transaksi') +
-    (isSuper ? nb('pengajuan-edit', 'chk', 'Pengajuan', '<span class="m-dot" data-pg></span>') : nb('monitoring', 'mon', 'Monitoring')) +
+    (isSuper ? nb('notifikasi', 'bell', 'Notifikasi', '<span class="m-dot m-nt" data-nt></span>') : nb('monitoring', 'mon', 'Monitoring')) +
     nb('akun', 'me', 'Akun');
   nav.addEventListener('click', e => {
     const b = e.target.closest('[data-k]'); if (!b) return;
@@ -3478,6 +3654,7 @@ function initMobileHome(){
   document.getElementById('desktopApp').appendChild(nav);
   const h = new Date().getHours();
   document.getElementById('mhHi').textContent = h < 11 ? 'Selamat pagi,' : h < 15 ? 'Selamat siang,' : h < 18 ? 'Selamat sore,' : 'Selamat malam,';
+  if (isSuper) { initMobileSuperDashboard(); initNotifTransaksi(); }
   initMobileLists();
   updateMobileTitle('dashboard');
   setMPending(_mPending);
@@ -3486,9 +3663,298 @@ function initMobileHome(){
   renderMobileSync();
 }
 function teardownMobileHome(){
-  document.querySelectorAll('.m-home, .m-topbar, .m-sync, .m-bnav, .m-sheet-ov').forEach(el => el.remove());
+  stopNotifTransaksi();
+  _saYear = null;
+  document.getElementById('desktopApp')?.classList.remove('m-sa');
+  document.querySelectorAll('.m-home, .m-topbar, .m-sync, .m-bnav, .m-sheet-ov, #page-notifikasi, .m-ntoast').forEach(el => el.remove());
   _mReady = false; _mSaldo = null; _mByBulan = null; _mHide = false; _mPending = 0; _mToday = null; _mSyncAt = null;
 }
+// ── Superadmin: susun ulang dashboard mobile sesuai desain ─────────────
+// Hanya menambah kelas & label khusus mobile (.m-only); tampilan desktop
+// tidak berubah karena .m-only disembunyikan di luar media mobile.
+function initMobileSuperDashboard(){
+  const panelOf = id => document.getElementById(id)?.closest('.panel');
+  const setTitle = (panel, cls, title, sub, extra) => {
+    if (!panel) return;
+    panel.classList.add('m-sa-p', cls);
+    const h3 = panel.querySelector('.panel-header h3');
+    if (h3 && !h3.querySelector('.d-only')) {
+      h3.innerHTML = `<span class="d-only">${h3.innerHTML}</span><span class="m-only">${title}</span><small class="m-only m-sub">${sub}</small>`;
+    }
+    if (extra && !panel.querySelector('.m-all')) panel.querySelector('.panel-header')?.appendChild(extra);
+  };
+  const trend = document.querySelector('#page-dashboard .panel-trend');
+  setTitle(trend, 'm-p-trend', 'Tren Saldo Bersih', 'Distribusi tahunan');
+  if (trend && trend.lastElementChild) trend.lastElementChild.classList.add('m-legend');
+  setTitle(panelOf('kategoriPendapatanBars'), 'm-p-income', 'Komposisi Pendapatan', 'Berdasarkan bank penampung');
+  const all = document.createElement('button');
+  all.type = 'button'; all.className = 'm-only m-all'; all.id = 'mKinerjaAll';
+  const cnt = (document.getElementById('perusahaanBars')?.querySelectorAll('.mon-mini-row') || []).length;
+  all.textContent = cnt ? `Semua (${cnt})` : 'Semua';
+  all.onclick = () => mGo('laporan-bulanan');
+  setTitle(panelOf('perusahaanBars'), 'm-p-kinerja', 'Kinerja Lokasi Teratas', 'Akumulasi setor terbesar', all);
+  // Tren: pil pilihan tahun + grafik khusus mobile.
+  if (trend && !trend.querySelector('.sa-trend')) {
+    const yr = document.createElement('label');
+    yr.className = 'm-only sa-year';
+    yr.innerHTML = `<select id="saYear" aria-label="Pilih tahun"></select>${mIco('down')}`;
+    trend.querySelector('.panel-header')?.appendChild(yr);
+    yr.querySelector('select').onchange = e => { _saYear = e.target.value; renderSaTrend(_mByBulan || {}); };
+    const box = document.createElement('div');
+    box.className = 'm-only sa-trend';
+    box.innerHTML = `<div class="sa-legend"><span><i></i>Saldo surplus</span><span><i class="def"></i>Saldo defisit</span></div><div class="sa-plot" id="saPlot"></div><div class="sa-months" id="saMonths"></div>`;
+    trend.appendChild(box);
+    if (_mByBulan) renderSaTrend(_mByBulan);
+  }
+  // Komposisi: tombol info.
+  const inc = panelOf('kategoriPendapatanBars');
+  if (inc && !inc.querySelector('.sa-info')) {
+    const ib = document.createElement('button');
+    ib.type = 'button'; ib.className = 'm-only sa-info'; ib.setAttribute('aria-label', 'Informasi');
+    ib.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>';
+    const note = document.createElement('p');
+    note.className = 'sa-note'; note.hidden = true;
+    note.textContent = 'Porsi pendapatan bulan berjalan menurut bank penampung (kategori pendapatan) dari seluruh lokasi.';
+    ib.onclick = () => { note.hidden = !note.hidden; };
+    inc.querySelector('.panel-header')?.appendChild(ib);
+    inc.querySelector('.panel-header')?.after(note);
+  }
+  panelOf('kategoriBars')?.classList.add('m-sa-p', 'm-p-expense');
+  panelOf('recentTbody')?.classList.add('m-sa-p', 'm-p-recent');
+}
+
+
+// Superadmin di layar mobile? (dipakai untuk memilih gaya grafik)
+function isSaMobile(){
+  return !!(currentUser && currentUser.role === 'superadmin' && window.matchMedia && window.matchMedia('(max-width:900px)').matches);
+}
+// ── Grafik "Tren Saldo Bersih" versi mobile superadmin ──────────────
+// Kurva halus per bulan dalam 1 tahun, tanpa sumbu Y; titik bulan terakhir
+// yang berisi data diberi penanda + label nilai (seperti desain).
+let _saYear = null;
+function renderSaTrend(byBulan){
+  const plot = document.getElementById('saPlot'), monthsEl = document.getElementById('saMonths');
+  if (!plot || !monthsEl) return;
+  byBulan = byBulan || {};
+  const years = [...new Set(Object.keys(byBulan).map(k => k.slice(0, 4)))].sort();
+  const nowY = String(new Date().getFullYear());
+  if (!years.length) years.push(nowY);
+  if (!_saYear || !years.includes(_saYear)) _saYear = years.includes(nowY) ? nowY : years[years.length - 1];
+  const sel = document.getElementById('saYear');
+  if (sel) {
+    sel.innerHTML = years.slice().reverse().map(y => `<option value="${y}"${y === _saYear ? ' selected' : ''}>Tahun ${y}</option>`).join('');
+    sel.disabled = years.length < 2;
+    sel.parentElement.classList.toggle('single', years.length < 2);
+  }
+  const net = k => { const v = byBulan[k]; return v ? (Number(v.pendapatan) || 0) - (Number(v.pengeluaran) || 0) : null; };
+  const vals = Array.from({ length: 12 }, (_, i) => net(_saYear + '-' + String(i + 1).padStart(2, '0')));
+  let last = -1; vals.forEach((v, i) => { if (v !== null) last = i; });
+  // Bulan kosong di antara data dianggap 0; setelah bulan terakhir tidak digambar.
+  const series = vals.slice(0, last + 1).map(v => v || 0);
+  monthsEl.innerHTML = BULAN_LABEL.map((m, i) => `<span class="${i === last ? 'on' : (i % 2 || Math.abs(i - last) === 1 ? 'off' : '')}">${m}</span>`).join('');
+  if (last < 0) { plot.innerHTML = '<div class="sa-empty">Belum ada data tahun ini.</div>'; return; }
+
+  const W = Math.max(240, Math.round(plot.clientWidth || 300)), H = 140, padT = 30, padB = 10;
+  const xAt = i => (i + 0.5) / 12 * W;
+  const max = Math.max(0, ...series), min = Math.min(0, ...series);
+  const rng = (max - min) || 1;
+  const yAt = v => padT + (H - padT - padB) * (1 - (v - min) / rng);
+  const pts = series.map((v, i) => [xAt(i), yAt(v)]);
+  const line = pts.length > 1 ? toSmoothPath(pts) : '';
+  const base = (H - padB).toFixed(1);
+  const area = line ? `${line} L ${pts[pts.length - 1][0].toFixed(1)} ${base} L ${pts[0][0].toFixed(1)} ${base} Z` : '';
+  const grid = [padT - 8, (padT + H - padB) / 2, H - padB].map(y => `<line x1="0" x2="${W}" y1="${y}" y2="${y}" stroke="#eceeec" stroke-dasharray="3 3"/>`).join('');
+  const zero = min < 0 ? `<line x1="0" x2="${W}" y1="${yAt(0)}" y2="${yAt(0)}" stroke="#c0c9c3" stroke-width="1"/>` : '';
+  const defDots = series.map((v, i) => v < 0 && i !== last ? `<circle cx="${pts[i][0]}" cy="${pts[i][1]}" r="3.5" fill="#c0c9c3"/>` : '').join('');
+  const [px, py] = pts[last];
+  const lv = series[last];
+  plot.innerHTML = `
+    <svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" fill="none" aria-hidden="true">
+      <defs><linearGradient id="saTrendGrad" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#176b4c" stop-opacity=".32"/><stop offset="85%" stop-color="#176b4c" stop-opacity="0"/></linearGradient></defs>
+      ${grid}${zero}
+      ${area ? `<path d="${area}" fill="url(#saTrendGrad)"/>` : ''}
+      ${line ? `<path d="${line}" stroke="#176b4c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>` : ''}
+      ${defDots}
+      <circle cx="${px}" cy="${py}" r="9" fill="${lv < 0 ? '#ba1a1a' : '#176b4c'}" fill-opacity=".2"/>
+      <circle cx="${px}" cy="${py}" r="5" fill="${lv < 0 ? '#ba1a1a' : '#003629'}"/>
+    </svg>
+    <span class="sa-peak${lv < 0 ? ' neg' : ''}">${BULAN_LABEL[last]}: ${lv < 0 ? '-' : ''}Rp ${fmtCompact(Math.abs(lv))}</span>`;
+  const tag = plot.querySelector('.sa-peak');
+  const tw = tag.offsetWidth || 110;
+  tag.style.left = Math.min(W - tw, Math.max(0, px - tw / 2)) + 'px';
+  tag.style.top = Math.max(0, py - 30) + 'px';
+}
+// ============================================================
+// NOTIFIKASI TRANSAKSI MASUK (mobile superadmin)
+// ============================================================
+// Polling ringan ke getNotifikasiTransaksi() (server hanya membaca 1 nilai
+// ScriptProperties). Polling berhenti saat tab/aplikasi tidak terlihat dan
+// langsung jalan lagi saat dibuka. Polling ini TIDAK memperpanjang sesi
+// login dan tidak mereset timer idle 30 menit.
+const NOTIF_POLL_MS = 30000;
+const _nt = { timer: null, items: [], unread: 0, lastReadSeq: 0, latestSeq: 0, seenSeq: null, busy: false, ready: false, err: '' };
+
+function initNotifTransaksi(){
+  if (!currentUser || currentUser.role !== 'superadmin') return;
+  stopNotifTransaksi();
+  Object.assign(_nt, { items: [], unread: 0, lastReadSeq: 0, latestSeq: 0, seenSeq: null, ready: false, err: '' });
+  // Halaman notifikasi (hanya dipakai di tampilan mobile).
+  if (!document.getElementById('page-notifikasi')) {
+    const pg = document.createElement('div');
+    pg.className = 'd-page'; pg.id = 'page-notifikasi';
+    pg.innerHTML = `
+      <div class="nt-head">
+        <div><h2>Notifikasi</h2><p>Transaksi masuk dari seluruh lokasi</p></div>
+        <button type="button" class="nt-readall" id="ntReadAll">${mIco('checkAll')}Tandai dibaca</button>
+      </div>
+      <button type="button" class="nt-pj" id="ntPj"></button>
+      <div class="nt-list" id="ntList"><div class="nt-empty">Memuat notifikasi…</div></div>`;
+    document.querySelector('#desktopApp .d-main')?.appendChild(pg);
+    pg.querySelector('#ntReadAll').onclick = () => tandaiNotifDibaca();
+    pg.querySelector('#ntPj').onclick = () => mGo('pengajuan-edit');
+  }
+  document.addEventListener('visibilitychange', notifVisibility);
+  mNotifPoll();
+  _nt.timer = setInterval(() => { if (document.visibilityState === 'visible') mNotifPoll(); }, NOTIF_POLL_MS);
+}
+function stopNotifTransaksi(){
+  if (_nt.timer) clearInterval(_nt.timer);
+  _nt.timer = null;
+  document.removeEventListener('visibilitychange', notifVisibility);
+}
+function notifVisibility(){ if (document.visibilityState === 'visible' && _nt.timer) mNotifPoll(); }
+
+function mNotifPoll(){
+  if (_nt.busy || !currentUser || currentUser.role !== 'superadmin') return;
+  _nt.busy = true;
+  google.script.run
+    .withSuccessHandler(res => {
+      _nt.busy = false;
+      if (!res || !res.success) { _nt.err = (res && res.message) || 'Gagal memuat notifikasi.'; renderNotifPage(); return; }
+      _nt.err = '';
+      const prevSeen = _nt.seenSeq;
+      _nt.items = res.items || [];
+      _nt.unread = res.unread || 0;
+      _nt.lastReadSeq = res.lastReadSeq || 0;
+      _nt.latestSeq = res.latestSeq || 0;
+      _nt.ready = true;
+      // Transaksi yang baru muncul sejak polling sebelumnya -> banner + getar.
+      if (prevSeen !== null) {
+        const fresh = _nt.items.filter(it => it.seq > prevSeen && it.seq > _nt.lastReadSeq);
+        if (fresh.length) {
+          showNotifToast(fresh);
+          // Dashboard ikut diperbarui supaya angka saldo/setoran sesuai.
+          if (window.swrInvalidate) { window.swrInvalidate('dash'); window.swrInvalidate('mon'); }
+          if (document.getElementById('page-dashboard')?.classList.contains('active')) loadDashboard(true);
+        }
+      }
+      _nt.seenSeq = _nt.latestSeq;
+      renderNotifBadges();
+      renderNotifPage();
+      // Sedang membuka halaman notifikasi -> langsung dianggap terbaca.
+      if (_nt.unread && document.getElementById('page-notifikasi')?.classList.contains('active') && document.visibilityState === 'visible') {
+        setTimeout(() => tandaiNotifDibaca(true), 2500);
+      }
+    })
+    .withFailureHandler(err => { _nt.busy = false; _nt.err = err.message; renderNotifPage(); })
+    .getNotifikasiTransaksi({ sinceSeq: 0 }, currentUser);
+}
+
+function renderNotifBadges(){
+  const fmt = n => n > 99 ? '99+' : String(n);
+  const u = _nt.unread || 0;
+  document.querySelectorAll('[data-nt]').forEach(el => { el.textContent = fmt(u); el.style.display = u > 0 ? 'inline-flex' : 'none'; });
+  const total = u + (_mPending || 0);
+  document.querySelectorAll('[data-nt-all]').forEach(el => { el.textContent = fmt(total); el.style.display = total > 0 ? 'inline-flex' : 'none'; });
+  const bn = document.querySelector('.m-bn[data-k="notifikasi"]');
+  if (bn) bn.setAttribute('aria-label', u ? `Notifikasi, ${u} transaksi baru` : 'Notifikasi');
+}
+
+function ntWaktu(iso){
+  const d = new Date(iso); if (isNaN(d)) return '';
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return 'Baru saja';
+  if (diff < 3600) return Math.floor(diff / 60) + ' mnt lalu';
+  const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+  const today = new Date(); const y = new Date(); y.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return jam;
+  if (d.toDateString() === y.toDateString()) return 'Kemarin ' + jam;
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' ' + jam;
+}
+function ntNominal(it){
+  const net = (Number(it.pendapatan) || 0) - (Number(it.pengeluaran) || 0);
+  return { net, txt: (net < 0 ? '-' : '+') + fmtRupiah(Math.abs(net)) };
+}
+
+function renderNotifPage(markRead){
+  const list = document.getElementById('ntList'); if (!list) return;
+  const pj = document.getElementById('ntPj');
+  if (pj) {
+    pj.style.display = _mPending > 0 ? 'flex' : 'none';
+    pj.innerHTML = `<span class="ic">${mIco('edit')}</span><span class="tx"><b>${_mPending} pengajuan edit menunggu</b><small>Tinjau sebelum masuk ke riwayat</small></span>${mIco('chev')}`;
+  }
+  document.getElementById('ntReadAll').disabled = !_nt.unread;
+  if (!_nt.ready) {
+    list.innerHTML = `<div class="nt-empty">${_nt.err ? escapeHtml(_nt.err) : 'Memuat notifikasi…'}</div>`;
+    if (markRead) mNotifPoll();
+    return;
+  }
+  if (!_nt.items.length) {
+    list.innerHTML = `<div class="nt-empty"><span class="ic">${mIco('inbox')}</span><b>Belum ada transaksi masuk</b><small>Setiap transaksi baru dari user akan muncul di sini.</small></div>`;
+  } else {
+    const row = it => {
+      const unread = it.seq > _nt.lastReadSeq;
+      const n = ntNominal(it);
+      return `<button type="button" class="nt-item${unread ? ' unread' : ''}" data-id="${escapeHtml(it.id)}">
+        <span class="ic">${mIco('trx')}</span>
+        <span class="tx">
+          <b>${escapeHtml(it.lokasi || '-')}</b>
+          <small>${escapeHtml(it.perusahaan || '')}</small>
+          <small class="by">${escapeHtml(it.oleh || '-')} · ${it.items || 1} item · ${escapeHtml(it.id)}</small>
+        </span>
+        <span class="rt"><b class="${n.net < 0 ? 'neg' : ''}">${n.txt}</b><small>${ntWaktu(it.ts)}</small></span>
+      </button>`;
+    };
+    const baru = _nt.items.filter(it => it.seq > _nt.lastReadSeq);
+    const lama = _nt.items.filter(it => it.seq <= _nt.lastReadSeq);
+    list.innerHTML =
+      (baru.length ? `<div class="nt-sec">Baru <span>${baru.length}</span></div><div class="nt-card">${baru.map(row).join('')}</div>` : '') +
+      (lama.length ? `<div class="nt-sec">Sebelumnya</div><div class="nt-card">${lama.map(row).join('')}</div>` : '');
+    list.querySelectorAll('.nt-item').forEach(b => b.onclick = () => { if (typeof viewTransaksi === 'function') viewTransaksi(b.dataset.id); });
+  }
+  // Membuka halaman notifikasi = semua yang tampil dianggap terbaca
+  // (penanda "Baru" tetap terlihat sampai halaman dibuka lagi).
+  if (markRead && _nt.unread) tandaiNotifDibaca(true);
+}
+
+function tandaiNotifDibaca(keepHighlight){
+  const seq = _nt.latestSeq;
+  _nt.unread = 0;
+  if (!keepHighlight) _nt.lastReadSeq = seq;
+  renderNotifBadges();
+  if (!keepHighlight) renderNotifPage();
+  google.script.run
+    .withSuccessHandler(res => { if (res && res.success && keepHighlight) { /* highlight dibiarkan sampai render berikutnya */ } })
+    .withFailureHandler(() => {})
+    .tandaiNotifikasiDibaca({ seq: seq }, currentUser);
+}
+
+function showNotifToast(fresh){
+  document.querySelector('.m-ntoast')?.remove();
+  const it = fresh[0];
+  const n = ntNominal(it);
+  const el = document.createElement('button');
+  el.type = 'button'; el.className = 'm-ntoast';
+  el.setAttribute('role', 'status');
+  el.innerHTML = `<span class="ic">${mIco('bell')}</span><span class="tx"><b>${fresh.length > 1 ? fresh.length + ' transaksi baru masuk' : 'Transaksi baru masuk'}</b><small>${escapeHtml(it.lokasi || '-')} · ${escapeHtml(it.oleh || '-')}</small></span><span class="amt">${n.txt}</span>`;
+  el.onclick = () => { el.remove(); mGo('notifikasi'); };
+  document.body.appendChild(el);
+  requestAnimationFrame(() => el.classList.add('show'));
+  try { if (navigator.vibrate) navigator.vibrate([60, 40, 60]); } catch (e) {}
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 6000);
+}
+window.mNotifPoll = mNotifPoll;
+
 function mRefresh(){
   document.getElementById('mhSync')?.classList.add('spin');
   loadDashboard(true);
@@ -3504,7 +3970,9 @@ function renderMobileHome(){
     eye.innerHTML = mIco(_mHide ? 'eyeOff' : 'eye');
   }
   const now = new Date();
-  document.getElementById('mhPeriod').textContent = 'Saldo Bersih | ' + now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+  document.getElementById('mhPeriod').textContent = currentUser && currentUser.role === 'superadmin'
+    ? now.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }).replace('.', '')
+    : 'Saldo Bersih | ' + now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
   if (!_mSaldo) return;
   const dots = '••••••••';
   const hid = 'Rp ••••••';
@@ -3546,6 +4014,10 @@ function updateMobileHome(summary, byBulan){
 function renderMobileSync(){
   const el = document.getElementById('mhSyncTxt'); if (!el) return;
   document.getElementById('mhSync')?.classList.remove('spin');
+  if (_mSyncAt && currentUser && currentUser.role === 'superadmin') {
+    el.textContent = 'Sinkronisasi terakhir: ' + _mSyncAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':') + ' WIB';
+    return;
+  }
   el.textContent = _mSyncAt
     ? 'Terakhir dimuat: ' + _mSyncAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':') + ' WIB · ketuk untuk perbarui'
     : 'Memuat data…';
@@ -3564,12 +4036,14 @@ function renderMobileToday(){
   badge.className = 'mh-badge' + (pct >= 80 ? ' ok' : pct >= 50 ? ' mid' : '');
   const sub = document.getElementById('mhTodaySub');
   sub.className = belum ? 'late' : '';
-  sub.textContent = !total ? 'Tambahkan di Master data' : belum ? `${belum} lokasi belum setor` : 'Semua lokasi sudah setor';
+  const sa = currentUser && currentUser.role === 'superadmin';
+  sub.textContent = !total ? 'Tambahkan di Master data' : belum ? (sa ? `${belum} belum setor` : `${belum} lokasi belum setor`) : (sa ? 'Semua sudah setor' : 'Semua lokasi sudah setor');
   document.getElementById('mhTodayBar').style.width = pct + '%';
 }
 function setMPending(n){
   _mPending = n || 0;
   document.querySelectorAll('[data-pg]').forEach(el => { el.textContent = _mPending > 99 ? '99+' : _mPending; el.style.display = _mPending > 0 ? 'inline-flex' : 'none'; });
+  renderNotifBadges();
   const b = document.getElementById('mhBanner');
   if (b) {
     b.style.display = _mPending > 0 ? 'flex' : 'none';
@@ -3658,6 +4132,7 @@ function switchPage(pageId) {
   if (pageId === 'master-lokasi') loadMasterLokasiPage();
   if (pageId === 'master-tipe') loadMasterTipePage();
   if (pageId === 'master-kategori') loadMasterKategoriPage();
+  if (pageId === 'notifikasi') renderNotifPage(true);
   updateMobileTitle(pageId);
 }
 
@@ -4025,6 +4500,7 @@ function loadDashboard(forceRefresh){
       trendBadge.textContent = 'Tahun ' + currentYearLabel;
     }
     renderTrendChart(sortedMonths, byBulan);
+    renderSaTrend(byBulan);
 
     // ── Kepatuhan Lokasi (ditampilkan sebagai doughnut chart, senada dgn 2 chart kategori) ──
     const renderMonitoringPanel = (mon) => {
@@ -4063,6 +4539,8 @@ function loadDashboard(forceRefresh){
     const blEntries = blEntriesAll.slice(0, 10);
     const countEl = document.getElementById('dbPerusahaanCount');
     if (countEl) countEl.textContent = blEntriesAll.length > 10 ? `Top 10 dari ${blEntriesAll.length} lokasi` : blEntriesAll.length + ' lokasi';
+    const mAllEl = document.getElementById('mKinerjaAll');
+    if (mAllEl) mAllEl.textContent = `Semua (${blEntriesAll.length})`;
     document.getElementById('perusahaanBars').innerHTML = blEntries.length ? blEntries.map(loc => {
       const net = loc.pendapatan - loc.pengeluaran;
       const netColor = net >= 0 ? 'var(--signal)' : 'var(--alert)';
@@ -4115,7 +4593,20 @@ function loadDashboard(forceRefresh){
         </div>`).join('');
       // Label tengah donut (hanya tampil di mobile): entry terbesar.
       const top = entries.reduce((a, e) => Number(e[1]) > Number(a[1]) ? e : a, entries[0]);
-      const center = `<div class="pie-center"><small>Terbesar</small><b title="${top[0]}">${top[0]}</b><span>${pctOf(top[1])}</span></div>`;
+      // Superadmin mobile: cincin tebal bersudut bulat (desain v2).
+      if (isSaMobile()) {
+        const C = 2 * Math.PI * 38;
+        let off = 0;
+        const rings = activeEntries.map(({ name, value, origIdx }) => {
+          const len = value / total * C;
+          const seg = `<circle cx="50" cy="50" r="38" fill="none" style="stroke:${colorMap[origIdx]};stroke-width:14;stroke-linecap:round" stroke-dasharray="${Math.max(0.01, len - 2).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}"><title>${name}: ${fmtValue(value)}</title></circle>`;
+          off += len;
+          return seg;
+        }).join('');
+        const nm = String(top[0]).toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase());
+        return `<div class="pie-box sa-ring"><svg class="pie-chart" viewBox="0 0 100 100" role="img" aria-label="Komposisi pendapatan" style="transform:rotate(-90deg)"><circle cx="50" cy="50" r="38" fill="none" style="stroke:#eceeec;stroke-width:14"/>${rings}</svg><div class="pie-center"><small>Dominan</small><b title="${top[0]}">${nm}</b><span>${pctOf(top[1])}</span></div></div><div class="pie-legend">${legend}</div>`;
+      }
+      const center = `<div class="pie-center"><small>${currentUser && currentUser.role === 'superadmin' ? 'Dominan' : 'Terbesar'}</small><b title="${top[0]}">${top[0]}</b><span>${pctOf(top[1])}</span></div>`;
       return `<div class="pie-box"><svg class="pie-chart" viewBox="0 0 220 220" role="img" aria-label="Pie chart kategori">${paths}</svg>${center}</div><div class="pie-legend">${legend}</div>`;
     }
 
@@ -4123,7 +4614,9 @@ function loadDashboard(forceRefresh){
     const bkp = stats.byKategoriPendapatan || {};
     const sortedKatPendapatan = Object.entries(bkp).sort((a,b) => b[1]-a[1]).slice(0,8);
     const isMobileView = window.matchMedia && window.matchMedia('(max-width:900px)').matches;
-    const katPendapatanColors = isMobileView
+    const katPendapatanColors = isSaMobile()
+      ? ['#003629','#176b4c','#88d6b0','#c0c9c3','#1d4f40','#a4f3cb','#376757','#e1e3e1']
+      : isMobileView
       ? ['#044424','#0b7a3d','#8fd9a8','#c0c9c3','#0b6e38','#a3d8b4','#2f7a4a','#e1e3e1']
       : ['#16a34a','#0d9488','#0284c7','#65a30d','#059669','#0891b2','#4d7c0f','#15803d'];
     const katPendapatanCountEl = document.getElementById('dbKategoriPendapatanCount');
