@@ -1158,6 +1158,13 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .m-date-input input{position:relative;z-index:1;}
 .m-date-input span{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;pointer-events:none;z-index:2;}
 .m-date-input.has-value span,.m-date-input input:focus + span{display:none;}
+/* Sembunyikan teks placeholder bawaan browser saat kosong (Android Chrome sudah
+   menampilkan "dd/mm/yyyy" sendiri) supaya tidak bertumpuk dengan <span> buatan. */
+.m-date-input:not(.has-value) input:not(:focus),
+.m-date-input:not(.has-value) input:not(:focus)::-webkit-datetime-edit,
+.m-date-input:not(.has-value) input:not(:focus)::-webkit-datetime-edit-fields-wrapper{color:transparent;}
+.m-date-input{min-width:0;}
+.m-date-input input{min-width:0;max-width:100%;}
 .m-field select:focus,.m-field input:focus,.m-field textarea:focus{outline:none;border-color:var(--brand);}
 .m-nominal-wrap{position:relative;}
 .m-nominal-wrap span{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:600;font-size:15px;}
