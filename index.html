@@ -4492,7 +4492,7 @@ function renderLogTable(){
     const color = aksiColor[item['Aksi']] || 'var(--muted)';
     return `
     <tr>
-      <td style="font-size:12.5px;color:var(--muted);white-space:nowrap;">${item['Tanggal'] || ''} ${item['Waktu'] || ''}</td>
+      <td style="font-size:12.5px;color:var(--muted);white-space:nowrap;">${String(item['Tanggal'] || '').substring(0,10)} ${String(item['Waktu'] || '').replace(/^1899-12-30\s*/, '').substring(0,8)}</td>
       <td style="font-weight:500;">${escapeHtml(item['Nama'] || '-')}</td>
       <td style="text-transform:capitalize;">${item['Role'] || '-'}</td>
       <td><span style="font-size:11.5px;font-weight:700;color:${color};background:${color}1a;padding:3px 8px;border-radius:5px;">${item['Aksi'] || ''}</span></td>
