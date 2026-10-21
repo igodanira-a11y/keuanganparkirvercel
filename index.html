@@ -1889,6 +1889,65 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 @keyframes muFade{from{opacity:0;}to{opacity:1;}}
 @media (min-width:600px){:is(#mobileApp,.mu-scope) .m-header,:is(#mobileApp,.mu-scope) .m-body{max-width:520px;margin-left:auto;margin-right:auto;}:is(#mobileApp,.mu-scope) .m-header{border-radius:0 0 40px 40px;}}
 .foto-preview-meta{display:none;}
+/* ===== Notifikasi transaksi — tampilan WEB superadmin ===== */
+@media (min-width:901px){
+  #page-notifikasi{max-width:980px;}
+  #page-notifikasi .nt-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:22px;}
+  #page-notifikasi .nt-head h2{font-size:22px;font-weight:700;letter-spacing:-0.02em;color:var(--brand-dark);}
+  #page-notifikasi .nt-head p{color:var(--muted);font-size:13.5px;margin-top:3px;}
+  #page-notifikasi .nt-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;}
+  #page-notifikasi .nt-actions button{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);transition:border-color .15s,background .15s;}
+  #page-notifikasi .nt-actions button:hover:not(:disabled){border-color:var(--brand);background:var(--brand-soft);color:var(--brand-dark);}
+  #page-notifikasi .nt-actions button:disabled{opacity:.45;cursor:default;}
+  #page-notifikasi .nt-actions button[hidden]{display:none;}
+  #page-notifikasi .nt-actions svg{width:16px;height:16px;}
+  #page-notifikasi .nt-actions .nt-perm{background:var(--brand);border-color:var(--brand);color:#fff;}
+  #page-notifikasi .nt-actions .nt-perm:hover{background:var(--brand-dark);color:#fff;}
+  #page-notifikasi .nt-pj{display:none;align-items:center;gap:14px;width:100%;text-align:left;margin-bottom:18px;padding:14px 18px;border-radius:12px;background:#fdf3e7;border:1px solid #f6dcb8;color:#7a3e07;}
+  #page-notifikasi .nt-pj:hover{border-color:#e9b979;}
+  #page-notifikasi .nt-pj .ic{flex:none;width:36px;height:36px;border-radius:10px;background:#b45309;color:#fff;display:flex;align-items:center;justify-content:center;}
+  #page-notifikasi .nt-pj .ic svg{width:18px;height:18px;}
+  #page-notifikasi .nt-pj .tx{flex:1;}
+  #page-notifikasi .nt-pj b{display:block;font-size:14px;color:#5c2e05;}
+  #page-notifikasi .nt-pj small{display:block;font-size:12px;}
+  #page-notifikasi .nt-pj > svg{width:18px;height:18px;}
+  #page-notifikasi .nt-sec{display:flex;align-items:center;gap:8px;margin:0 2px 10px;font-size:13px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.04em;}
+  #page-notifikasi .nt-sec span{min-width:20px;height:20px;padding:0 7px;border-radius:10px;background:var(--alert);color:#fff;font-size:11px;display:inline-flex;align-items:center;justify-content:center;letter-spacing:0;}
+  #page-notifikasi .nt-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:24px;}
+  #page-notifikasi .nt-item{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:14px;align-items:center;width:100%;text-align:left;padding:14px 18px;color:var(--ink);border-top:1px solid var(--line);transition:background .15s;}
+  #page-notifikasi .nt-item:first-child{border-top:none;}
+  #page-notifikasi .nt-item:hover{background:#f6faf7;}
+  #page-notifikasi .nt-item.unread{background:#f1f9f3;box-shadow:inset 3px 0 0 var(--brand);}
+  #page-notifikasi .nt-item .ic{position:relative;width:40px;height:40px;border-radius:10px;background:var(--brand-soft);color:var(--brand-dark);display:flex;align-items:center;justify-content:center;}
+  #page-notifikasi .nt-item .ic svg{width:19px;height:19px;}
+  #page-notifikasi .nt-item.unread .ic::after{content:"";position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:var(--alert);box-shadow:0 0 0 2px #fff;}
+  #page-notifikasi .nt-item .tx{display:flex;flex-direction:column;min-width:0;gap:1px;}
+  #page-notifikasi .nt-item .tx b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #page-notifikasi .nt-item .tx small{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #page-notifikasi .nt-item .tx small.by{font-size:12px;color:var(--muted-light, #94a3b8);}
+  #page-notifikasi .nt-item .rt{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+  #page-notifikasi .nt-item .rt b{font-size:15px;font-weight:700;color:var(--signal);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  #page-notifikasi .nt-item .rt b.neg{color:var(--alert);}
+  #page-notifikasi .nt-item .rt small{font-size:12px;color:var(--muted);white-space:nowrap;}
+  #page-notifikasi .nt-empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:48px 16px;color:var(--muted);font-size:13.5px;background:var(--panel);border:1px solid var(--line);border-radius:14px;}
+  #page-notifikasi .nt-empty .ic{width:56px;height:56px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;margin-bottom:4px;}
+  #page-notifikasi .nt-empty .ic svg{width:26px;height:26px;}
+  #page-notifikasi .nt-empty b{color:var(--ink);font-size:14.5px;}
+  #navNotifikasi svg{width:18px;height:18px;flex:none;}
+  #page-notifikasi .nt-item.loading{opacity:.55;pointer-events:none;}
+
+  /* Pop-up "Transaksi baru masuk" di pojok kanan atas */
+  body .m-ntoast{display:flex;position:fixed;top:20px;right:24px;width:380px;z-index:1200;align-items:center;gap:12px;padding:14px 16px;border-radius:14px;background:#074728;color:#fff;text-align:left;cursor:pointer;box-shadow:0 18px 40px -10px rgba(0,54,41,.5),0 4px 12px rgba(0,0,0,.12);transform:translateY(-16px);opacity:0;transition:transform .3s cubic-bezier(.2,.9,.3,1.1),opacity .25s;}
+  body .m-ntoast.show{transform:none;opacity:1;}
+  body .m-ntoast:hover{background:#05592d;}
+  body .m-ntoast .ic{flex:none;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.14);color:#a4f3cb;display:flex;align-items:center;justify-content:center;}
+  body .m-ntoast .ic svg{width:19px;height:19px;}
+  body .m-ntoast .tx{flex:1;min-width:0;display:flex;flex-direction:column;}
+  body .m-ntoast .tx b{font-size:14px;font-weight:700;}
+  body .m-ntoast .tx small{font-size:12px;color:rgba(255,255,255,.78);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  body .m-ntoast .amt{flex:none;font-size:14px;font-weight:700;color:#a4f3cb;font-variant-numeric:tabular-nums;}
+}
+
 /* ===== Mobile SUPERADMIN — desain "Forest Modern FinOps" v2 + notifikasi =====
    Semua aturan di bawah dibatasi #desktopApp.m-sa (kelas dipasang hanya untuk
    role superadmin di initMobileHome), jadi tampilan admin & desktop tidak berubah. */
@@ -2012,6 +2071,8 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
   #page-notifikasi .nt-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 0 16px;}
   #page-notifikasi .nt-head h2{font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--f-primary);}
   #page-notifikasi .nt-head p{font-size:13px;color:var(--muted);margin-top:2px;}
+  #page-notifikasi .nt-actions{flex:none;display:flex;}
+  #page-notifikasi .nt-perm{display:none !important;}
   #page-notifikasi .nt-readall{flex:none;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;background:var(--m-tint);color:var(--f-secondary);font-size:12px;font-weight:700;}
   #page-notifikasi .nt-readall svg{width:16px;height:16px;}
   #page-notifikasi .nt-readall:disabled{opacity:.45;}
@@ -2027,6 +2088,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
   #page-notifikasi .nt-card{display:flex;flex-direction:column;gap:2px;padding:6px;margin-bottom:20px;background:#fff;border-radius:24px;box-shadow:var(--f-sh1);}
   #page-notifikasi .nt-item{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;text-align:left;padding:12px 10px;border-radius:18px;color:var(--ink);}
   #page-notifikasi .nt-item:active{background:var(--f-low);}
+  #page-notifikasi .nt-item.loading{opacity:.55;pointer-events:none;}
   #page-notifikasi .nt-item.unread{background:rgba(232,245,233,.7);}
   #page-notifikasi .nt-item .ic{position:relative;width:40px;height:40px;border-radius:14px;background:var(--m-tint);color:var(--f-primary);display:flex;align-items:center;justify-content:center;}
   #page-notifikasi .nt-item .ic svg{width:20px;height:20px;}
@@ -3754,7 +3816,8 @@ function teardownMobileHome(){
   stopNotifTransaksi();
   _saYear = null;
   document.getElementById('desktopApp')?.classList.remove('m-sa');
-  document.querySelectorAll('.m-home, .m-topbar, .m-sync, .m-bnav, .m-sheet-ov, #page-notifikasi, .m-ntoast, #saUInput').forEach(el => el.remove());
+  document.querySelectorAll('.m-home, .m-topbar, .m-sync, .m-bnav, .m-sheet-ov, #page-notifikasi, .m-ntoast, #saUInput, #navNotifikasi').forEach(el => el.remove());
+  if (_nt.judulAsli) { document.title = _nt.judulAsli; }
   saFotoManager = null;
   _mReady = false; _mSaldo = null; _mByBulan = null; _mHide = false; _mPending = 0; _mToday = null; _mSyncAt = null;
 }
@@ -4177,17 +4240,35 @@ function initNotifTransaksi(){
     pg.innerHTML = `
       <div class="nt-head">
         <div><h2>Notifikasi</h2><p>Transaksi masuk dari seluruh lokasi</p></div>
-        <button type="button" class="nt-readall" id="ntReadAll">${mIco('checkAll')}Tandai dibaca</button>
+        <div class="nt-actions">
+          <button type="button" class="nt-perm" id="ntPerm" hidden>${mIco('bell')}Aktifkan notifikasi browser</button>
+          <button type="button" class="nt-readall" id="ntReadAll">${mIco('checkAll')}Tandai dibaca</button>
+        </div>
       </div>
       <button type="button" class="nt-pj" id="ntPj"></button>
       <div class="nt-list" id="ntList"><div class="nt-empty">Memuat notifikasi…</div></div>`;
     document.querySelector('#desktopApp .d-main')?.appendChild(pg);
     pg.querySelector('#ntReadAll').onclick = () => tandaiNotifDibaca();
     pg.querySelector('#ntPj').onclick = () => mGo('pengajuan-edit');
+    pg.querySelector('#ntPerm').onclick = mintaIzinNotifBrowser;
   }
+  // Tampilan web: menu "Notifikasi" di sidebar (di bawah Dashboard) + badge.
+  if (!document.getElementById('navNotifikasi')) {
+    const nav = document.createElement('button');
+    nav.className = 'd-nav-item'; nav.id = 'navNotifikasi'; nav.dataset.page = 'notifikasi';
+    nav.innerHTML = `${mIco('bell')}Notifikasi<span class="d-nav-badge" data-nt style="display:none;">0</span>`;
+    nav.onclick = () => switchPage('notifikasi');
+    document.querySelector('.d-nav .d-nav-item[data-page="dashboard"]')?.after(nav);
+  }
+  if (!_nt.judulAsli) _nt.judulAsli = document.title;
+  updateTombolIzinNotif();
   document.addEventListener('visibilitychange', notifVisibility);
   mNotifPoll();
-  _nt.timer = setInterval(() => { if (document.visibilityState === 'visible') mNotifPoll(); }, NOTIF_POLL_MS);
+  // Tab aktif: tiap 30 detik. Tab di latar belakang (web): tiap 60 detik,
+  // supaya superadmin yang sedang membuka tab lain tetap mendapat notifikasi.
+  _nt.timer = setInterval(() => {
+    if (document.visibilityState === 'visible' || Date.now() - (_nt.lastPoll || 0) >= 60000) mNotifPoll();
+  }, NOTIF_POLL_MS);
 }
 function stopNotifTransaksi(){
   if (_nt.timer) clearInterval(_nt.timer);
@@ -4199,6 +4280,7 @@ function notifVisibility(){ if (document.visibilityState === 'visible' && _nt.ti
 function mNotifPoll(){
   if (_nt.busy || !currentUser || currentUser.role !== 'superadmin') return;
   _nt.busy = true;
+  _nt.lastPoll = Date.now();
   google.script.run
     .withSuccessHandler(res => {
       _nt.busy = false;
@@ -4242,6 +4324,38 @@ function renderNotifBadges(){
   document.querySelectorAll('[data-nt-all]').forEach(el => { el.textContent = fmt(total); el.style.display = total > 0 ? 'inline-flex' : 'none'; });
   const bn = document.querySelector('.m-bn[data-k="notifikasi"]');
   if (bn) bn.setAttribute('aria-label', u ? `Notifikasi, ${u} transaksi baru` : 'Notifikasi');
+  // Jumlah belum dibaca juga tampil di judul tab browser, mis. "(3) Sistem ...".
+  if (_nt.judulAsli) document.title = (u ? '(' + fmt(u) + ') ' : '') + _nt.judulAsli;
+}
+
+// ── Notifikasi browser (tampilan web) ─────────────────────────
+// Muncul di pojok layar komputer walau superadmin sedang membuka tab /
+// aplikasi lain. Hanya aktif setelah superadmin menekan tombol izin.
+function bisaNotifBrowser(){
+  return 'Notification' in window && !(window.matchMedia && window.matchMedia('(max-width:900px)').matches);
+}
+function updateTombolIzinNotif(){
+  const b = document.getElementById('ntPerm'); if (!b) return;
+  b.hidden = !(bisaNotifBrowser() && Notification.permission === 'default');
+}
+function mintaIzinNotifBrowser(){
+  if (!bisaNotifBrowser()) return;
+  Promise.resolve(Notification.requestPermission()).then(p => {
+    updateTombolIzinNotif();
+    if (p === 'granted') showDesktopToast({ title: 'Notifikasi browser aktif', message: 'Transaksi baru akan muncul di pojok layar walau Anda sedang membuka tab lain.' });
+    else if (p === 'denied') showDesktopToast({ title: 'Notifikasi browser diblokir', message: 'Izinkan notifikasi untuk situs ini lewat ikon gembok di address bar.', type: 'error' });
+  }).catch(() => {});
+}
+function kirimNotifBrowser(fresh){
+  try {
+    if (!bisaNotifBrowser() || Notification.permission !== 'granted' || document.visibilityState === 'visible') return;
+    const it = fresh[0];
+    const n = new Notification(fresh.length > 1 ? fresh.length + ' transaksi baru masuk' : 'Transaksi baru masuk', {
+      body: (it.lokasi || '-') + ' · ' + (it.oleh || '-') + ' · ' + ntNominal(it).txt,
+      tag: 'transaksi-baru', renotify: true
+    });
+    n.onclick = () => { window.focus(); mGo('notifikasi'); n.close(); };
+  } catch (e) { /* browser tidak mendukung -> abaikan */ }
 }
 
 function ntWaktu(iso){
@@ -4294,11 +4408,33 @@ function renderNotifPage(markRead){
     list.innerHTML =
       (baru.length ? `<div class="nt-sec">Baru <span>${baru.length}</span></div><div class="nt-card">${baru.map(row).join('')}</div>` : '') +
       (lama.length ? `<div class="nt-sec">Sebelumnya</div><div class="nt-card">${lama.map(row).join('')}</div>` : '');
-    list.querySelectorAll('.nt-item').forEach(b => b.onclick = () => { if (typeof viewTransaksi === 'function') viewTransaksi(b.dataset.id); });
+    list.querySelectorAll('.nt-item').forEach(b => b.onclick = () => bukaDetailNotif(b.dataset.id, b));
   }
   // Membuka halaman notifikasi = semua yang tampil dianggap terbaca
   // (penanda "Baru" tetap terlihat sampai halaman dibuka lagi).
   if (markRead && _nt.unread) tandaiNotifDibaca(true);
+}
+
+// Buka detail transaksi dari notifikasi. viewTransaksi() hanya mengenal
+// transaksi yang sudah dimuat di tabel Riwayat, jadi kalau belum ada,
+// detailnya diambil dulu dari server.
+function bukaDetailNotif(id, el){
+  if (!id) return;
+  if (currentTransaksiGroups[id]) { viewTransaksi(id); return; }
+  if (el) el.classList.add('loading');
+  google.script.run.withSuccessHandler(res => {
+    if (el) el.classList.remove('loading');
+    const groups = groupTransaksiRows((res && res.data) || []);
+    if (!res || res.error || !groups.length) {
+      showDesktopToast({ title: 'Detail tidak tersedia', message: (res && res.error) || 'Transaksi tidak ditemukan (mungkin sudah dihapus).', type: 'error' });
+      return;
+    }
+    groups.forEach(g => currentTransaksiGroups[g.id] = g);
+    viewTransaksi(groups[0].id);
+  }).withFailureHandler(err => {
+    if (el) el.classList.remove('loading');
+    showDesktopToast({ title: 'Gagal memuat detail', message: err.message, type: 'error' });
+  }).getTransaksiDetail(id, currentUser);
 }
 
 function tandaiNotifDibaca(keepHighlight){
@@ -4314,6 +4450,7 @@ function tandaiNotifDibaca(keepHighlight){
 }
 
 function showNotifToast(fresh){
+  kirimNotifBrowser(fresh);
   document.querySelector('.m-ntoast')?.remove();
   const it = fresh[0];
   const n = ntNominal(it);
@@ -6288,7 +6425,7 @@ function buildFotoGrid(fotoUrls) {
       + 'style="cursor:pointer;width:80px;height:80px;border-radius:8px;overflow:hidden;border:1px solid var(--line);flex-shrink:0;" title="Lihat foto ' + (i+1) + '">'
       + '<img src="' + thumb + '" alt="Foto bukti ' + (i+1) + '" loading="lazy" '
       + 'style="width:100%;height:100%;object-fit:cover;display:block;" '
-      + 'onerror="this.remove();var f=document.createElement(\'div\');f.style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-align:center;padding:4px;\';f.textContent=\'Foto ' + (i+1) + '\';this.parentElement.appendChild(f);">'
+      + 'onerror="var p=this.parentElement;this.remove();var f=document.createElement(\'div\');f.style=\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted);text-align:center;padding:4px;\';f.textContent=\'Foto ' + (i+1) + '\';if(p)p.appendChild(f);">'
       + '</div>';
   }).join('');
 }
