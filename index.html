@@ -1925,6 +1925,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
   #page-notifikasi .nt-item .tx b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #page-notifikasi .nt-item .tx small{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #page-notifikasi .nt-item .tx small.by{font-size:12px;color:var(--muted-light, #94a3b8);}
+  #page-notifikasi .nt-item .rt small.rel{font-size:11.5px;color:var(--signal);font-weight:600;}
   #page-notifikasi .nt-item .rt{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
   #page-notifikasi .nt-item .rt b{font-size:15px;font-weight:700;color:var(--signal);font-variant-numeric:tabular-nums;white-space:nowrap;}
   #page-notifikasi .nt-item .rt b.neg{color:var(--alert);}
@@ -2097,6 +2098,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
   #page-notifikasi .nt-item .tx b{font-size:13px;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #page-notifikasi .nt-item .tx small{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   #page-notifikasi .nt-item .tx small.by{color:var(--muted-light);margin-top:2px;}
+  #page-notifikasi .nt-item .rt small.rel{color:var(--f-secondary);font-weight:600;}
   #page-notifikasi .nt-item .rt{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
   #page-notifikasi .nt-item .rt b{font-size:13px;font-weight:700;color:var(--f-secondary);white-space:nowrap;font-variant-numeric:tabular-nums;}
   #page-notifikasi .nt-item .rt b.neg{color:#ba1a1a;}
@@ -4358,6 +4360,12 @@ function kirimNotifBrowser(fresh){
   } catch (e) { /* browser tidak mendukung -> abaikan */ }
 }
 
+// Tanggal & jam input lengkap, mis. "21 Okt 2026, 07:48".
+function ntTanggalJam(iso){
+  const d = new Date(iso); if (isNaN(d)) return '';
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).replace('.', '') + ', ' +
+    d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+}
 function ntWaktu(iso){
   const d = new Date(iso); if (isNaN(d)) return '';
   const diff = (Date.now() - d.getTime()) / 1000;
@@ -4393,6 +4401,9 @@ function renderNotifPage(markRead){
     const row = it => {
       const unread = it.seq > _nt.lastReadSeq;
       const n = ntNominal(it);
+      const dIn = new Date(it.ts);
+      const baruSaja = !isNaN(dIn) && Date.now() - dIn.getTime() < 3600000; // < 1 jam: tampilkan juga "x mnt lalu"
+
       return `<button type="button" class="nt-item${unread ? ' unread' : ''}" data-id="${escapeHtml(it.id)}">
         <span class="ic">${mIco('trx')}</span>
         <span class="tx">
@@ -4400,7 +4411,7 @@ function renderNotifPage(markRead){
           <small>${escapeHtml(it.perusahaan || '')}</small>
           <small class="by">${escapeHtml(it.oleh || '-')} · ${it.items || 1} item · ${escapeHtml(it.id)}</small>
         </span>
-        <span class="rt"><b class="${n.net < 0 ? 'neg' : ''}">${n.txt}</b><small>${ntWaktu(it.ts)}</small></span>
+        <span class="rt"><b class="${n.net < 0 ? 'neg' : ''}">${n.txt}</b><small title="Diinput ${ntTanggalJam(it.ts)}">${ntTanggalJam(it.ts)}</small>${baruSaja ? `<small class="rel">${ntWaktu(it.ts)}</small>` : ''}</span>
       </button>`;
     };
     const baru = _nt.items.filter(it => it.seq > _nt.lastReadSeq);
