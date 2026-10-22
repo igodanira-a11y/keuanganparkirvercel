@@ -1889,6 +1889,44 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 @keyframes muFade{from{opacity:0;}to{opacity:1;}}
 @media (min-width:600px){:is(#mobileApp,.mu-scope) .m-header,:is(#mobileApp,.mu-scope) .m-body{max-width:520px;margin-left:auto;margin-right:auto;}:is(#mobileApp,.mu-scope) .m-header{border-radius:0 0 40px 40px;}}
 .foto-preview-meta{display:none;}
+/* ===== Toast: jenis, progress bar, geser ===== */
+.d-toast,.mu-toast,.m-ntoast{touch-action:pan-y;user-select:none;-webkit-user-select:none;}
+.t-drag{transition:none !important;cursor:grabbing;}
+.t-bar{position:absolute;left:0;right:0;bottom:0;height:3px;transform-origin:left center;transform:scaleX(1);pointer-events:none;}
+.d-toast{overflow:hidden;}
+.d-toast .t-bar{background:var(--signal);opacity:.55;}
+.d-toast.t-info{border-left-color:#2563eb;}
+.d-toast.t-info .d-toast-icon{background:#dbeafe;color:#2563eb;}
+.d-toast.t-info .t-bar{background:#2563eb;}
+.d-toast.t-warning{border-left-color:#d97706;}
+.d-toast.t-warning .d-toast-icon{background:#fef3c7;color:#b45309;}
+.d-toast.t-warning .t-bar{background:#d97706;}
+.d-toast.t-error .t-bar{background:var(--alert);}
+@media (max-width:600px){
+  .d-toast-container{top:calc(env(safe-area-inset-top,0px) + 10px);left:12px;right:12px;}
+  .d-toast{min-width:0;max-width:none;width:100%;}
+}
+
+/* Toast HP role user: bertumpuk di atas menu bawah */
+.mu-toast-stack{position:fixed;left:16px;right:16px;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:250;display:flex;flex-direction:column;gap:8px;pointer-events:none;font-family:'Plus Jakarta Sans',var(--font);}
+.mu-toast{position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;padding:13px 40px 15px 14px;border-radius:16px;background:#044424;color:#fff;font-size:14px;font-weight:500;line-height:1.4;box-shadow:0 12px 28px -10px rgba(0,0,0,.35);pointer-events:auto;transform:translateY(24px);opacity:0;transition:transform .3s cubic-bezier(.2,.9,.3,1.2),opacity .25s ease;}
+.mu-toast.show{transform:none;opacity:1;}
+.mu-toast.t-error{background:#b91c1c;}
+.mu-toast.t-info{background:#1d4ed8;}
+.mu-toast.t-warning{background:#b45309;}
+.mu-toast-ic{flex:none;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;}
+.mu-toast-ic svg{width:16px;height:16px;}
+.mu-toast-tx{flex:1;min-width:0;overflow-wrap:anywhere;}
+.mu-toast-x{position:absolute;top:50%;right:8px;width:30px;height:30px;margin-top:-16px;border-radius:50%;color:rgba(255,255,255,.85);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;}
+.mu-toast-x:active{background:rgba(255,255,255,.15);}
+.mu-toast .t-bar{background:rgba(255,255,255,.55);}
+
+/* Pop-up transaksi baru: tombol tutup + progress bar */
+body .m-ntoast{overflow:hidden;padding-right:44px !important;}
+body .m-ntoast .t-x{position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;color:rgba(255,255,255,.75);font-size:17px;line-height:1;display:flex;align-items:center;justify-content:center;}
+body .m-ntoast .t-x:hover{background:rgba(255,255,255,.14);color:#fff;}
+body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
+
 /* ===== Notifikasi transaksi — tampilan WEB superadmin ===== */
 @media (min-width:901px){
   #page-notifikasi{max-width:980px;}
@@ -1922,8 +1960,8 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
   #page-notifikasi .nt-item .ic svg{width:19px;height:19px;}
   #page-notifikasi .nt-item.unread .ic::after{content:"";position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:var(--alert);box-shadow:0 0 0 2px #fff;}
   #page-notifikasi .nt-item .tx{display:flex;flex-direction:column;min-width:0;gap:1px;}
-  #page-notifikasi .nt-item .tx b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  #page-notifikasi .nt-item .tx small{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #page-notifikasi .nt-item .tx b{font-size:14px;font-weight:700;overflow-wrap:anywhere;}
+  #page-notifikasi .nt-item .tx small{font-size:12.5px;color:var(--muted);overflow-wrap:anywhere;}
   #page-notifikasi .nt-item .tx small.by{font-size:12px;color:var(--muted-light, #94a3b8);}
   #page-notifikasi .nt-item .rt small.rel{font-size:11.5px;color:var(--signal);font-weight:600;}
   #page-notifikasi .nt-item .rt{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
@@ -2067,6 +2105,26 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
   #desktopApp.m-sa .sa-uinput .m-date-input input{width:100%;}
   /* Modal (struk, detail transaksi, dll.) harus menutupi bottom bar */
   body:has(.modal-overlay.show) #desktopApp.m-sa .m-bnav{z-index:1;}
+
+
+  /* Riwayat Transaksi (superadmin, HP): baris rapi tanpa teks terpotong */
+  #desktopApp.m-sa #transaksiTbody tr{grid-template-columns:minmax(0,1fr) auto !important;grid-template-areas:"lok nom" "per per" "ket ket" "tgl tgl" "act act" !important;gap:4px 12px !important;padding:16px !important;align-items:start !important;}
+  #desktopApp.m-sa #transaksiTbody td:nth-child(4){font-size:15px;line-height:1.3;}
+  #desktopApp.m-sa #transaksiTbody td:nth-child(6){white-space:nowrap !important;line-height:1.3;}
+  #desktopApp.m-sa #transaksiTbody td:nth-child(5){font-size:13px;line-height:1.4;color:var(--ink);}
+  #desktopApp.m-sa #transaksiTbody td:nth-child(5).m-kosong{display:none !important;}
+  #desktopApp.m-sa #transaksiTbody td:nth-child(7){display:none !important;}
+  #desktopApp.m-sa #transaksiTbody td:nth-child(2){margin-top:2px;font-size:12.5px;line-height:1.4;color:var(--muted);}
+  #desktopApp.m-sa #transaksiTbody td:nth-child(2) .m-meta{display:inline;}
+  #desktopApp.m-sa #transaksiTbody td:nth-child(8){justify-self:end;margin:6px -6px -6px 0 !important;}
+
+  /* Notifikasi (HP): nama lokasi/perusahaan & keterangan boleh turun baris */
+  #desktopApp #page-notifikasi .nt-item{align-items:start;}
+  #desktopApp #page-notifikasi .nt-item .ic{margin-top:2px;}
+  #page-notifikasi .nt-item .tx b,
+  #page-notifikasi .nt-item .tx small{white-space:normal !important;overflow:visible !important;text-overflow:clip !important;overflow-wrap:anywhere;line-height:1.35;}
+  #page-notifikasi .nt-item .tx small.by{margin-top:3px;}
+  #page-notifikasi .nt-id{display:none;}
 
   /* Halaman Notifikasi */
   #page-notifikasi .nt-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:4px 0 16px;}
@@ -3068,10 +3126,6 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
     </button>
   </nav>
 
-  <div class="m-toast" id="mToast">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-    <span id="mToastText">Tersimpan</span>
-  </div>
 </div>
 
 <script>
@@ -3110,8 +3164,8 @@ function clearSubmitReqId(form){ delete _submitReqIds[form]; }
 // Server melaporkan transaksi ini SUDAH tersimpan dari klik sebelumnya.
 function infoTransaksiDobel(res){
   const msg = `Transaksi ini sudah tersimpan sebelumnya${res.batchId ? ' (No. ' + res.batchId + ')' : ''}, jadi tidak disimpan dua kali. Cek di Riwayat Transaksi.`;
-  if (document.getElementById('mobileApp')?.style.display === 'block') showToast(msg, false);
-  else showDesktopToast({ title: 'Sudah tersimpan', message: msg, duration: 8000 });
+  if (document.getElementById('mobileApp')?.style.display === 'block') showToast(msg, 'warning');
+  else showDesktopToast({ title: 'Sudah tersimpan', message: msg, type: 'warning', duration: 8000 });
 }
 
 // ============================================================
@@ -3360,16 +3414,89 @@ document.addEventListener('click', () => {
   document.querySelectorAll('.multiselect.open').forEach(o => o.classList.remove('open'));
 });
 
+// ============================================================
+// TOAST — mesin bersama (progress bar, jeda, geser untuk menutup)
+// ============================================================
+// Dipakai oleh: toast web (showDesktopToast), toast HP role user (showToast)
+// dan pop-up "Transaksi baru masuk". Perilakunya:
+//  - progress bar menunjukkan sisa waktu sebelum toast hilang;
+//  - waktu BERHENTI selama kursor berada di atas toast / toast disentuh,
+//    dan selama tab browser tidak sedang dilihat;
+//  - toast bisa digeser ke kiri/kanan untuk menutup (HP & mouse).
+const TOAST_IKON = {
+  success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+  error:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>',
+  info:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 11v5M12 8h.01"/></svg>',
+  warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>'
+};
+const TOAST_TIPE = ['success', 'error', 'info', 'warning'];
+
+// el: elemen toast (harus berisi .t-bar untuk progress bar).
+// tutup(arah): dipanggil sekali saat toast harus hilang ('kiri'/'kanan' = digeser).
+function pasangPerilakuToast(el, durasi, tutup){
+  const bar = el.querySelector('.t-bar');
+  let sisa = durasi, mulai = 0, timer = null, selesai = false, jedaHover = false, jedaSentuh = false;
+  const akhiri = arah => { if (selesai) return; selesai = true; clearTimeout(timer); document.removeEventListener('visibilitychange', cekTab); tutup(arah); };
+  const jalan = () => {
+    if (selesai || timer || jedaHover || jedaSentuh || document.visibilityState === 'hidden') return;
+    mulai = Date.now();
+    timer = setTimeout(() => akhiri(), sisa);
+    if (bar) { bar.style.transition = 'transform ' + sisa + 'ms linear'; bar.style.transform = 'scaleX(0)'; }
+  };
+  const jeda = () => {
+    if (!timer) return;
+    clearTimeout(timer); timer = null;
+    sisa = Math.max(400, sisa - (Date.now() - mulai));
+    if (bar) { const t = getComputedStyle(bar).transform; bar.style.transition = 'none'; bar.style.transform = (t && t !== 'none') ? t : 'scaleX(1)'; }
+  };
+  const cekTab = () => document.visibilityState === 'hidden' ? jeda() : jalan();
+  document.addEventListener('visibilitychange', cekTab);
+  el.addEventListener('mouseenter', () => { jedaHover = true; jeda(); });
+  el.addEventListener('mouseleave', () => { jedaHover = false; jalan(); });
+
+  // Geser untuk menutup.
+  let x0 = null, dx = 0, digeser = false;
+  el.addEventListener('pointerdown', e => {
+    if (e.button !== undefined && e.button !== 0) return;
+    x0 = e.clientX; dx = 0; digeser = false; jedaSentuh = true; jeda();
+  });
+  el.addEventListener('pointermove', e => {
+    if (x0 === null) return;
+    dx = e.clientX - x0;
+    if (!digeser && Math.abs(dx) > 8) { digeser = true; try { el.setPointerCapture(e.pointerId); } catch (_) {} el.classList.add('t-drag'); }
+    if (digeser) { el.style.transform = 'translateX(' + dx + 'px)'; el.style.opacity = String(Math.max(0.2, 1 - Math.abs(dx) / (el.offsetWidth || 300))); }
+  });
+  const lepas = () => {
+    if (x0 === null) return;
+    x0 = null; jedaSentuh = false;
+    el.classList.remove('t-drag');
+    if (digeser && Math.abs(dx) > Math.min(110, (el.offsetWidth || 300) * 0.3)) {
+      el.style.transition = 'transform .22s ease, opacity .22s ease';
+      el.style.transform = 'translateX(' + (dx > 0 ? 130 : -130) + '%)'; el.style.opacity = '0';
+      akhiri(dx > 0 ? 'kanan' : 'kiri');
+      return;
+    }
+    el.style.transform = ''; el.style.opacity = '';
+    if (!jedaHover) jalan();
+  };
+  el.addEventListener('pointerup', lepas);
+  el.addEventListener('pointercancel', lepas);
+  // Klik setelah menggeser tidak dihitung sebagai klik (mis. tidak membuka halaman).
+  el.addEventListener('click', e => { if (digeser) { e.stopPropagation(); e.preventDefault(); digeser = false; } }, true);
+
+  requestAnimationFrame(() => requestAnimationFrame(jalan));
+  return { tutup: () => akhiri() };
+}
+
+// Toast web (juga dipakai tampilan HP superadmin/admin).
+// opts: { title, message | lines, type: success|error|info|warning, duration }
 function showDesktopToast(opts){
   const container = document.getElementById('dToastContainer');
   if (!container) return;
-  const type = opts.type || 'success';
+  const type = TOAST_TIPE.indexOf(opts.type) > -1 ? opts.type : 'success';
   const el = document.createElement('div');
-  el.className = 'd-toast' + (type === 'error' ? ' error' : '');
-
-  const iconSvg = type === 'error'
-    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>'
-    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>';
+  el.className = 'd-toast t-' + type + (type === 'error' ? ' error' : '');
+  el.setAttribute('role', type === 'error' || type === 'warning' ? 'alert' : 'status');
 
   let bodyHtml = '';
   if (opts.lines && opts.lines.length) {
@@ -3382,17 +3509,24 @@ function showDesktopToast(opts){
   el.innerHTML = `
     <button class="d-toast-close" aria-label="Tutup">&times;</button>
     <div class="d-toast-head${bodyHtml ? ' has-body' : ''}">
-      <div class="d-toast-icon">${iconSvg}</div>
+      <div class="d-toast-icon">${TOAST_IKON[type]}</div>
       <div class="d-toast-title">${escapeHtml(opts.title)}</div>
     </div>
     ${bodyHtml ? `<div class="d-toast-body">${bodyHtml}</div>` : ''}
+    <div class="t-bar"></div>
   `;
   container.appendChild(el);
+  // Maksimal 4 toast sekaligus; yang paling lama ditutup.
+  const semua = container.querySelectorAll('.d-toast:not(.t-keluar)');
+  if (semua.length > 4) semua[0].querySelector('.d-toast-close').click();
   requestAnimationFrame(() => el.classList.add('show'));
 
-  const remove = () => { el.classList.remove('show'); setTimeout(() => el.remove(), 350); };
-  el.querySelector('.d-toast-close').addEventListener('click', remove);
-  setTimeout(remove, opts.duration || 5000);
+  const ctl = pasangPerilakuToast(el, opts.duration || 5000, arah => {
+    el.classList.add('t-keluar');
+    if (!arah) el.classList.remove('show');
+    setTimeout(() => el.remove(), 350);
+  });
+  el.querySelector('.d-toast-close').addEventListener('click', e => { e.stopPropagation(); ctl.tutup(); });
 }
 
 // ============================================================
@@ -4241,7 +4375,7 @@ function initNotifTransaksi(){
     pg.className = 'd-page'; pg.id = 'page-notifikasi';
     pg.innerHTML = `
       <div class="nt-head">
-        <div><h2>Notifikasi</h2><p>Transaksi masuk dari seluruh lokasi</p></div>
+        <div><h2>Notifikasi</h2><p>Transaksi masuk terbaru</p></div>
         <div class="nt-actions">
           <button type="button" class="nt-perm" id="ntPerm" hidden>${mIco('bell')}Aktifkan notifikasi browser</button>
           <button type="button" class="nt-readall" id="ntReadAll">${mIco('checkAll')}Tandai dibaca</button>
@@ -4345,7 +4479,7 @@ function mintaIzinNotifBrowser(){
   Promise.resolve(Notification.requestPermission()).then(p => {
     updateTombolIzinNotif();
     if (p === 'granted') showDesktopToast({ title: 'Notifikasi browser aktif', message: 'Transaksi baru akan muncul di pojok layar walau Anda sedang membuka tab lain.' });
-    else if (p === 'denied') showDesktopToast({ title: 'Notifikasi browser diblokir', message: 'Izinkan notifikasi untuk situs ini lewat ikon gembok di address bar.', type: 'error' });
+    else if (p === 'denied') showDesktopToast({ title: 'Notifikasi browser diblokir', message: 'Izinkan notifikasi untuk situs ini lewat ikon gembok di address bar.', type: 'warning' });
   }).catch(() => {});
 }
 function kirimNotifBrowser(fresh){
@@ -4409,7 +4543,7 @@ function renderNotifPage(markRead){
         <span class="tx">
           <b>${escapeHtml(it.lokasi || '-')}</b>
           <small>${escapeHtml(it.perusahaan || '')}</small>
-          <small class="by">${escapeHtml(it.oleh || '-')} · ${it.items || 1} item · ${escapeHtml(it.id)}</small>
+          <small class="by">Diinput oleh ${escapeHtml(it.oleh || '-')} · ${it.items || 1} item<span class="nt-id"> · ${escapeHtml(it.id)}</span></small>
         </span>
         <span class="rt"><b class="${n.net < 0 ? 'neg' : ''}">${n.txt}</b><small title="Diinput ${ntTanggalJam(it.ts)}">${ntTanggalJam(it.ts)}</small>${baruSaja ? `<small class="rel">${ntWaktu(it.ts)}</small>` : ''}</span>
       </button>`;
@@ -4462,18 +4596,26 @@ function tandaiNotifDibaca(keepHighlight){
 
 function showNotifToast(fresh){
   kirimNotifBrowser(fresh);
-  document.querySelector('.m-ntoast')?.remove();
+  document.querySelector('.m-ntoast:not(.t-keluar)')?.querySelector('.t-x')?.click();
   const it = fresh[0];
   const n = ntNominal(it);
-  const el = document.createElement('button');
-  el.type = 'button'; el.className = 'm-ntoast';
-  el.setAttribute('role', 'status');
-  el.innerHTML = `<span class="ic">${mIco('bell')}</span><span class="tx"><b>${fresh.length > 1 ? fresh.length + ' transaksi baru masuk' : 'Transaksi baru masuk'}</b><small>${escapeHtml(it.lokasi || '-')} · ${escapeHtml(it.oleh || '-')}</small></span><span class="amt">${n.txt}</span>`;
-  el.onclick = () => { el.remove(); mGo('notifikasi'); };
+  const el = document.createElement('div');
+  el.className = 'm-ntoast';
+  el.setAttribute('role', 'button'); el.tabIndex = 0;
+  el.setAttribute('aria-label', 'Transaksi baru masuk. Buka notifikasi');
+  el.innerHTML = `<span class="ic">${mIco('bell')}</span><span class="tx"><b>${fresh.length > 1 ? fresh.length + ' transaksi baru masuk' : 'Transaksi baru masuk'}</b><small>${escapeHtml(it.lokasi || '-')} · ${escapeHtml(it.oleh || '-')}</small></span><span class="amt">${n.txt}</span><button type="button" class="t-x" aria-label="Tutup">&times;</button><div class="t-bar"></div>`;
   document.body.appendChild(el);
   requestAnimationFrame(() => el.classList.add('show'));
   try { if (navigator.vibrate) navigator.vibrate([60, 40, 60]); } catch (e) {}
-  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 6000);
+  const ctl = pasangPerilakuToast(el, 6000, arah => {
+    el.classList.add('t-keluar');
+    if (!arah) el.classList.remove('show');
+    setTimeout(() => el.remove(), 320);
+  });
+  const buka = () => { ctl.tutup(); mGo('notifikasi'); };
+  el.addEventListener('click', buka);
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); buka(); } });
+  el.querySelector('.t-x').addEventListener('click', e => { e.stopPropagation(); ctl.tutup(); });
 }
 window.mNotifPoll = mNotifPoll;
 
@@ -6214,16 +6356,22 @@ function fetchTransaksiTable(opts){
   });
 }
 
+// "2026-10-22" -> "22 Okt 2026" (dipakai di daftar mobile).
+function fmtTglIndo(ymd){
+  const m = String(ymd || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return String(ymd || '');
+  return Number(m[3]) + ' ' + BULAN_LABEL[Number(m[2]) - 1] + ' ' + m[1];
+}
 function renderTransaksiTable() {
   renderPagination('transaksi', 8, (g) => {
     const net = g.totalPendapatan - g.totalPengeluaran;
     return `
     <tr>
       <td style="font-family:monospace;font-size:12px;color:var(--muted);">${g.id}</td>
-      <td>${g.tanggal}</td>
+      <td><span class="d-only">${g.tanggal}</span><span class="m-only m-meta">${fmtTglIndo(g.tanggal)}${g.waktu ? ', ' + String(g.waktu).slice(0, 5) : ''} · oleh ${escapeHtml(g.inputOleh || '-')}</span></td>
       <td>${escapeHtml(g.perusahaan)}</td>
       <td>${escapeHtml(g.lokasi)}</td>
-      <td>${escapeHtml(g.keterangan)}</td>
+      <td class="${(!g.keterangan || g.keterangan === '-') ? 'm-kosong' : ''}">${escapeHtml(g.keterangan)}</td>
       <td style="text-align:right;font-weight:600;"><span style="color:${net>=0?'var(--signal)':'var(--alert)'}">${net<0?'-':''}${fmtRupiah(Math.abs(net))}</span></td>
       <td>${escapeHtml(g.inputOleh)}</td>
       <td class="user-table-actions">
@@ -8494,13 +8642,32 @@ function downloadMobileReceiptPDF(id){
   downloadReceiptPDF(receiptData, tglLabel, btn);
 }
 
-function showToast(msg, isError){
-  const toast = document.getElementById('mToast');
-  document.getElementById('mToastText').textContent = msg;
-  toast.classList.toggle('success', !isError);
-  toast.style.background = isError ? 'var(--alert)' : 'var(--signal)';
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2600);
+// Toast HP role user. Argumen kedua: true (= error), false (= sukses),
+// atau nama jenis: 'success' | 'error' | 'info' | 'warning'.
+// Beberapa toast bisa tampil bertumpuk (maks. 3), masing-masing dengan
+// tombol tutup, progress bar, jeda saat disentuh, dan bisa digeser.
+function showToast(msg, jenis){
+  const type = typeof jenis === 'string' && TOAST_TIPE.indexOf(jenis) > -1 ? jenis : (jenis ? 'error' : 'success');
+  let stack = document.getElementById('mToastStack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'mToastStack'; stack.className = 'mu-toast-stack';
+    (document.getElementById('mobileApp') || document.body).appendChild(stack);
+  }
+  const el = document.createElement('div');
+  el.className = 'mu-toast t-' + type;
+  el.setAttribute('role', type === 'error' || type === 'warning' ? 'alert' : 'status');
+  el.innerHTML = `<span class="mu-toast-ic">${TOAST_IKON[type]}</span><span class="mu-toast-tx">${escapeHtml(msg)}</span><button type="button" class="mu-toast-x" aria-label="Tutup">&times;</button><div class="t-bar"></div>`;
+  stack.appendChild(el);
+  const semua = stack.querySelectorAll('.mu-toast:not(.t-keluar)');
+  if (semua.length > 3) semua[0].querySelector('.mu-toast-x').click();
+  requestAnimationFrame(() => el.classList.add('show'));
+  const ctl = pasangPerilakuToast(el, type === 'error' ? 4500 : 3000, arah => {
+    el.classList.add('t-keluar');
+    if (!arah) el.classList.remove('show');
+    setTimeout(() => el.remove(), 320);
+  });
+  el.querySelector('.mu-toast-x').addEventListener('click', e => { e.stopPropagation(); ctl.tutup(); });
 }
 
 // ============================================================
