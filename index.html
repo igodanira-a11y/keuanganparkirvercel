@@ -99,6 +99,8 @@
   // 'mtrx' (riwayat mobile), 'dash' (dashboard), 'mon' (monitoring),
   // 'lap' (laporan), 'master' (master data).
   var TRX_KEYS = ['trx', 'mtrx', 'dash', 'mon', 'lap'];
+  // Aksi yang menghasilkan/mengubah transaksi -> form PDF disiapkan di latar belakang.
+  var PDF_SETELAH = { simpanTransaksi: true, simpanTransaksiBatch: true, reviewPengajuanTransaksi: true, updateTransaksiBatch: true };
   var WRITE_INVALIDATES = {
     simpanTransaksi: TRX_KEYS,
     simpanTransaksiBatch: TRX_KEYS,
@@ -149,6 +151,16 @@
             invalidate.forEach(function (prefix) { window.swrInvalidate(prefix); });
           }
           if (onSuccess) onSuccess(data.result);
+          // Form PDF: minta server membuatnya sekarang lewat request TERPISAH
+          // di latar belakang — simpan transaksi tidak ikut menunggu.
+          if (PDF_SETELAH[fnName] && data.result && data.result.success && !data.result.pending) {
+            var idPdf = data.result.batchId || data.result.idTransaksi || data.result.id || (fnName === 'updateTransaksiBatch' ? args[0] : '');
+            if (idPdf && (fnName !== 'reviewPengajuanTransaksi' || data.result.status === 'DISETUJUI')) {
+              setTimeout(function () {
+                try { window.google.script.run.withSuccessHandler(function () {}).withFailureHandler(function () {}).siapkanDokumenTransaksi(String(idPdf)); } catch (e) {}
+              }, 400);
+            }
+          }
         } else {
           if (data.code === 'SESSION_EXPIRED') forceReLogin();
           // Ditolak karena hak akses: sesuaikan menu sekarang juga.
@@ -4241,7 +4253,14 @@ function bukaFormPdf(id, btn){
   if (!id) return;
   const w = window.open('', '_blank');
   try { if (w) w.opener = null; } catch (e) {}
-  try { if (w) w.document.write('<title>Menyiapkan form…</title><p style="font-family:sans-serif;padding:24px;color:#555">Menyiapkan form transaksi…</p>'); } catch (e) {}
+  try {
+    if (w) w.document.write('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Form ' + escapeHtml(id) + '</title>' +
+      '<style>body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f1f5f2;color:#151b18;display:flex;align-items:center;justify-content:center;min-height:100vh}' +
+      '.c{background:#fff;border-radius:20px;padding:28px 26px;max-width:340px;text-align:center;box-shadow:0 10px 30px -10px rgba(0,0,0,.15)}' +
+      '.s{width:36px;height:36px;border:4px solid #d6e6dc;border-top-color:#05592d;border-radius:50%;margin:0 auto 16px;animation:r 1s linear infinite}@keyframes r{to{transform:rotate(360deg)}}' +
+      'b{display:block;font-size:16px;margin-bottom:6px}small{color:#5f6d66;font-size:13px;line-height:1.5}</style>' +
+      '<div class="c"><div class="s"></div><b>Menyiapkan form transaksi…</b><small id="m">' + escapeHtml(id) + '<br>Biasanya langsung terbuka. Kalau form baru dibuat, tunggu 5–15 detik.</small></div>');
+  } catch (e) {}
   const labelAsli = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Menyiapkan…'; }
   const selesai = () => { if (btn) { btn.disabled = false; btn.innerHTML = labelAsli; } };
@@ -4254,8 +4273,10 @@ function bukaFormPdf(id, btn){
   google.script.run.withSuccessHandler(res => {
     if (!res || !res.success || !/^https:\/\/drive\.google\.com\//.test(String(res.url || ''))) return gagal((res && res.message) || 'Form belum bisa dibuat.');
     selesai();
-    if (w && !w.closed) w.location.href = res.url;
-    else window.location.href = res.url;
+    if (w && !w.closed) {
+      try { w.location.replace(res.url); }
+      catch (e) { try { w.close(); } catch (e2) {} window.open(res.url, '_blank', 'noopener'); }
+    } else window.location.href = res.url;
   }).withFailureHandler(err => gagal(err.message)).getDokumenTransaksi(id, currentUser);
 }
 
