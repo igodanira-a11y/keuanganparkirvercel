@@ -4071,18 +4071,48 @@ function setAkses(akses, versi){
 }
 function cekAksesSekarang(){
   if (!currentUser || currentUser.role === 'superadmin') return;
-  google.script.run.withSuccessHandler(r => { if (r && r.success && r.versi !== _akses.versi) setAkses(r.akses, r.versi); })
-    .withFailureHandler(() => {}).getAksesSaya(currentUser);
+  google.script.run.withSuccessHandler(r => {
+    if (!r || !r.success) return;
+    if (r.profil && terapkanProfilBaru(r.profil)) return; // aplikasi dimuat ulang
+    if (r.versi !== _akses.versi) setAkses(r.akses, r.versi);
+  }).withFailureHandler(() => {}).getAksesSaya(currentUser);
 }
+// Data akun diubah superadmin di Manajemen User (nama/perusahaan/lokasi/role)
+// -> sesuaikan aplikasi yang sedang terbuka tanpa perlu login ulang.
+// Mengembalikan true kalau aplikasi dimuat ulang.
+function terapkanProfilBaru(p){
+  if (!currentUser || !p) return false;
+  const beda = k => String(p[k] == null ? '' : p[k]) !== String(currentUser[k] == null ? '' : currentUser[k]);
+  if (!['name', 'role', 'perusahaan', 'lokasi'].some(beda)) return false;
+  const roleBerubah = beda('role');
+  const baru = Object.assign({}, currentUser, { name: p.name, role: p.role, perusahaan: p.perusahaan, lokasi: p.lokasi });
+  if (window.swrInvalidate) window.swrInvalidate(); // data lama mengikuti wilayah lama
+  teardownMobileHome();
+  document.getElementById('desktopApp').style.display = 'none';
+  document.getElementById('mobileApp').style.display = 'none';
+  document.querySelectorAll('.modal-overlay, .m-sheet-ov').forEach(el => el.remove());
+  currentUser = baru;
+  if (window.__auth) window.__auth.rememberUser(baru);
+  loadApp();
+  setTimeout(() => {
+    const pesan = roleBerubah ? 'Role akun Anda diubah menjadi ' + baru.role + '.' : 'Data akses akun Anda diperbarui oleh superadmin.';
+    if (baru.role === 'user') showToast(pesan, 'info');
+    else showDesktopToast({ title: 'Akun diperbarui', message: pesan, type: 'info' });
+  }, 600);
+  return true;
+}
+function aksesSaatKembali(){ if (document.visibilityState === 'visible' && _akses.timer) cekAksesSekarang(); }
 function mulaiPollingAkses(){
   stopPollingAkses();
   if (!currentUser || currentUser.role === 'superadmin') return;
-  if (!_akses.data) cekAksesSekarang();
+  cekAksesSekarang();
+  document.addEventListener('visibilitychange', aksesSaatKembali);
   _akses.timer = setInterval(() => { if (document.visibilityState === 'visible') cekAksesSekarang(); }, 60000);
 }
 function stopPollingAkses(){
   if (_akses.timer) clearInterval(_akses.timer);
   _akses.timer = null;
+  document.removeEventListener('visibilitychange', aksesSaatKembali);
 }
 function resetAkses(){ stopPollingAkses(); _akses.data = null; _akses.versi = ''; document.getElementById('aksesStyle')?.remove(); }
 
@@ -8584,6 +8614,14 @@ function loadUsersPage(){
     // seluruh objek user ditulis ke atribut onclick='...', yang bisa pecah /
     // disusupi script kalau nama user mengandung tanda kutip).
     _usersList = users || [];
+    renderUsersTable();
+  }).getUsers();
+
+  document.getElementById('addUserBtn').onclick = () => openUserModal(null);
+}
+function renderUsersTable(){
+  const users = _usersList || [];
+  {
     document.getElementById('usersTbody').innerHTML = users.length ? users.map((u, i) => `
       <tr>
         <td>${escapeHtml(u['NAMA'])}</td>
@@ -8598,9 +8636,7 @@ function loadUsersPage(){
         </td>
       </tr>
     `).join('') : '<tr><td colspan="7" class="empty-state">Belum ada user.</td></tr>';
-  }).getUsers();
-
-  document.getElementById('addUserBtn').onclick = () => openUserModal(null);
+  }
 }
 
 function deleteUserConfirm(id){
@@ -8781,6 +8817,12 @@ function openUserModal(user){
       google.script.run.withSuccessHandler(res => {
         if (res.success) {
           overlay.remove();
+          // Tampilkan perubahan seketika, lalu muat ulang dari server.
+          if (isEdit) {
+            const u = _usersList.find(x => x['ID'] === payload.id);
+            if (u) Object.assign(u, { NAMA: payload.nama, USERNAME: payload.username, ROLE: payload.role, PERUSAHAAN: payload.perusahaan, LOKASI: payload.lokasi });
+            renderUsersTable();
+          }
           loadUsersPage();
           showDesktopToast({ title: isEdit ? 'User diperbarui' : 'User ditambahkan', message: `${payload.nama} kini punya akses sebagai ${payload.role}.` });
         } else {
