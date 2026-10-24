@@ -1893,6 +1893,54 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 @media (min-width:600px){:is(#mobileApp,.mu-scope) .m-header,:is(#mobileApp,.mu-scope) .m-body{max-width:520px;margin-left:auto;margin-right:auto;}:is(#mobileApp,.mu-scope) .m-header{border-radius:0 0 40px 40px;}}
 .foto-preview-meta{display:none;}
 
+
+
+/* ===== Logo perusahaan ===== */
+.logo-cell{white-space:nowrap;}
+@media (max-width:900px){
+  .d-main table.m-generic tbody tr > td.logo-cell{display:flex !important;align-items:center;gap:8px;margin-top:4px;}
+  .d-main table.m-generic tbody tr > td.logo-cell::before{content:none;}
+  .d-main table.m-generic tbody tr > td.logo-cell .logo-mini{margin-right:0;justify-content:flex-start;}
+}
+.logo-mini{display:inline-flex;align-items:center;justify-content:flex-start;width:64px;height:32px;vertical-align:middle;margin-right:8px;}
+.logo-mini img{max-width:64px;max-height:32px;object-fit:contain;}
+.logo-mini em{font-size:11.5px;color:var(--muted);font-style:normal;}
+.logo-btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--ink);cursor:pointer;vertical-align:middle;}
+.logo-btn:hover{border-color:var(--brand,#05592d);color:var(--brand,#05592d);}
+.logo-modal h3{margin:0;}
+.logo-modal .logo-sub{margin:2px 0 14px;color:var(--muted);font-size:13px;}
+.logo-modal .logo-prev{display:flex;align-items:center;justify-content:center;height:150px;border:1.5px dashed var(--line);border-radius:14px;background:repeating-conic-gradient(#f3f5f4 0% 25%, #fff 0% 50%) 50%/16px 16px;margin-bottom:12px;}
+.logo-modal .logo-prev img{max-width:85%;max-height:130px;object-fit:contain;}
+.logo-modal .logo-prev span{color:var(--muted);font-size:13px;}
+.logo-modal .logo-pilih{display:flex;justify-content:center;cursor:pointer;}
+.logo-modal .logo-hint{font-size:12px;color:var(--muted);margin:8px 0 14px;}
+.logo-modal .logo-hapus{color:var(--alert,#ba1a1a);}
+/* ===== Halaman verifikasi form transaksi ===== */
+#verifPage{position:fixed;inset:0;z-index:9999;overflow:auto;background:#f1f5f2;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;font-family:inherit;}
+#verifPage .vf-card{width:100%;max-width:440px;background:#fff;border-radius:24px;padding:24px 22px;box-shadow:0 12px 32px -8px rgba(21,27,24,.12);}
+#verifPage .vf-brand{font-size:24px;font-weight:800;color:#05592d;letter-spacing:-.02em;margin-bottom:18px;}
+#verifPage .vf-brand span{color:#3fae2a;}
+#verifPage .vf-load{padding:24px 0;text-align:center;color:#5f6d66;font-size:14px;}
+#verifPage .vf-status{display:flex;gap:14px;align-items:center;padding:16px;border-radius:18px;margin-bottom:16px;}
+#verifPage .vf-status i{flex:none;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;}
+#verifPage .vf-status i svg{width:24px;height:24px;}
+#verifPage .vf-status b{display:block;font-size:16px;}
+#verifPage .vf-status small{display:block;font-size:13px;line-height:1.4;margin-top:2px;}
+#verifPage .vf-status.ok{background:#e8f5e9;color:#05592d;}
+#verifPage .vf-status.ok i{background:#0b7a3d;}
+#verifPage .vf-status.bad{background:#fdecea;color:#93000a;}
+#verifPage .vf-status.bad i{background:#ba1a1a;}
+#verifPage .vf-row{display:flex;justify-content:space-between;gap:16px;padding:10px 2px;border-bottom:1px solid #edf1ee;font-size:13.5px;}
+#verifPage .vf-row span{color:#5f6d66;flex:none;}
+#verifPage .vf-row b{text-align:right;overflow-wrap:anywhere;color:#151b18;}
+#verifPage .vf-sign{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:16px;}
+#verifPage .vf-sign > div{background:#f6f8f7;border-radius:14px;padding:12px 14px;}
+#verifPage .vf-sign small{display:block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#5f6d66;}
+#verifPage .vf-sign b{display:block;font-size:15px;margin-top:4px;color:#151b18;}
+#verifPage .vf-sign span{display:block;font-size:12px;color:#5f6d66;margin-top:2px;}
+#verifPage .vf-kode{margin-top:16px;font-size:12px;color:#5f6d66;text-align:center;}
+#verifPage .vf-kode b{display:block;font-size:15px;letter-spacing:.08em;color:#151b18;margin-top:2px;}
+#verifPage .vf-app{display:block;margin-top:20px;text-align:center;padding:12px;border-radius:14px;border:1px solid #dfe5e1;color:#05592d;font-weight:700;font-size:14px;text-decoration:none;}
 /* ===== Hak Akses (superadmin) ===== */
 .hak-tabs{margin-bottom:14px;}
 .hak-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
@@ -2832,7 +2880,7 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
       </div>
       <div class="panel" style="padding:0;overflow-x:auto;">
         <table>
-          <thead><tr><th style="width:60px;">No</th><th>Nama Perusahaan</th><th style="width:100px;">Aksi</th></tr></thead>
+          <thead><tr><th style="width:60px;">No</th><th>Nama Perusahaan</th><th style="width:170px;">Logo</th><th style="width:100px;">Aksi</th></tr></thead>
           <tbody id="masterPerusahaanTbody"></tbody>
         </table>
       </div>
@@ -3752,6 +3800,9 @@ function showDesktopToast(opts){
 // INIT
 // ============================================================
 window.addEventListener('DOMContentLoaded', () => {
+  // QR form transaksi -> halaman verifikasi (tanpa login).
+  const vTok = new URLSearchParams(location.search).get('v');
+  if (vTok) { tampilkanVerifikasi(vTok); return; }
   document.getElementById('globalLoader').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
   const rememberedUser = window.__auth && window.__auth.getRememberedUser();
@@ -3932,6 +3983,10 @@ function initDesktopApp(){
   initHakAkses();
   terapkanAkses();
   mulaiPollingAkses();
+  // Alamat aplikasi untuk QR verifikasi di form PDF (dicatat dari login superadmin).
+  if (currentUser.role === 'superadmin' && location.protocol === 'https:') {
+    try { google.script.run.withSuccessHandler(() => {}).withFailureHandler(() => {}).setAppUrl(location.origin, currentUser); } catch (e) {}
+  }
 
   // Populate perusahaan select (input form)
   const dPerusahaan = document.getElementById('dPerusahaan');
@@ -4050,7 +4105,7 @@ function terapkanAkses(){
     add(no('notifikasi', 'r'), nav('notifikasi') + ', #navNotifikasi, #page-notifikasi');
     add(no('master', 'r'), '#masterNavGroup, .mh-tile[data-k="master"], [id^="page-master-"]');
     add(no('master', 'c'), '[id^="page-master-"] .filter-bar button[onclick^="openMasterModal"]');
-    add(no('master', 'u'), '[id^="page-master-"] .user-table-actions button:not([data-action="delete"])');
+    add(no('master', 'u'), '[id^="page-master-"] .user-table-actions button:not([data-action="delete"]), [data-action="logo"]');
     add(no('master', 'd'), '[id^="page-master-"] .user-table-actions button[data-action="delete"]');
     add(no('users', 'r'), nav('users') + ', #page-users');
     add(no('users', 'c'), '#addUserBtn');
@@ -4174,6 +4229,74 @@ function renderHakAkses(){
       }).simpanHakAkses(role, m.k, aksi, currentUser);
     });
   });
+}
+
+// ============================================================
+// FORM TRANSAKSI (PDF) + HALAMAN VERIFIKASI E-SIGN
+// ============================================================
+// Buka form PDF transaksi (dibuat server; kalau belum ada dibuat saat itu).
+// Tab baru dibuka LEBIH DULU (sinkron dengan klik) supaya tidak diblokir
+// popup blocker, lalu diarahkan ke file PDF setelah siap.
+function bukaFormPdf(id, btn){
+  if (!id) return;
+  const w = window.open('', '_blank');
+  try { if (w) w.opener = null; } catch (e) {}
+  try { if (w) w.document.write('<title>Menyiapkan form…</title><p style="font-family:sans-serif;padding:24px;color:#555">Menyiapkan form transaksi…</p>'); } catch (e) {}
+  const labelAsli = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Menyiapkan…'; }
+  const selesai = () => { if (btn) { btn.disabled = false; btn.innerHTML = labelAsli; } };
+  const gagal = msg => {
+    selesai();
+    try { if (w) w.close(); } catch (e) {}
+    if (currentUser && currentUser.role === 'user') showToast(msg, true);
+    else showDesktopToast({ title: 'Form PDF gagal', message: msg, type: 'error' });
+  };
+  google.script.run.withSuccessHandler(res => {
+    if (!res || !res.success || !/^https:\/\/drive\.google\.com\//.test(String(res.url || ''))) return gagal((res && res.message) || 'Form belum bisa dibuat.');
+    selesai();
+    if (w && !w.closed) w.location.href = res.url;
+    else window.location.href = res.url;
+  }).withFailureHandler(err => gagal(err.message)).getDokumenTransaksi(id, currentUser);
+}
+
+// Halaman verifikasi (dibuka dari QR di PDF: ?v=<ID>.<kode>) — tanpa login.
+function tampilkanVerifikasi(token){
+  document.getElementById('globalLoader')?.classList.add('hidden');
+  document.getElementById('loginScreen')?.classList.add('hidden');
+  const pg = document.createElement('div');
+  pg.id = 'verifPage';
+  pg.innerHTML = `<div class="vf-card"><div class="vf-brand">parkir<span>div</span></div><div class="vf-body" id="vfBody"><div class="vf-load">Memeriksa dokumen…</div></div>
+    <a class="vf-app" href="${escapeHtml(location.origin + location.pathname)}">Buka aplikasi</a></div>`;
+  document.body.appendChild(pg);
+  const body = pg.querySelector('#vfBody');
+  const ikon = ok => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${ok ? '<path d="M20 6L9 17l-5-5"/>' : '<path d="M18 6L6 18M6 6l12 12"/>'}</svg>`;
+  const baris = (k, v) => v ? `<div class="vf-row"><span>${k}</span><b>${escapeHtml(v)}</b></div>` : '';
+  google.script.run.withSuccessHandler(r => {
+    r = r || {};
+    if (!r.valid) {
+      body.innerHTML = `<div class="vf-status bad"><i>${ikon(false)}</i><div><b>Dokumen tidak terverifikasi</b><small>${escapeHtml(r.pesan || 'Kode tidak dikenali.')}</small></div></div>`;
+      return;
+    }
+    const saldo = (Number(r.totalPendapatan) || 0) - (Number(r.totalPengeluaran) || 0);
+    body.innerHTML = `
+      <div class="vf-status ok"><i>${ikon(true)}</i><div><b>Dokumen terverifikasi</b><small>Isi form sesuai data di sistem parkirdiv.</small></div></div>
+      <div class="vf-list">
+        ${baris('No. transaksi', r.id)}
+        ${baris('Perusahaan', r.perusahaan)}
+        ${baris('Lokasi', r.lokasi)}
+        ${baris('Tanggal', (typeof fmtTglIndo === 'function' ? fmtTglIndo(r.tanggal) : r.tanggal) + (r.jam ? ', ' + r.jam : ''))}
+        ${baris('Pendapatan', fmtRupiah(r.totalPendapatan))}
+        ${baris('Pengeluaran', fmtRupiah(r.totalPengeluaran))}
+        ${baris('Saldo bersih', (saldo < 0 ? '-' : '') + fmtRupiah(Math.abs(saldo)))}
+      </div>
+      <div class="vf-sign">
+        <div><small>Dibuat oleh</small><b>${escapeHtml(r.pembuat || '-')}</b><span>${escapeHtml(r.waktuBuat || '')}</span></div>
+        ${r.penyetuju ? `<div><small>Disetujui oleh</small><b>${escapeHtml(r.penyetuju)}</b><span>${escapeHtml(r.waktuSetuju || '')}</span></div>` : ''}
+      </div>
+      <div class="vf-kode">Kode verifikasi <b>${escapeHtml(r.kode || '')}</b></div>`;
+  }).withFailureHandler(() => {
+    body.innerHTML = `<div class="vf-status bad"><i>${ikon(false)}</i><div><b>Gagal memeriksa</b><small>Periksa koneksi internet lalu muat ulang halaman.</small></div></div>`;
+  }).verifikasiDokumen(token);
 }
 
 // ===== Tampilan mobile admin/superadmin (Home, menu cepat, bottom nav) =====
@@ -4460,6 +4583,7 @@ function teardownMobileHome(){
   _apv.data = []; _apv.tab = 'MENUNGGU'; _apv.pending = 0; _ptxUser.data = [];
   document.querySelectorAll('#page-persetujuan, #navPersetujuan, #mPtxBox, #mApvNote, .apv-modal, #page-hak-akses, #navHakAkses, #mAksesKosong').forEach(el => el.remove());
   resetAkses(); _hak.data = null; _hak.role = 'admin';
+  _logo.data = null;
   const pe0 = document.getElementById('navPengajuanEdit'); if (pe0) { pe0.style.display = 'none'; pe0._ak = false; }
   window._renderMhGrid = null;
   _saYear = null;
@@ -5754,6 +5878,7 @@ function labelMobileTable(table){
       if (!generic || td.classList.contains('empty-state')) return;
       td.classList.remove('m-first', 'm-act', 'm-hide', 'm-num');
       if (/^no$/i.test(lbl)) { td.classList.add('m-hide'); return; }
+      if (td.classList.contains('logo-cell')) return; // logo: baris biasa di bawah nama
       if (/^aksi$/i.test(lbl) || td.querySelector('button')) { td.classList.add('m-act'); return; }
       if (first && td.textContent.trim()) { td.classList.add('m-first'); first = false; return; }
       if (/pendapatan|pengeluaran|saldo|nominal/i.test(lbl)) td.classList.add('m-num');
@@ -7716,11 +7841,12 @@ function viewTransaksi(id){
       </div>
       ` : ''}
       ${isMsaRole() ? `<div class="m-only m-vact">
-        <button type="button" data-v="pdf">${mIco('log')}PDF</button>
+        <button type="button" data-v="pdf">${mIco('log')}Struk</button>
         <button type="button" data-v="edit">${mIco('edit')}Edit</button>
         <button type="button" data-v="hapus" class="danger">${mIco('xc')}Hapus</button>
       </div>` : ''}
       <div class="btn-row">
+        <button type="button" class="btn-sm btn-dark" id="viewFormBtn">Form PDF</button>
         <button type="button" class="btn-sm btn-outline" id="viewCloseBtn">Tutup</button>
       </div>
     </div>
@@ -7733,6 +7859,7 @@ function viewTransaksi(id){
     overlay.remove();
     if (v === 'edit') editTransaksiModal(id); else deleteTransaksiConfirm(id);
   });
+  overlay.querySelector('#viewFormBtn').onclick = e => bukaFormPdf(id, e.currentTarget);
   overlay.querySelector('#viewCloseBtn').onclick = () => overlay.remove();
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
@@ -8653,8 +8780,109 @@ function renderMasterPerusahaan(){
   const filtered = q ? all.filter(item => item.nama.toLowerCase().includes(q)) : all;
   window._masterActionRecords = { perusahaan: filtered };
   document.getElementById('masterPerusahaanTbody').innerHTML = filtered.length
-    ? filtered.map((item, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(item.nama)}</td><td class="user-table-actions"><button type="button" title="Edit" aria-label="Edit" onclick="openMasterModal('perusahaan',${i})"><i class="fi fi-rr-edit"></i></button><button type="button" title="Hapus" aria-label="Hapus" data-action="delete" onclick="deleteMasterConfirm('perusahaan',${i})"><i class="fi fi-rr-trash"></i></button></td></tr>`).join('')
-    : `<tr><td colspan="3" class="empty-state">Belum ada data</td></tr>`;
+    ? filtered.map((item, i) => `<tr><td>${i + 1}</td><td>${escapeHtml(item.nama)}</td><td class="logo-cell">${logoSel(item.nama, i)}</td><td class="user-table-actions"><button type="button" title="Edit" aria-label="Edit" onclick="openMasterModal('perusahaan',${i})"><i class="fi fi-rr-edit"></i></button><button type="button" title="Hapus" aria-label="Hapus" data-action="delete" onclick="deleteMasterConfirm('perusahaan',${i})"><i class="fi fi-rr-trash"></i></button></td></tr>`).join('')
+    : `<tr><td colspan="4" class="empty-state">Belum ada data</td></tr>`;
+  muatLogoPerusahaan();
+}
+
+// ---------- Logo perusahaan (kop Form Transaksi PDF) ----------
+const _logo = { data: null, busy: false };
+function logoSel(nama, i){
+  const url = _logo.data && Object.keys(_logo.data).find(k => normalizeNama(k) === normalizeNama(nama));
+  const src = url ? _logo.data[url] : '';
+  const aman = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(src) ? src : '';
+  return `<span class="logo-mini">${aman ? `<img src="${aman}" alt="">` : '<em>Default</em>'}</span><button type="button" class="logo-btn" data-action="logo" onclick="bukaLogoModal(${i})">${aman ? 'Ganti' : 'Atur'}</button>`;
+}
+function muatLogoPerusahaan(paksa){
+  if (_logo.busy || (_logo.data && !paksa)) return;
+  _logo.busy = true;
+  google.script.run.withSuccessHandler(r => {
+    _logo.busy = false;
+    if (r && r.success) { _logo.data = r.data || {}; renderMasterPerusahaan(); }
+  }).withFailureHandler(() => { _logo.busy = false; }).getLogoPerusahaan(currentUser);
+}
+// Perkecil gambar di browser (maks 360 px sisi terpanjang) sebelum diunggah.
+function perkecilLogo(file){
+  return new Promise((res, rej) => {
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) return rej(new Error('Pilih gambar PNG, JPG, atau WEBP.'));
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, 360 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.width * s)); c.height = Math.max(1, Math.round(img.height * s));
+      const g = c.getContext('2d');
+      g.drawImage(img, 0, 0, c.width, c.height);
+      let url = c.toDataURL('image/png');
+      if (url.length > 120000) { // terlalu besar -> JPG berlatar putih
+        const c2 = document.createElement('canvas'); c2.width = c.width; c2.height = c.height;
+        const g2 = c2.getContext('2d'); g2.fillStyle = '#fff'; g2.fillRect(0, 0, c2.width, c2.height); g2.drawImage(c, 0, 0);
+        url = c2.toDataURL('image/jpeg', 0.85);
+      }
+      URL.revokeObjectURL(img.src);
+      res(url);
+    };
+    img.onerror = () => rej(new Error('Gambar tidak bisa dibaca.'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+function bukaLogoModal(i){
+  const item = (window._masterActionRecords?.perusahaan || [])[i];
+  if (!item) return;
+  const kunci = _logo.data && Object.keys(_logo.data).find(k => normalizeNama(k) === normalizeNama(item.nama));
+  const lama0 = kunci ? _logo.data[kunci] : '';
+  const lama = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(lama0) ? lama0 : '';
+  let baru = null;
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay show';
+  ov.innerHTML = `
+    <div class="modal-box logo-modal" style="max-width:420px;">
+      <h3>Logo perusahaan</h3>
+      <p class="logo-sub">${escapeHtml(item.nama)}</p>
+      <div class="logo-prev" id="lgPrev">${lama ? `<img src="${lama}" alt="Logo">` : '<span>Belum ada logo</span>'}</div>
+      <label class="btn-sm btn-outline logo-pilih">Pilih gambar<input type="file" accept="image/png,image/jpeg,image/webp" id="lgFile" hidden></label>
+      <p class="logo-hint">PNG transparan paling bagus. Logo tampil di kop Form Transaksi PDF.</p>
+      <div class="btn-row">
+        ${lama ? '<button type="button" class="btn-sm btn-outline logo-hapus" id="lgHapus">Hapus logo</button>' : ''}
+        <button type="button" class="btn-sm btn-outline" id="lgBatal" style="margin-left:auto;">Batal</button>
+        <button type="button" class="btn-sm btn-dark" id="lgSimpan" disabled>Simpan</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  const tutup = () => ov.remove();
+  ov.querySelector('#lgBatal').onclick = tutup;
+  ov.addEventListener('click', e => { if (e.target === ov) tutup(); });
+  ov.querySelector('#lgFile').onchange = async e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    try {
+      baru = await perkecilLogo(f);
+      ov.querySelector('#lgPrev').innerHTML = `<img src="${baru}" alt="Logo baru">`;
+      ov.querySelector('#lgSimpan').disabled = false;
+    } catch (err) { showDesktopToast({ title: 'Logo tidak valid', message: err.message, type: 'error' }); }
+  };
+  const kirim = (data, btn) => {
+    ov.querySelectorAll('button').forEach(b => b.disabled = true);
+    btn.textContent = data ? 'Menyimpan…' : 'Menghapus…';
+    google.script.run.withSuccessHandler(r => {
+      if (!r || !r.success) {
+        ov.querySelectorAll('button').forEach(b => b.disabled = false);
+        btn.textContent = data ? 'Simpan' : 'Hapus logo';
+        showDesktopToast({ title: 'Gagal', message: (r && r.message) || 'Terjadi kesalahan.', type: 'error' });
+        return;
+      }
+      _logo.data = _logo.data || {};
+      if (kunci) delete _logo.data[kunci];
+      if (r.logo) _logo.data[r.perusahaan] = r.logo;
+      tutup(); renderMasterPerusahaan();
+      showDesktopToast({ title: data ? 'Logo disimpan' : 'Logo dihapus', message: r.perusahaan, type: 'success' });
+    }).withFailureHandler(err => {
+      ov.querySelectorAll('button').forEach(b => b.disabled = false);
+      btn.textContent = data ? 'Simpan' : 'Hapus logo';
+      showDesktopToast({ title: 'Gagal', message: err.message, type: 'error' });
+    }).simpanLogoPerusahaan(item.nama, data, currentUser);
+  };
+  ov.querySelector('#lgSimpan').onclick = e => { if (baru) kirim(baru, e.currentTarget); };
+  const h = ov.querySelector('#lgHapus');
+  if (h) h.onclick = e => kirim(null, e.currentTarget);
 }
 
 function renderMasterKategori(){
@@ -9481,10 +9709,11 @@ function viewMobileTransaksi(id){
       </div>
       ` : ''}
       ${pjNotice}
+      <button type="button" class="btn-sm btn-dark" id="mViewFormBtn" style="width:100%;margin-bottom:8px;">Form PDF</button>
       <button type="button" class="btn-sm btn-outline" id="mViewEditBtn" style="width:100%;margin-bottom:4px;" ${pjMenunggu ? 'disabled' : ''}>${pjMenunggu ? 'Menunggu review admin' : 'Ajukan Edit'}</button>
       <div class="btn-row" style="margin-top:10px;">
         <button type="button" class="btn-sm btn-outline" id="mViewCloseBtn" style="flex:1;">Tutup</button>
-        <button type="button" class="btn-sm btn-dark" id="mViewPdfBtn" style="flex:1;">Download PDF</button>
+        <button type="button" class="btn-sm btn-outline" id="mViewPdfBtn" style="flex:1;">Struk PDF</button>
       </div>
     </div>
   `;
@@ -9492,6 +9721,7 @@ function viewMobileTransaksi(id){
   bindFotoGrid(overlay);
   overlay.querySelector('#mViewCloseBtn').onclick = () => overlay.remove();
   overlay.querySelector('#mViewPdfBtn').onclick = () => downloadMobileReceiptPDF(id);
+  overlay.querySelector('#mViewFormBtn').onclick = e => bukaFormPdf(id, e.currentTarget);
   overlay.querySelector('#mViewEditBtn').onclick = () => { overlay.remove(); ajukanEditMobileModal(id); };
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
