@@ -106,6 +106,7 @@
     hapusTransaksi: TRX_KEYS,
     importTransaksiBatch: TRX_KEYS,
     reviewPengajuanEdit: TRX_KEYS,
+    reviewPengajuanTransaksi: TRX_KEYS,
     saveMasterItem: ['master'].concat(TRX_KEYS),
     deleteMasterItem: ['master'].concat(TRX_KEYS)
   };
@@ -150,6 +151,8 @@
           if (onSuccess) onSuccess(data.result);
         } else {
           if (data.code === 'SESSION_EXPIRED') forceReLogin();
+          // Ditolak karena hak akses: sesuaikan menu sekarang juga.
+          if (data.code === 'FORBIDDEN' && typeof cekAksesSekarang === 'function') { try { cekAksesSekarang(); } catch (e) {} }
           var err = new Error(data.error || 'Terjadi kesalahan di server.');
           err.code = data.code;
           if (onFailure) onFailure(err); else console.error(err);
@@ -1889,6 +1892,183 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 @keyframes muFade{from{opacity:0;}to{opacity:1;}}
 @media (min-width:600px){:is(#mobileApp,.mu-scope) .m-header,:is(#mobileApp,.mu-scope) .m-body{max-width:520px;margin-left:auto;margin-right:auto;}:is(#mobileApp,.mu-scope) .m-header{border-radius:0 0 40px 40px;}}
 .foto-preview-meta{display:none;}
+
+/* ===== Hak Akses (superadmin) ===== */
+.hak-tabs{margin-bottom:14px;}
+.hak-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+.hak-row{display:grid;grid-template-columns:minmax(0,1fr) repeat(4,64px);align-items:center;gap:4px;padding:12px 16px;border-top:1px solid var(--line);}
+.hak-row:first-child{border-top:none;}
+.hak-head{background:var(--paper);padding:10px 16px;font-size:11.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--muted);}
+.hak-head span:not(:first-child),.hak-row > .hak-cek,.hak-row > .hak-na{justify-self:center;text-align:center;}
+.hak-nama{font-size:14px;font-weight:600;color:var(--ink);overflow-wrap:anywhere;}
+.hak-na{color:var(--muted-light,#b3bcb7);font-size:14px;}
+.hak-cek{position:relative;width:24px;height:24px;cursor:pointer;}
+.hak-cek input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer;z-index:1;}
+.hak-cek i{position:absolute;inset:0;border-radius:7px;border:1.5px solid #c0c9c3;background:#fff;transition:background .15s,border-color .15s;}
+.hak-cek input:checked + i{background:var(--brand,#05592d);border-color:var(--brand,#05592d);}
+.hak-cek input:checked + i::after{content:"";position:absolute;left:7px;top:3px;width:6px;height:11px;border:solid #fff;border-width:0 2.2px 2.2px 0;transform:rotate(45deg);}
+.hak-cek input:focus-visible + i{box-shadow:0 0 0 3px rgba(5,89,45,.18);}
+.hak-cek input:disabled + i{opacity:.55;}
+.hak-note{margin:10px 4px 0;font-size:12.5px;color:var(--muted);}
+@media (max-width:700px){
+  .hak-row{grid-template-columns:minmax(0,1fr) repeat(4,44px);padding:12px 12px;gap:2px;}
+  .hak-head{padding:10px 12px;font-size:10px;letter-spacing:0;}
+  .hak-nama{font-size:13px;}
+}
+.mu-akses-kosong{display:flex;flex-direction:column;gap:4px;text-align:center;padding:28px 18px !important;color:var(--muted);font-size:13px;}
+.mu-akses-kosong b{color:var(--ink);font-size:15px;}
+/* ===== Persetujuan Transaksi (approval) ===== */
+.st-badge.dibatalkan{background:#eef0ef;color:#5f6d66;}
+.apv-head{align-items:flex-start;}
+.apv-reload{display:inline-flex;align-items:center;gap:6px;}
+.apv-reload svg{width:14px;height:14px;}
+.apv-tabs{display:flex;gap:6px;margin:0 0 16px;padding:4px;background:var(--panel);border:1px solid var(--line);border-radius:12px;width:max-content;max-width:100%;overflow-x:auto;}
+.apv-tab{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--muted);white-space:nowrap;}
+.apv-tab:hover{color:var(--ink);}
+.apv-tab.active{background:var(--brand);color:#fff;}
+.apv-count{min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:var(--alert);color:#fff;font-size:11px;font-weight:700;align-items:center;justify-content:center;}
+.apv-tab.active .apv-count{background:#fff;color:var(--brand);}
+.apv-list{display:flex;flex-direction:column;gap:10px;}
+/* Kartu ringkas: [isi | nominal | tombol] di layar lebar, bertumpuk di HP */
+.apv-card{display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"main total act";align-items:center;gap:6px 18px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);border-left:4px solid #d97706;border-radius:14px;cursor:pointer;transition:background .15s,box-shadow .15s;}
+.apv-card:hover{background:#fafcfb;box-shadow:0 4px 14px -8px rgba(16,21,28,.18);}
+.apv-card:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
+.apv-card.st-disetujui{border-left-color:var(--signal);}
+.apv-card.st-ditolak{border-left-color:var(--alert);}
+.apv-card.st-dibatalkan{border-left-color:#c0c9c3;}
+.apv-main{grid-area:main;min-width:0;display:flex;flex-direction:column;gap:3px;}
+.apv-lok{font-size:15px;font-weight:700;color:var(--ink);text-transform:uppercase;overflow-wrap:anywhere;line-height:1.3;}
+.apv-sub{font-size:12px;color:var(--muted);text-transform:uppercase;overflow-wrap:anywhere;}
+.apv-meta{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;font-size:12.5px;color:var(--muted);line-height:1.4;}
+.apv-meta .st-badge{font-size:11px;padding:2px 8px;}
+.apv-wkt{white-space:nowrap;}
+.apv-rev{padding:2px 8px;border-radius:999px;background:#e0e7ff;color:#3730a3;font-size:11px;font-weight:700;}
+.apv-alasan{margin-top:4px;font-size:12.5px;color:#b91c1c;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;}
+.apv-alasan::before{content:"Alasan: ";font-weight:700;}
+.apv-total{grid-area:total;font-size:17px;font-weight:800;color:var(--signal);white-space:nowrap;font-variant-numeric:tabular-nums;text-align:right;}
+.apv-total.neg{color:var(--alert);}
+.apv-actions{grid-area:act;display:flex;gap:8px;}
+.apv-note{margin-top:8px;padding:9px 12px;border-radius:10px;background:#f1f5f2;font-size:12.5px;line-height:1.45;color:var(--ink);overflow-wrap:anywhere;}
+.apv-note.tolak{background:#fff1f1;color:#7f1d1d;}
+.apv-note.ok{background:#ecfdf3;color:#14532d;}
+.apv-batal-link{background:none;color:#b91c1c;margin-right:auto;padding-left:0;}
+.apv-batal-link:hover{text-decoration:underline;}
+.apv-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:0 14px;border-radius:9px;font-size:13px;font-weight:700;border:1.5px solid transparent;cursor:pointer;white-space:nowrap;}
+.apv-btn.ghost{border-color:var(--line);background:var(--panel);color:var(--ink);}
+.apv-btn.ghost:hover{border-color:var(--brand);}
+.apv-btn.primary{background:var(--brand);color:#fff;}
+.apv-btn.primary:hover{background:var(--brand-dark,#044424);}
+.apv-btn.danger{background:#fff1f1;border-color:#fecaca;color:#b91c1c;}
+.apv-btn.danger:hover{background:#fee2e2;}
+.apv-btn.danger-ghost{background:transparent;color:#b91c1c;}
+.apv-empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:44px 16px;color:var(--muted);font-size:13.5px;background:var(--panel);border:1px solid var(--line);border-radius:14px;}
+.apv-empty.err{color:var(--alert);}
+.apv-empty .ic{width:56px;height:56px;border-radius:50%;background:var(--brand-soft,#e8f5e9);color:var(--brand);display:flex;align-items:center;justify-content:center;margin-bottom:4px;}
+.apv-empty .ic svg{width:26px;height:26px;}
+.apv-empty b{color:var(--ink);font-size:14.5px;}
+/* Pengaturan */
+.apv-set-info{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;margin-bottom:14px;border-radius:12px;background:#eff6ff;color:#1e3a8a;font-size:13px;line-height:1.5;}
+.apv-set-info svg{flex:none;width:20px;height:20px;margin-top:1px;}
+.apv-set-list{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+.apv-set-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;border-top:1px solid var(--line);cursor:pointer;}
+.apv-set-row:first-child{border-top:none;}
+.apv-set-tx{display:flex;flex-direction:column;min-width:0;}
+.apv-set-tx b{font-size:14px;color:var(--ink);overflow-wrap:anywhere;}
+.apv-set-tx small{font-size:12.5px;color:var(--muted);}
+.apv-switch{position:relative;flex:none;width:46px;height:26px;}
+.apv-switch input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;z-index:1;}
+.apv-switch i{position:absolute;inset:0;border-radius:13px;background:#d6dcd8;transition:background .2s;}
+.apv-switch i::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s;}
+.apv-switch input:checked + i{background:var(--brand);}
+.apv-switch input:checked + i::after{transform:translateX(20px);}
+.apv-switch input:focus-visible + i{box-shadow:0 0 0 3px var(--brand-ring,rgba(5,89,45,.18));}
+.apv-switch input:disabled + i{opacity:.6;}
+.apv-switch.part i{background:#9cc9b0;}
+.apv-switch.part i::after{transform:translateX(10px);}
+.apv-grp{border-top:1px solid var(--line);}
+.apv-grp:first-child{border-top:none;}
+.apv-grp > .apv-set-row{border-top:none;cursor:default;}
+.apv-grp-tg{flex:1;min-width:0;display:flex;align-items:center;gap:8px;background:none;border:none;padding:0;text-align:left;font:inherit;color:inherit;cursor:pointer;}
+.apv-grp-tg:disabled{cursor:default;}
+.apv-grp-tg .apv-set-tx{flex:1;}
+.apv-grp-tg .chev{flex:none;width:18px;height:18px;color:var(--muted);transition:transform .2s;}
+.apv-grp.open .apv-grp-tg .chev{transform:rotate(180deg);}
+.apv-lok-list{display:none;padding:0 18px 8px 18px;}
+.apv-grp.open .apv-lok-list{display:block;}
+.apv-lok-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 10px 14px;border-top:1px dashed var(--line);font-size:13.5px;color:var(--ink);cursor:pointer;}
+.apv-lok-row > span:first-child{min-width:0;overflow-wrap:anywhere;}
+/* Modal */
+.apv-modal .modal-box{max-height:calc(100vh - 40px);overflow-y:auto;}
+.apv-modal .detail-table td:last-child,.apv-modal .detail-table th:last-child{white-space:nowrap;}
+.apv-modal .modal-box.apv-kecil{max-width:420px;}
+.apv-status-row{display:flex;align-items:center;gap:8px;margin:-6px 0 10px;}
+.apv-btn-row{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:16px;}
+.apv-btn-row .btn-sm{min-height:40px;}
+.apv-danger{background:#dc2626;color:#fff;border:none;}
+.apv-danger:hover{background:#b91c1c;}
+.apv-dialog{text-align:center;}
+.apv-dialog h3{font-size:17px;margin:12px 0 6px;color:var(--ink);}
+.apv-dialog p{font-size:13.5px;color:var(--muted);line-height:1.5;}
+.apv-dialog .d-field{text-align:left;margin-top:14px;}
+.apv-dialog .apv-btn-row{justify-content:center;}
+.apv-dialog-ic{display:inline-flex;width:48px;height:48px;border-radius:50%;align-items:center;justify-content:center;}
+.apv-dialog-ic svg{width:24px;height:24px;}
+.apv-dialog-ic.ok{background:var(--brand-soft,#e8f5e9);color:var(--brand);}
+.apv-dialog-ic.tolak{background:#fee2e2;color:#dc2626;}
+.apv-modal textarea{width:100%;min-height:84px;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:14px;resize:vertical;}
+.apv-modal textarea.apv-invalid{border-color:var(--alert);}
+.apv-modal em{font-style:normal;font-weight:400;color:var(--muted);font-size:12px;}
+/* Form perbaikan (user) */
+.apv-fix .d-field{margin-top:12px;}
+.apv-fix input[type=date],.apv-fix select,.apv-fix textarea{width:100%;min-height:42px;padding:0 12px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:15px;background:#fff;}
+.apv-fix textarea{padding:10px 12px;}
+.apv-fix-head{display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px;}
+.apv-item{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px;margin-bottom:8px;border:1px solid var(--line);border-radius:12px;background:#f7faf8;position:relative;}
+.apv-item .apv-nom-wrap{grid-column:1 / -1;position:relative;}
+.apv-item .apv-nom-wrap span{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-weight:700;color:var(--brand);}
+.apv-item .apv-nom{width:100%;min-height:44px;padding:0 12px 0 40px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:17px;font-weight:700;}
+.apv-item select{min-height:42px;}
+.apv-rm{position:absolute;top:-8px;right:-8px;width:26px;height:26px;border-radius:50%;background:#fff;border:1px solid #fecaca;color:#dc2626;font-size:16px;line-height:1;}
+.apv-rm:disabled{opacity:.35;}
+.apv-fix-total{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;background:#edf7f1;font-size:13px;color:var(--muted);font-weight:600;}
+.apv-fix-total b{font-size:19px;color:var(--brand);}
+.apv-fix-foto{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+.apv-foto-lama{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#f1f5f2;font-size:12.5px;font-weight:600;}
+.apv-fix-upload{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+/* Label di dalam .d-field defaultnya display:block -> kembalikan bentuk tombol/chip */
+.apv-fix .d-field label.apv-btn{display:flex;align-items:center;justify-content:center;margin:0;min-height:42px;font-size:13.5px;}
+.apv-fix .d-field label.apv-foto-lama{display:inline-flex;align-items:center;gap:8px;margin:0;font-size:13px;}
+.apv-fix .d-field .apv-foto-lama input{width:18px;height:18px;min-height:0;margin:0;padding:0;accent-color:var(--brand);}
+/* Catatan & daftar pengajuan di aplikasi user */
+.mu-apv-note{display:flex;gap:10px;align-items:flex-start;margin:4px 0 12px;padding:11px 13px;border-radius:14px;background:#eff6ff;color:#1e3a8a;font-size:13px;line-height:1.45;}
+.mu-apv-note[hidden]{display:none;}
+.mu-apv-note svg{flex:none;width:18px;height:18px;margin-top:1px;}
+.mu-ptx{margin:0 0 16px;}
+.mu-ptx[hidden]{display:none;}
+
+.m-bottom-item .pill{position:relative;}
+.mu-dot{position:absolute;top:2px;right:8px;width:9px;height:9px;border-radius:50%;background:#dc2626;box-shadow:0 0 0 2px #fff;display:none;}
+/* Kartu "transaksi menunggu persetujuan" di halaman Notifikasi */
+#page-notifikasi .nt-pj.nt-ptx{background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a;}
+#page-notifikasi .nt-pj.nt-ptx .ic{background:#2563eb;}
+#page-notifikasi .nt-pj.nt-ptx b{color:#1e3a8a;}
+#navPersetujuan svg{width:18px;height:18px;flex:none;}
+@media (max-width:700px){
+  .apv-card{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"main total" "act act";align-items:start;gap:12px 12px;padding:14px;}
+  .apv-card.tanpa-aksi{grid-template-areas:"main total";}
+  .apv-total{font-size:16px;padding-top:1px;}
+  .apv-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px;}
+  .apv-actions .apv-btn{min-height:42px;font-size:14px;}
+  .apv-tabs{width:100%;}
+  .apv-tab{flex:1;justify-content:center;padding:9px 10px;}
+  .apv-head{flex-direction:row !important;align-items:flex-start !important;}
+  .apv-reload{flex:none;width:40px;height:40px;padding:0 !important;justify-content:center;}
+  .apv-reload span{display:none;}
+  .apv-reload svg{width:17px;height:17px;}
+  .apv-modal .detail-header h3{font-size:18px;}
+  .apv-btn-row .btn-sm{flex:1;}
+}
+
 /* ===== Toast: jenis, progress bar, geser ===== */
 .d-toast,.mu-toast,.m-ntoast{touch-action:pan-y;user-select:none;-webkit-user-select:none;}
 .t-drag{transition:none !important;cursor:grabbing;}
@@ -2040,6 +2220,14 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
   #desktopApp.m-sa .m-p-kinerja{order:4;}
   #desktopApp.m-sa #page-dashboard .m-sync{order:9;}
   #desktopApp.m-sa .m-p-expense,#desktopApp.m-sa .m-p-recent{display:none !important;}
+  #desktopApp.m-sa .m-p-kinerja.m-satu-lokasi{display:none !important;}
+  #desktopApp.m-sa .mh-grid.mh-grid-5{gap:12px 2px;padding:14px 8px;}
+  #desktopApp.m-sa .mh-grid.mh-grid-5 .mh-tile{padding:6px 0;font-size:12px;}
+  #desktopApp.m-sa .mh-grid.mh-grid-5 .mh-tile .ic.duo{width:46px;height:46px;border-radius:15px;}
+  #desktopApp.m-sa .mh-grid.mh-grid-5 .mh-tile .m-dot{right:2px;}
+  #desktopApp.m-sa .mt-txt small.mt-wil{display:flex;max-width:calc(100vw - 120px);text-transform:uppercase;}
+  #desktopApp.m-sa .mt-txt small.mt-wil{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:block;}
+  #desktopApp.m-sa .mt-txt small.mt-wil i{display:inline-block;margin-right:5px;vertical-align:middle;}
   #desktopApp.m-sa .m-sa-p .panel-header{align-items:flex-start;}
   #desktopApp.m-sa .m-sa-p .panel-header h3{line-height:1.35;}
   #desktopApp.m-sa .m-sub{font-size:12px;font-weight:400;line-height:16px;color:var(--muted);margin-top:1px;}
@@ -2116,6 +2304,25 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
   #desktopApp.m-sa #transaksiTbody td:nth-child(2){margin-top:2px;font-size:12.5px;line-height:1.4;color:var(--muted);}
   #desktopApp.m-sa #transaksiTbody td:nth-child(2) .m-meta{display:inline;}
   #desktopApp.m-sa #transaksiTbody td:nth-child(8){justify-self:end;margin:6px -6px -6px 0 !important;}
+  /* Ringkas: lokasi + nominal, perusahaan, tanggal · nama. Keterangan ada di detail. */
+  #desktopApp.m-sa #page-transaksi > .d-header p{display:none;}
+  #desktopApp.m-sa #page-transaksi > .toolbar-actions{display:none !important;}
+  #desktopApp.m-sa #transaksiTbody tr{grid-template-areas:"lok nom" "per per" "tgl tgl" !important;grid-template-columns:minmax(0,1fr) auto !important;gap:2px 12px !important;padding:14px 16px !important;cursor:pointer;align-items:start !important;}
+  #desktopApp.m-sa #transaksiTbody tr:active{background:var(--f-low) !important;}
+  #desktopApp.m-sa #transaksiTbody td:nth-child(5),
+  #desktopApp.m-sa #transaksiTbody td:nth-child(8){display:none !important;}
+  #desktopApp.m-sa #transaksiTbody td:nth-child(3){font-size:12px;}
+  #desktopApp.m-sa #transaksiTbody td:nth-child(2){margin-top:0;font-size:12px;}
+  /* Aksi di popup detail transaksi (HP) */
+  body:has(#desktopApp.m-sa) .modal-overlay .m-vact{display:grid !important;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 12px;}
+  .modal-overlay .m-vact button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border-radius:12px;border:1px solid var(--m-line);background:#fff;color:var(--ink);font:inherit;font-size:13px;font-weight:600;}
+  .modal-overlay .m-vact button svg{width:17px;height:17px;}
+  .modal-overlay .m-vact button.danger{color:#ba1a1a;border-color:#f3c9c6;background:#fff7f6;}
+  body:has(#desktopApp.m-sa) .modal-overlay .m-vact + .btn-row .btn-sm{width:100%;justify-content:center;min-height:44px;}
+  #desktopApp.m-sa .m-frow{display:flex;gap:8px;align-items:stretch;margin-bottom:12px;}
+  #desktopApp.m-sa .m-frow .m-ftoggle{flex:1;margin:0;}
+  #desktopApp.m-sa .m-fmore{flex:none;width:48px;display:inline-flex;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--m-line);border-radius:12px;color:var(--ink);}
+  #desktopApp.m-sa .m-fmore svg{width:20px;height:20px;}
 
   /* Notifikasi (HP): nama lokasi/perusahaan & keterangan boleh turun baris */
   #desktopApp #page-notifikasi .nt-item{align-items:start;}
@@ -2134,7 +2341,7 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
   #page-notifikasi .nt-readall{flex:none;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:999px;background:var(--m-tint);color:var(--f-secondary);font-size:12px;font-weight:700;}
   #page-notifikasi .nt-readall svg{width:16px;height:16px;}
   #page-notifikasi .nt-readall:disabled{opacity:.45;}
-  #page-notifikasi .nt-pj{display:none;align-items:center;gap:12px;width:100%;text-align:left;margin-bottom:16px;padding:14px 16px;border-radius:20px;background:var(--m-wait-soft);color:#7a3e07;box-shadow:var(--f-sh1);}
+  #page-notifikasi .nt-pj{display:none;align-items:center;gap:12px;width:100%;text-align:left;margin-bottom:10px;padding:10px 14px;border-radius:18px;background:var(--m-wait-soft);color:#7a3e07;box-shadow:var(--f-sh1);}
   #page-notifikasi .nt-pj .ic{flex:none;width:36px;height:36px;border-radius:12px;background:var(--m-wait);color:#fff;display:flex;align-items:center;justify-content:center;}
   #page-notifikasi .nt-pj .ic svg{width:18px;height:18px;}
   #page-notifikasi .nt-pj .tx{flex:1;min-width:0;}
@@ -3332,6 +3539,19 @@ function bindRibuanInput(el){
 // Akses PERUSAHAAN / LOKASI pada USERS bisa berupa 'ALL', satu nama, atau
 // beberapa nama dipisahkan koma (akses multi). Helper ini menerjemahkannya
 // menjadi daftar perusahaan yang boleh diakses user tsb.
+// Lokasi yang boleh diakses akun yang login (sesuai kolom LOKASI di
+// Manajemen User), untuk perusahaan terpilih (string/array; kosong = semua
+// perusahaan aksesnya). Dipakai semua dropdown/filter lokasi.
+function lokasiAkses(perusahaanPilih){
+  const pil = (Array.isArray(perusahaanPilih) ? perusahaanPilih : [perusahaanPilih]).filter(Boolean);
+  let list = lokasiUntukPerusahaan(pil.length ? pil : getAccessiblePerusahaan(currentUser));
+  const lok = currentUser && currentUser.role !== 'superadmin' ? String(currentUser.lokasi || 'ALL') : 'ALL';
+  if (lok !== 'ALL') {
+    const izin = new Set(lok.split(',').map(l => normalizeNama(l.trim())).filter(Boolean));
+    list = list.filter(l => izin.has(normalizeNama(l)));
+  }
+  return [...new Set(list)].sort();
+}
 function getAccessiblePerusahaan(user){
   if (!user || !user.perusahaan || user.perusahaan === 'ALL') return masterData.perusahaan;
   // Cocokkan nama perusahaan dari USERS ke nama resmi di masterData.perusahaan
@@ -3616,6 +3836,8 @@ function loadApp(preloadedInit){
   };
   const applyInit = (init) => {
     masterData = init.masterData;
+    setApprovalPerusahaan(init.approvalPerusahaan);
+    if (init.akses) { _akses.data = init.akses; _akses.versi = init.aksesVersi || ''; }
     const isDesktop = (currentUser.role === 'superadmin' || currentUser.role === 'admin');
     if (isDesktop) {
       initDesktopApp();
@@ -3640,6 +3862,8 @@ function loadApp(preloadedInit){
       if (!init || init.error || !currentUser) return;
       seedInit(init);
       masterData = init.masterData;
+      setApprovalPerusahaan(init.approvalPerusahaan);
+      if (init.akses) setAkses(init.akses, init.aksesVersi);
       if (document.getElementById('page-dashboard')?.classList.contains('active') &&
           document.getElementById('desktopApp').style.display === 'block') {
         loadDashboard();
@@ -3704,6 +3928,10 @@ function initDesktopApp(){
 
   document.getElementById('dLogoutBtn').onclick = (logout);
   initMobileHome();
+  initPersetujuan();
+  initHakAkses();
+  terapkanAkses();
+  mulaiPollingAkses();
 
   // Populate perusahaan select (input form)
   const dPerusahaan = document.getElementById('dPerusahaan');
@@ -3730,6 +3958,222 @@ function initDesktopApp(){
     document.getElementById('navPengajuanEdit').style.display = '';
     refreshPengajuanBadge();
   }
+}
+
+// ============================================================
+// HAK AKSES PER ROLE (Lihat / Tambah / Ubah / Hapus per menu)
+// ============================================================
+// Superadmin mengatur di menu "Hak Akses". Di sini: (1) menyembunyikan menu
+// & tombol yang tidak boleh untuk akun yang login, (2) mengecek perubahan
+// tiap ±1 menit supaya berlaku tanpa login ulang. Server tetap menolak aksi
+// yang tidak diizinkan (bukan hanya disembunyikan).
+const _akses = { data: null, versi: '', timer: null };
+const AKSES_HALAMAN = {
+  dashboard: ['dashboard', 'r'], input: ['input', 'c'], transaksi: ['riwayat', 'r'], persetujuan: ['persetujuan', 'r'],
+  'pengajuan-edit': ['pengajuan-edit', 'r'], monitoring: ['monitoring', 'r'], 'laporan-bulanan': ['laporan', 'r'],
+  notifikasi: ['notifikasi', 'r'], users: ['users', 'r'], 'log-aktivitas': ['log', 'r'],
+  'master-perusahaan': ['master', 'r'], 'master-lokasi': ['master', 'r'], 'master-tipe': ['master', 'r'], 'master-kategori': ['master', 'r']
+};
+const AKSES_BAWAAN = {
+  admin: { dashboard: 'r', input: 'c', riwayat: 'rcud', persetujuan: 'ru', 'pengajuan-edit': '', monitoring: 'r',
+    laporan: 'r', notifikasi: 'r', master: '', users: '', log: 'r' },
+  user: { input: 'c', riwayat: 'r', 'pengajuan-edit': 'c' }
+};
+const AKSI_LABEL = { r: 'Lihat', c: 'Tambah', u: 'Ubah', d: 'Hapus' };
+function boleh(modul, aksi){
+  if (!currentUser) return false;
+  if (currentUser.role === 'superadmin') return true;
+  // Belum dimuat dari server: pakai bawaan (server tetap menegakkan).
+  const data = _akses.data || AKSES_BAWAAN[currentUser.role] || {};
+  return String(data[modul] || '').indexOf(aksi || 'r') > -1;
+}
+function bolehHalaman(pageId){
+  if (pageId === 'hak-akses') return !!currentUser && currentUser.role === 'superadmin';
+  const a = AKSES_HALAMAN[pageId];
+  return !a || boleh(a[0], a[1]);
+}
+function setAkses(akses, versi){
+  if (!akses || typeof akses !== 'object') return;
+  const sebelum = _akses.versi;
+  _akses.data = akses; _akses.versi = versi || '';
+  terapkanAkses();
+  if (sebelum && versi && sebelum !== versi && currentUser && currentUser.role !== 'superadmin') {
+    if (currentUser.role === 'user') showToast('Hak akses Anda diperbarui oleh superadmin.', 'info');
+    else showDesktopToast({ title: 'Hak akses diperbarui', message: 'Menu disesuaikan oleh superadmin.', type: 'info' });
+  }
+}
+function cekAksesSekarang(){
+  if (!currentUser || currentUser.role === 'superadmin') return;
+  google.script.run.withSuccessHandler(r => { if (r && r.success && r.versi !== _akses.versi) setAkses(r.akses, r.versi); })
+    .withFailureHandler(() => {}).getAksesSaya(currentUser);
+}
+function mulaiPollingAkses(){
+  stopPollingAkses();
+  if (!currentUser || currentUser.role === 'superadmin') return;
+  if (!_akses.data) cekAksesSekarang();
+  _akses.timer = setInterval(() => { if (document.visibilityState === 'visible') cekAksesSekarang(); }, 60000);
+}
+function stopPollingAkses(){
+  if (_akses.timer) clearInterval(_akses.timer);
+  _akses.timer = null;
+}
+function resetAkses(){ stopPollingAkses(); _akses.data = null; _akses.versi = ''; document.getElementById('aksesStyle')?.remove(); }
+
+// Sembunyikan elemen lewat satu <style> (berlaku juga untuk elemen yang
+// dirender belakangan, mis. baris tabel & tombol di popup).
+function terapkanAkses(){
+  if (!currentUser) return;
+  let st = document.getElementById('aksesStyle');
+  if (currentUser.role === 'superadmin') { st?.remove(); return; }
+  const sel = [];
+  const no = (m, a) => !boleh(m, a);
+  const add = (cond, s) => { if (cond) sel.push(s); };
+  if (currentUser.role === 'user') {
+    add(no('input', 'c'), '.m-bottom-item[data-mobile-view="input"], #mInputView');
+    add(no('riwayat', 'r'), '.m-bottom-item[data-mobile-view="history"], #mHistoryView .mu-filter, #mHistoryView .m-recent, #mPtxBox');
+    add(no('input', 'c'), '#mPtxBox [data-act="perbaiki"], .apv-modal [data-act="perbaiki"]');
+    add(no('pengajuan-edit', 'c'), '#mViewEditBtn');
+  } else {
+    const nav = p => `.d-nav-item[data-page="${p}"], .m-bn[data-k="${p}"], .mh-tile[data-k="${p}"]`;
+    add(no('dashboard', 'r'), '#page-dashboard > :not(.d-header):not(.m-topbar):not(.m-home):not(.m-sync), #page-dashboard .mh-hero, #mhToday, #mhSync, #page-dashboard .d-header > div:last-child');
+    add(no('input', 'c'), nav('input') + ', #page-input');
+    add(no('riwayat', 'r'), nav('transaksi') + ', #page-transaksi');
+    add(no('riwayat', 'c'), '#btnTemplateTransaksi, #btnImportTransaksiLabel');
+    add(no('riwayat', 'u'), '#transaksiTbody [data-action="edit"], .m-vact [data-v="edit"]');
+    add(no('riwayat', 'd'), '#transaksiTbody [data-action="delete"], .m-vact [data-v="hapus"]');
+    add(no('persetujuan', 'r'), nav('persetujuan') + ', #navPersetujuan, #page-persetujuan, #ntPtx');
+    add(no('persetujuan', 'u'), '#apvBody .apv-actions, .apv-modal [data-act="setuju"], .apv-modal [data-act="tolak"]');
+    add(no('pengajuan-edit', 'r'), nav('pengajuan-edit') + ', #navPengajuanEdit, #page-pengajuan-edit, #ntPj');
+    add(no('pengajuan-edit', 'u'), '#pjRejectBtn, #pjApproveBtn');
+    add(no('monitoring', 'r'), nav('monitoring') + ', #page-monitoring, #mhToday .mh-link');
+    add(no('laporan', 'r'), nav('laporan-bulanan') + ', #page-laporan-bulanan, #mKinerjaAll');
+    add(no('notifikasi', 'r'), nav('notifikasi') + ', #navNotifikasi, #page-notifikasi');
+    add(no('master', 'r'), '#masterNavGroup, .mh-tile[data-k="master"], [id^="page-master-"]');
+    add(no('master', 'c'), '[id^="page-master-"] .filter-bar button[onclick^="openMasterModal"]');
+    add(no('master', 'u'), '[id^="page-master-"] .user-table-actions button:not([data-action="delete"])');
+    add(no('master', 'd'), '[id^="page-master-"] .user-table-actions button[data-action="delete"]');
+    add(no('users', 'r'), nav('users') + ', #page-users');
+    add(no('users', 'c'), '#addUserBtn');
+    add(no('users', 'u'), '#usersTbody [data-action="edit"]');
+    add(no('users', 'd'), '#usersTbody [data-action="delete"]');
+    add(no('log', 'r'), nav('log-aktivitas') + ', #page-log-aktivitas');
+    // Pengajuan Edit & Manajemen User/Log untuk admin: tampilkan menunya kalau diizinkan.
+    const pe = document.getElementById('navPengajuanEdit');
+    if (pe) {
+      pe.style.display = boleh('pengajuan-edit', 'r') ? '' : 'none';
+      if (boleh('pengajuan-edit', 'r') && !pe._ak) { pe._ak = true; refreshPengajuanBadge(); }
+    }
+    document.querySelectorAll('.d-nav-item[data-page="users"], .d-nav-item[data-page="log-aktivitas"]').forEach(b => {
+      b.style.display = boleh(b.dataset.page === 'users' ? 'users' : 'log', 'r') ? '' : 'none';
+    });
+    const sub = document.getElementById('dbSubtitle');
+    if (sub) sub.textContent = boleh('dashboard', 'r') ? 'Ringkasan keuangan bulan berjalan.' : 'Pilih menu untuk mulai bekerja.';
+    if (typeof window._renderMhGrid === 'function') window._renderMhGrid();
+  }
+  const css = sel.length ? sel.join(',\n') + '{display:none !important;}' : '';
+  if (!st) { st = document.createElement('style'); st.id = 'aksesStyle'; document.head.appendChild(st); }
+  st.textContent = css;
+  // Halaman yang sedang dibuka ikut dicabut -> pindah ke halaman yang boleh.
+  if (currentUser.role === 'user') {
+    const app = document.getElementById('mobileApp');
+    const view = app && app.dataset.view;
+    if (view === 'input' && !boleh('input', 'c') && boleh('riwayat', 'r')) switchMobileView('history');
+    if (view === 'history' && !boleh('riwayat', 'r') && boleh('input', 'c')) switchMobileView('input');
+    let kosong = document.getElementById('mAksesKosong');
+    const tanpaMenu = !boleh('input', 'c') && !boleh('riwayat', 'r');
+    if (tanpaMenu && !kosong) {
+      kosong = document.createElement('div');
+      kosong.id = 'mAksesKosong'; kosong.className = 'm-card mu-akses-kosong';
+      kosong.innerHTML = '<b>Belum ada menu untuk akun ini</b><span>Hubungi superadmin untuk mendapatkan akses.</span>';
+      document.querySelector('#mobileApp .m-body')?.prepend(kosong);
+    } else if (!tanpaMenu && kosong) kosong.remove();
+  } else {
+    const aktif = document.querySelector('#desktopApp .d-page.active');
+    const pid = aktif && aktif.id.replace(/^page-/, '');
+    if (pid && !bolehHalaman(pid)) switchPage('dashboard');
+  }
+}
+
+// ---------- Halaman Hak Akses (superadmin) ----------
+const _hak = { role: 'admin', modul: [], data: null };
+function initHakAkses(){
+  if (!currentUser || currentUser.role !== 'superadmin') return;
+  if (!document.getElementById('page-hak-akses')) {
+    const pg = document.createElement('div');
+    pg.className = 'd-page'; pg.id = 'page-hak-akses';
+    pg.innerHTML = `
+      <div class="d-header"><div><h2>Hak Akses</h2><p>Atur menu yang boleh dibuka tiap role.</p></div></div>
+      <div class="apv-tabs hak-tabs" role="tablist">
+        <button type="button" class="apv-tab" data-role="admin" role="tab">Admin</button>
+        <button type="button" class="apv-tab" data-role="user" role="tab">User</button>
+      </div>
+      <div id="hakBody"></div>`;
+    document.querySelector('#desktopApp .d-main')?.appendChild(pg);
+    pg.querySelectorAll('.hak-tabs .apv-tab').forEach(b => b.onclick = () => { _hak.role = b.dataset.role; renderHakAkses(); });
+  }
+  if (!document.getElementById('navHakAkses')) {
+    const nav = document.createElement('button');
+    nav.className = 'd-nav-item'; nav.id = 'navHakAkses'; nav.dataset.page = 'hak-akses';
+    nav.innerHTML = `${mIco('kunci')}Hak Akses`;
+    nav.onclick = () => switchPage('hak-akses');
+    document.querySelector('.d-nav .d-nav-item[data-page="users"]')?.after(nav);
+  }
+}
+function muatHakAkses(){
+  const body = document.getElementById('hakBody'); if (!body) return;
+  if (!_hak.data) body.innerHTML = '<div class="apv-empty">Memuat hak akses…</div>';
+  google.script.run.withSuccessHandler(res => {
+    if (!res || !res.success) { body.innerHTML = `<div class="apv-empty err">${escapeHtml((res && res.message) || 'Gagal memuat.')}</div>`; return; }
+    _hak.modul = res.modul || []; _hak.data = res.data || {};
+    renderHakAkses();
+  }).withFailureHandler(err => { body.innerHTML = `<div class="apv-empty err">Gagal memuat: ${escapeHtml(err.message)}</div>`; })
+    .getHakAkses(currentUser);
+}
+function renderHakAkses(){
+  const body = document.getElementById('hakBody'); if (!body || !_hak.data) return;
+  document.querySelectorAll('.hak-tabs .apv-tab').forEach(b => b.classList.toggle('active', b.dataset.role === _hak.role));
+  const role = _hak.role, data = _hak.data[role] || {};
+  const rows = _hak.modul.filter(m => m[role]);
+  body.innerHTML = `
+    <div class="hak-card">
+      <div class="hak-row hak-head"><span>Menu</span>${'rcud'.split('').map(a => `<span>${AKSI_LABEL[a]}</span>`).join('')}</div>
+      ${rows.map(m => `
+      <div class="hak-row" data-m="${escapeHtml(m.k)}">
+        <span class="hak-nama">${escapeHtml(m.label)}</span>
+        ${'rcud'.split('').map(a => m[role].indexOf(a) > -1
+          ? `<label class="hak-cek"><input type="checkbox" data-a="${a}" ${String(data[m.k] || '').indexOf(a) > -1 ? 'checked' : ''} aria-label="${AKSI_LABEL[a]} ${escapeHtml(m.label)}"><i></i></label>`
+          : '<span class="hak-na" aria-hidden="true">–</span>').join('')}
+      </div>`).join('')}
+    </div>
+    <p class="hak-note">Superadmin selalu punya akses penuh. Perubahan berlaku ±1 menit tanpa login ulang.</p>`;
+  body.querySelectorAll('.hak-row[data-m]').forEach(row => {
+    const m = _hak.modul.find(x => x.k === row.dataset.m);
+    const inputs = [...row.querySelectorAll('input[data-a]')];
+    inputs.forEach(inp => inp.onchange = () => {
+      const a = inp.dataset.a;
+      const punyaLihat = m[role].indexOf('r') > -1;
+      // Tanpa "Lihat", menu tersembunyi -> aksi lain ikut mati; aksi lain butuh "Lihat".
+      if (punyaLihat && a === 'r' && !inp.checked) inputs.forEach(x => { x.checked = false; });
+      if (punyaLihat && a !== 'r' && inp.checked) { const r = inputs.find(x => x.dataset.a === 'r'); if (r) r.checked = true; }
+      const aksi = inputs.filter(x => x.checked).map(x => x.dataset.a).join('');
+      const lama = String(data[m.k] || '');
+      inputs.forEach(x => x.disabled = true);
+      google.script.run.withSuccessHandler(r => {
+        inputs.forEach(x => x.disabled = false);
+        if (!r || !r.success) {
+          inputs.forEach(x => { x.checked = lama.indexOf(x.dataset.a) > -1; });
+          showDesktopToast({ title: 'Gagal menyimpan', message: (r && r.message) || 'Terjadi kesalahan.', type: 'error' });
+          return;
+        }
+        _hak.data = r.data || _hak.data;
+        const ket = r.aksi ? r.aksi.split('').map(x => AKSI_LABEL[x]).join(', ') : 'Tanpa akses';
+        showDesktopToast({ title: `${role === 'admin' ? 'Admin' : 'User'} · ${m.label}`, message: ket, type: r.aksi ? 'success' : 'info' });
+      }).withFailureHandler(err => {
+        inputs.forEach(x => { x.disabled = false; x.checked = lama.indexOf(x.dataset.a) > -1; });
+        showDesktopToast({ title: 'Gagal menyimpan', message: err.message, type: 'error' });
+      }).simpanHakAkses(role, m.k, aksi, currentUser);
+    });
+  });
 }
 
 // ===== Tampilan mobile admin/superadmin (Home, menu cepat, bottom nav) =====
@@ -3761,7 +4205,11 @@ const MI = {
   down:'<path d="M6 9l6 6 6-6"/>',
   add:'<path d="M12 5v14M5 12h14"/>',
   filter:'<path d="M4 5h16M7 12h10M10 19h4"/>',
+  more:'<circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/>',
   checkAll:'<path d="M18 7l-8.5 8.5L6 12"/><path d="M22 7l-8.5 8.5-1-1"/>',
+  xc:'<circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/>',
+  apv:'<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/>',
+  kunci:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.4"/>',
   inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>'
 };
 // Ikon fitur utama: garis putih di kotak hijau hutan (desain v3, superadmin).
@@ -3773,6 +4221,9 @@ const MI_DUO = {
   'users':'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
   'master':'<rect height="7" width="7" x="3" y="3"/><rect height="7" width="7" x="14" y="3"/><rect height="7" width="7" x="14" y="14"/><rect height="7" width="7" x="3" y="14"/>',
   'log-aktivitas':'<path d="M12 8v4l2 2"/><path d="M3.05 11a9 9 0 1 1 .5 4m-.5 5v-5h5"/>',
+  'persetujuan':'<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/>',
+  'input':'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',
+  'notifikasi':'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
   'refresh':'<path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>'
 };
 const mIco = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${MI[k]}</svg>`;
@@ -3780,6 +4231,19 @@ let _mReady = false, _mSaldo = null, _mByBulan = null, _mHide = false, _mPending
 // Batas setor "tepat waktu" — sama dengan yang dipakai badge di halaman Monitoring.
 const JAM_BATAS_SETOR = '14:00:00';
 
+// Ringkasan wilayah akses admin untuk header HP: 1 lokasi -> nama lokasi,
+// beberapa -> "3 lokasi · PT X", semua -> "Semua wilayah".
+function labelWilayahAdmin(){
+  const u = currentUser || {};
+  const lok = String(u.lokasi || 'ALL'), per = String(u.perusahaan || 'ALL');
+  const daftar = v => v.split(',').map(x => x.trim()).filter(Boolean);
+  const pList = per === 'ALL' ? [] : daftar(per);
+  const lList = lok === 'ALL' ? [] : daftar(lok);
+  if (lList.length === 1) return lList[0];
+  const pTxt = pList.length === 1 ? pList[0] : pList.length ? pList.length + ' perusahaan' : '';
+  if (lList.length > 1) return lList.length + ' lokasi' + (pTxt ? ' · ' + pTxt : '');
+  return pTxt || 'Semua wilayah';
+}
 function mGo(pageId){
   switchPage(pageId);
   const m = document.querySelector('.d-main'); if (m) m.scrollTop = 0;
@@ -3804,8 +4268,10 @@ function openMSheet(title, items, who){
 function initMobileHome(){
   if (_mReady) return;
   _mReady = true;
-  const isSuper = currentUser.role === 'superadmin';
-  // Desain "Forest Modern FinOps" v2 + notifikasi transaksi: khusus superadmin.
+  // Tampilan mobile admin = superadmin (desain "Forest Modern FinOps" +
+  // notifikasi transaksi). Bedanya hanya menu yang boleh diakses.
+  const isSuper = isMsaRole();
+  const isAdmin = currentUser.role === 'admin';
   document.getElementById('desktopApp').classList.toggle('m-sa', isSuper);
   const firstName = String(currentUser.name || '').trim().split(/\s+/)[0] || currentUser.username;
   const page = document.getElementById('page-dashboard');
@@ -3816,7 +4282,7 @@ function initMobileHome(){
   top.innerHTML = `
     <div class="mt-who">
       <span class="mt-av" aria-hidden="true">${mIco('me')}<i></i></span>
-      <span class="mt-txt"><small><i></i>Beranda</small><b><span id="mhHi">Halo</span> ${escapeHtml(firstName)}!</b></span>
+      <span class="mt-txt"><small${isAdmin ? ' class="mt-wil"' : ''}><i></i>${isAdmin ? escapeHtml(labelWilayahAdmin()) : 'Beranda'}</small><b><span id="mhHi">Halo</span> ${escapeHtml(firstName)}!</b></span>
     </div>
     `;
 
@@ -3824,21 +4290,41 @@ function initMobileHome(){
   const tile = (k, ico, tone, label, fn, dot) => ({ k, ico, tone, label, fn, dot });
   // Ikon duotone (desain v2) khusus superadmin.
   const dt = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${MI_DUO[k]}</svg>`;
-  const tiles = [
+  const tiles = isAdmin ? [
+    // Admin: Persetujuan Transaksi jadi menu pertama (tugas utama admin).
+    // Label pendek supaya 5 menu muat satu baris.
+    tile('persetujuan', 'apv', 't5', 'Persetujuan', () => mGo('persetujuan'), 'ptx'),
+    tile('transaksi', 'trx', 't1', 'Riwayat', () => mGo('transaksi')),
+    tile('monitoring', 'mon', 't2', 'Monitoring', () => mGo('monitoring')),
+    tile('laporan-bulanan', 'rep', 't3', 'Laporan', () => mGo('laporan-bulanan')),
+    tile('log-aktivitas', 'log', 't3', 'Log', () => mGo('log-aktivitas')),
+    // Input & Notifikasi sudah ada di bottom bar; perbarui data di kartu sinkronisasi.
+    // Menu di bawah ini hanya muncul kalau superadmin memberi akses (Hak Akses).
+    tile('master', 'mst', 't1', 'Master Data', () => openMSheet('Master data', [
+      { label: 'Perusahaan', fn: () => mGo('master-perusahaan') },
+      { label: 'Lokasi',     fn: () => mGo('master-lokasi') },
+      { label: 'Tipe',       fn: () => mGo('master-tipe') },
+      { label: 'Kategori',   fn: () => mGo('master-kategori') }])),
+    tile('pengajuan-edit', 'edit', 't4', 'Pengajuan Edit', () => mGo('pengajuan-edit'), true),
+    tile('users', 'usr', 't2', 'Pengguna', () => mGo('users'))
+  ] : [
     tile('transaksi', 'trx', 't1', 'Riwayat Transaksi', () => mGo('transaksi')),
     tile('monitoring', 'mon', 't2', 'Monitoring Lokasi', () => mGo('monitoring')),
     tile('laporan-bulanan', 'rep', 't3', 'Laporan Bulanan', () => mGo('laporan-bulanan')),
     isSuper
       ? tile('pengajuan-edit', 'edit', 't4', 'Pengajuan Edit', () => mGo('pengajuan-edit'), true)
       : tile('input', 'add', 't4', 'Input Transaksi', () => mGo('input')),
-    tile('users', 'usr', 't2', 'Pengguna &amp; Akses', () => mGo('users')),
+    tile('users', 'usr', 't2', 'Pengguna &amp; Akses', () => openMSheet('Pengguna & akses', [
+      { label: 'Pengguna', fn: () => mGo('users') },
+      { label: 'Hak akses per role', fn: () => mGo('hak-akses') }])),
     tile('master', 'mst', 't1', 'Master Data', () => openMSheet('Master data', [
       { label: 'Perusahaan', fn: () => mGo('master-perusahaan') },
       { label: 'Lokasi',     fn: () => mGo('master-lokasi') },
       { label: 'Tipe',       fn: () => mGo('master-tipe') },
       { label: 'Kategori',   fn: () => mGo('master-kategori') }])),
     tile('log-aktivitas', 'log', 't3', 'Log Aktivitas', () => mGo('log-aktivitas')),
-    tile('refresh', 'refresh', 't5', 'Perbarui Data', () => mRefresh())
+    // Data bisa diperbarui lewat kartu "Sinkronisasi" di bawah Beranda.
+    tile('persetujuan', 'apv', 't5', 'Persetujuan Transaksi', () => mGo('persetujuan'), 'ptx')
   ];
 
   const home = document.createElement('div');
@@ -3892,14 +4378,34 @@ function initMobileHome(){
       <nav class="mh-grid" id="mhGrid" aria-label="Fitur utama"></nav>
     </section>`;
   const grid = home.querySelector('#mhGrid');
-  tiles.forEach(it => {
-    const b = document.createElement('button');
-    b.type = 'button'; b.className = 'mh-tile';
-    const duo = isSuper && MI_DUO[it.k];
-    b.innerHTML = `${it.dot ? '<span class="m-dot" data-pg></span>' : ''}<span class="ic ${duo ? 'duo' : it.tone}">${duo ? dt(it.k) : mIco(it.ico)}</span><span>${it.label}</span>`;
-    b.onclick = it.fn;
-    grid.appendChild(b);
-  });
+  // Grid digambar ulang saat hak akses berubah (hanya kalau daftarnya berubah).
+  const tileBoleh = it => it.k === 'refresh' || (it.k === 'master' ? boleh('master', 'r') : bolehHalaman(it.k));
+  let gridKey = '';
+  window._renderMhGrid = () => {
+    const tampil = tiles.filter(tileBoleh);
+    const key = tampil.map(t => t.k).join('|');
+    if (key === gridKey) return;
+    gridKey = key;
+    grid.innerHTML = '';
+    if (isAdmin) {
+      const n = tampil.length;
+      // 5 menu -> 1 baris; 6 -> 3x2; 7-8 -> 4 kolom.
+      const kol = n <= 5 ? Math.max(n, 1) : n === 6 ? 3 : 4;
+      grid.style.gridTemplateColumns = `repeat(${kol}, minmax(0, 1fr))`;
+      grid.classList.toggle('mh-grid-5', kol === 5);
+    }
+    tampil.forEach(it => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'mh-tile'; b.dataset.k = it.k;
+      const duo = isSuper && MI_DUO[it.k];
+      b.innerHTML = `${it.dot ? `<span class="m-dot" data-${it.dot === true ? 'pg' : it.dot}></span>` : ''}<span class="ic ${duo ? 'duo' : it.tone}">${duo ? dt(it.k) : mIco(it.ico)}</span><span>${it.label}</span>`;
+      b.onclick = it.fn;
+      grid.appendChild(b);
+    });
+    if (typeof setPtxBadge === 'function') setPtxBadge(_apv.pending);
+    setMPending(_mPending);
+  };
+  window._renderMhGrid();
 
   // ── Kartu sinkronisasi (di akhir halaman Home) ──
   const sync = document.createElement('button');
@@ -3933,7 +4439,7 @@ function initMobileHome(){
   nav.addEventListener('click', e => {
     const b = e.target.closest('[data-k]'); if (!b) return;
     if (b.dataset.k === 'akun') {
-      openMSheet('Akun', [{ label: 'Keluar', danger: true, fn: logout }], currentUser.name + ' · ' + currentUser.role);
+      openMSheet('Akun', [{ label: 'Keluar', danger: true, fn: logout }], currentUser.name + ' · ' + currentUser.role + (currentUser.role === 'admin' ? ' · ' + labelWilayahAdmin() : ''));
     } else mGo(b.dataset.k);
   });
   document.getElementById('desktopApp').appendChild(nav);
@@ -3941,6 +4447,7 @@ function initMobileHome(){
   document.getElementById('mhHi').textContent = h < 11 ? 'Selamat pagi,' : h < 15 ? 'Selamat siang,' : h < 18 ? 'Selamat sore,' : 'Selamat malam,';
   if (isSuper) { initMobileSuperDashboard(); initNotifTransaksi(); initSaInputForm(); }
   initMobileLists();
+  if (isSuper) initMobileRiwayat();
   updateMobileTitle('dashboard');
   setMPending(_mPending);
   renderMobileHome();
@@ -3949,6 +4456,12 @@ function initMobileHome(){
 }
 function teardownMobileHome(){
   stopNotifTransaksi();
+  stopPersetujuan();
+  _apv.data = []; _apv.tab = 'MENUNGGU'; _apv.pending = 0; _ptxUser.data = [];
+  document.querySelectorAll('#page-persetujuan, #navPersetujuan, #mPtxBox, #mApvNote, .apv-modal, #page-hak-akses, #navHakAkses, #mAksesKosong').forEach(el => el.remove());
+  resetAkses(); _hak.data = null; _hak.role = 'admin';
+  const pe0 = document.getElementById('navPengajuanEdit'); if (pe0) { pe0.style.display = 'none'; pe0._ak = false; }
+  window._renderMhGrid = null;
   _saYear = null;
   document.getElementById('desktopApp')?.classList.remove('m-sa');
   document.querySelectorAll('.m-home, .m-topbar, .m-sync, .m-bnav, .m-sheet-ov, #page-notifikasi, .m-ntoast, #saUInput, #navNotifikasi').forEach(el => el.remove());
@@ -4069,7 +4582,7 @@ function initSaInputForm(){
 
 function saRefreshLokasi(){
   const p = document.getElementById('saPerusahaan').value;
-  const list = p ? lokasiUntukPerusahaan(p).sort() : [];
+  const list = p ? lokasiAkses(p) : [];
   const sel = document.getElementById('saLokasi');
   sel.innerHTML = list.length
     ? list.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('')
@@ -4239,6 +4752,510 @@ async function saSubmit(e){
   });
 }
 
+// ============================================================
+// PERSETUJUAN TRANSAKSI (skema approval per perusahaan)
+// ============================================================
+// Admin (sesuai hak akses perusahaan/lokasi) & superadmin menyetujui atau
+// menolak transaksi yang diajukan role user. Superadmin juga mengatur
+// perusahaan mana yang memakai skema approval (tab "Pengaturan").
+let approvalPerusahaan = [];
+const _apv = { tab: 'MENUNGGU', data: [], pending: 0, timer: null, seq: 0 };
+const APV_STATUS = {
+  MENUNGGU: ['menunggu', 'Menunggu'], DIPROSES: ['menunggu', 'Diproses'],
+  DISETUJUI: ['disetujui', 'Disetujui'], DITOLAK: ['ditolak', 'Ditolak'], DIBATALKAN: ['dibatalkan', 'Dibatalkan']
+};
+// Entri pengaturan: "PERUSAHAAN" (semua lokasi) atau "PERUSAHAAN||LOKASI".
+function lokasiPerluApproval(perusahaan, lokasi){
+  const p = normalizeNama(perusahaan), l = normalizeNama(lokasi);
+  if (!p) return false;
+  return approvalPerusahaan.some(x => {
+    const s = String(x), k = s.indexOf('||');
+    if (k < 0) return normalizeNama(s) === p;
+    return normalizeNama(s.slice(0, k)) === p && !!l && normalizeNama(s.slice(k + 2)) === l;
+  });
+}
+function setApprovalPerusahaan(list){
+  if (!Array.isArray(list)) return;
+  approvalPerusahaan = list;
+  if (typeof refreshLabelAjukan === 'function') refreshLabelAjukan();
+}
+function apvBadgeStatus(st){
+  const m = APV_STATUS[st] || ['menunggu', st || '-'];
+  return `<span class="st-badge ${m[0]}">${m[1]}</span>`;
+}
+function apvNet(p){ return (Number(p.totalPendapatan) || 0) - (Number(p.totalPengeluaran) || 0); }
+function apvNetTxt(p){ const n = apvNet(p); return (n < 0 ? '-' : '') + fmtRupiah(Math.abs(n)); }
+
+function initPersetujuan(){
+  if (!currentUser || (currentUser.role !== 'admin' && currentUser.role !== 'superadmin')) return;
+  stopPersetujuan();
+  const isSuper = currentUser.role === 'superadmin';
+  if (!document.getElementById('page-persetujuan')) {
+    const pg = document.createElement('div');
+    pg.className = 'd-page'; pg.id = 'page-persetujuan';
+    pg.innerHTML = `
+      <div class="d-header apv-head">
+        <div><h2>Persetujuan Transaksi</h2><p>Transaksi user yang menunggu persetujuan.</p></div>
+        <button type="button" class="btn-sm btn-outline apv-reload" id="apvReload" aria-label="Muat ulang" title="Muat ulang">${mIco('refresh')}<span>Muat ulang</span></button>
+      </div>
+      <div class="apv-tabs" role="tablist">
+        <button type="button" class="apv-tab" data-tab="MENUNGGU" role="tab">Menunggu <span class="apv-count" data-ptx style="display:none;">0</span></button>
+        <button type="button" class="apv-tab" data-tab="RIWAYAT" role="tab">Riwayat</button>
+        ${isSuper ? '<button type="button" class="apv-tab" data-tab="PENGATURAN" role="tab">Pengaturan</button>' : ''}
+      </div>
+      <div class="apv-body" id="apvBody"></div>`;
+    document.querySelector('#desktopApp .d-main')?.appendChild(pg);
+    pg.querySelectorAll('.apv-tab').forEach(b => b.onclick = () => { _apv.tab = b.dataset.tab; renderPersetujuan(true); });
+    pg.querySelector('#apvReload').onclick = () => { renderPersetujuan(true); refreshPtxBadge(); };
+  }
+  // Menu di sidebar web (di bawah Transaksi).
+  if (!document.getElementById('navPersetujuan')) {
+    const nav = document.createElement('button');
+    nav.className = 'd-nav-item'; nav.id = 'navPersetujuan'; nav.dataset.page = 'persetujuan';
+    nav.innerHTML = `${mIco('apv')}Persetujuan<span class="d-nav-badge" data-ptx style="display:none;">0</span>`;
+    nav.onclick = () => switchPage('persetujuan');
+    document.querySelector('.d-nav .d-nav-item[data-page="transaksi"]')?.after(nav);
+  }
+  refreshPtxBadge();
+  // Jumlah menunggu ikut polling notifikasi (admin & superadmin).
+}
+function stopPersetujuan(){
+  if (_apv.timer) clearInterval(_apv.timer);
+  _apv.timer = null;
+}
+function refreshPtxBadge(){
+  if (!boleh('persetujuan', 'r')) return;
+  google.script.run.withSuccessHandler(r => { if (r && r.success) setPtxBadge(r.menunggu); })
+    .withFailureHandler(() => {}).hitungPengajuanTransaksi({}, currentUser);
+}
+function setPtxBadge(n){
+  n = Number(n) || 0;
+  const berubah = n !== _apv.pending;
+  _apv.pending = n;
+  document.querySelectorAll('[data-ptx]').forEach(el => { el.textContent = n > 99 ? '99+' : String(n); el.style.display = n > 0 ? 'inline-flex' : 'none'; });
+  const card = document.getElementById('ntPtx');
+  if (card) {
+    card.style.display = n > 0 ? 'flex' : 'none';
+    card.innerHTML = `<span class="ic">${mIco('apv')}</span><span class="tx"><b>${n} transaksi menunggu persetujuan</b></span>${mIco('chev')}`;
+  }
+  // Daftar "Menunggu" sedang dibuka & jumlahnya berubah -> muat ulang diam-diam.
+  if (berubah && _apv.tab === 'MENUNGGU' && document.getElementById('page-persetujuan')?.classList.contains('active')) renderPersetujuan(true);
+}
+
+function renderPersetujuan(reload){
+  const pg = document.getElementById('page-persetujuan'); if (!pg) return;
+  if (_apv.tab === 'PENGATURAN' && currentUser.role !== 'superadmin') _apv.tab = 'MENUNGGU';
+  pg.querySelectorAll('.apv-tab').forEach(b => { const on = b.dataset.tab === _apv.tab; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
+  const body = document.getElementById('apvBody');
+  if (_apv.tab === 'PENGATURAN') { renderPengaturanApproval(body); return; }
+  if (!reload) { renderDaftarApv(body); return; }
+  if (!_apv.data.length || body.dataset.tab !== _apv.tab) body.innerHTML = '<div class="apv-empty">Memuat pengajuan…</div>';
+  body.dataset.tab = _apv.tab;
+  const seq = ++_apv.seq;
+  google.script.run.withSuccessHandler(res => {
+    if (seq !== _apv.seq) return;
+    if (!res || !res.success) { body.innerHTML = `<div class="apv-empty err">${escapeHtml((res && res.message) || 'Gagal memuat pengajuan.')}</div>`; return; }
+    _apv.data = res.data || [];
+    setPtxBadge(res.pendingCount);
+    renderDaftarApv(body);
+  }).withFailureHandler(err => {
+    if (seq === _apv.seq) body.innerHTML = `<div class="apv-empty err">Gagal memuat: ${escapeHtml(err.message)}</div>`;
+  }).getPengajuanTransaksi({ status: _apv.tab }, currentUser);
+}
+
+// Kartu ringkas: lokasi, nominal, siapa & kapan. Detail lengkap dibuka
+// dengan mengetuk kartu.
+function apvKartu(p, mode){
+  const admin = mode === 'admin';
+  const multiPerusahaan = currentUser.role === 'superadmin' || /ALL|,/.test(String(currentUser.perusahaan || ''));
+  const siapa = admin ? escapeHtml(p.diajukanOleh || '-') + ' · ' : '';
+  const badge = admin && p.status === 'MENUNGGU' ? '' : apvBadgeStatus(p.status);
+  const aksi = admin
+    ? (p.status === 'MENUNGGU' ? `<button type="button" class="apv-btn danger" data-act="tolak">Tolak</button><button type="button" class="apv-btn primary" data-act="setuju">Setujui</button>` : '')
+    : (p.status === 'DITOLAK' ? `<button type="button" class="apv-btn primary" data-act="perbaiki">Perbaiki &amp; ajukan ulang</button>` : '');
+  return `
+    <div class="apv-card st-${escapeHtml(String(p.status).toLowerCase())}${aksi ? '' : ' tanpa-aksi'}" data-id="${escapeHtml(p.id)}" role="button" tabindex="0" aria-label="Lihat detail pengajuan ${escapeHtml(p.lokasi)}">
+      <div class="apv-main">
+        <b class="apv-lok">${escapeHtml(p.lokasi)}</b>
+        ${admin && multiPerusahaan ? `<span class="apv-sub">${escapeHtml(p.perusahaan)}</span>` : ''}
+        <span class="apv-meta"><span>${siapa}<span class="apv-wkt">${ntTanggalJam(p.waktuAjuan)}</span></span>${badge}${p.revisi ? `<span class="apv-rev">Revisi ${p.revisi}</span>` : ''}</span>
+        ${p.status === 'DITOLAK' ? `<span class="apv-alasan">${escapeHtml(p.catatan || '-')}</span>` : ''}
+      </div>
+      <b class="apv-total${apvNet(p) < 0 ? ' neg' : ''}">${apvNetTxt(p)}</b>
+      ${aksi ? `<div class="apv-actions">${aksi}</div>` : ''}
+    </div>`;
+}
+// Pasang aksi kartu: ketuk kartu = detail, tombol = aksi masing-masing.
+function pasangAksiKartuApv(wadah, data, mode){
+  wadah.querySelectorAll('.apv-card').forEach(card => {
+    const p = data.find(x => x.id === card.dataset.id);
+    const detail = () => bukaDetailPengajuan(p, mode);
+    card.addEventListener('click', e => { if (!e.target.closest('[data-act]')) detail(); });
+    card.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === card) { e.preventDefault(); detail(); } });
+    card.querySelectorAll('[data-act]').forEach(b => b.onclick = e => {
+      e.stopPropagation();
+      if (b.dataset.act === 'setuju') konfirmasiSetujui(p);
+      else if (b.dataset.act === 'tolak') formTolak(p);
+      else if (b.dataset.act === 'perbaiki') formPerbaikiPengajuan(p);
+    });
+  });
+}
+function renderDaftarApv(body){
+  const data = _apv.data || [];
+  if (!data.length) {
+    body.innerHTML = `<div class="apv-empty"><span class="ic">${mIco('apv')}</span><b>${_apv.tab === 'MENUNGGU' ? 'Tidak ada pengajuan yang menunggu' : 'Belum ada riwayat persetujuan'}</b><small>${_apv.tab === 'MENUNGGU' ? 'Pengajuan transaksi dari user akan muncul di sini.' : 'Pengajuan yang sudah disetujui, ditolak, atau dibatalkan muncul di sini.'}</small></div>`;
+    return;
+  }
+  body.innerHTML = `<div class="apv-list">${data.map(p => apvKartu(p, 'admin')).join('')}</div>`;
+  pasangAksiKartuApv(body, data, 'admin');
+}
+
+// ---------- Modal ----------
+function apvModal(html, opts){
+  const ov = document.createElement('div');
+  ov.className = 'modal-overlay show apv-modal';
+  ov.innerHTML = `<div class="modal-box${opts && opts.kecil ? ' apv-kecil' : ''}">${html}</div>`;
+  document.body.appendChild(ov);
+  ov.addEventListener('click', e => { if (e.target === ov && !ov._sibuk) ov.remove(); });
+  return ov;
+}
+function bukaDetailPengajuan(p, mode){
+  const menunggu = p.status === 'MENUNGGU';
+  const tp = Number(p.totalPendapatan) || 0, tk = Number(p.totalPengeluaran) || 0;
+  const tombol = mode === 'admin' && menunggu
+    ? `<button type="button" class="btn-sm btn-outline" data-x="tutup">Tutup</button><button type="button" class="btn-sm apv-danger" data-x="tolak">Tolak</button><button type="button" class="btn-sm btn-dark" data-x="setuju">Setujui</button>`
+    : mode === 'user' && (menunggu || p.status === 'DITOLAK')
+      ? `<button type="button" class="btn-sm apv-batal-link" data-x="batal">Batalkan pengajuan</button><button type="button" class="btn-sm btn-outline" data-x="tutup">Tutup</button>` +
+        (p.status === 'DITOLAK' ? `<button type="button" class="btn-sm btn-dark" data-x="perbaiki">Perbaiki &amp; ajukan ulang</button>` : '')
+      : `<button type="button" class="btn-sm btn-outline" data-x="tutup">Tutup</button>`;
+  let catatan = '';
+  if (p.status === 'DITOLAK') catatan = `<div class="apv-note tolak"><b>Alasan ditolak (${escapeHtml(p.direviewOleh || '-')}):</b> ${escapeHtml(p.catatan || '-')}</div>`;
+  else if (p.status === 'DISETUJUI') catatan = `<div class="apv-note ok"><b>Disetujui oleh ${escapeHtml(p.direviewOleh || '-')}</b> · ${escapeHtml(p.idTransaksi || '')}</div>`;
+  const ov = apvModal(`
+      <div class="detail-header"><h3>Detail Pengajuan</h3><span class="detail-id-chip">${escapeHtml(p.id)}</span></div>
+      <div class="apv-status-row">${apvBadgeStatus(p.status)}${p.revisi ? `<span class="apv-rev">Revisi ${p.revisi}</span>` : ''}</div>
+      ${catatan}
+      <div class="detail-info-list">
+        <div class="detail-info-row"><span class="detail-label">Perusahaan</span><span class="detail-value">${escapeHtml(p.perusahaan)}</span></div>
+        <div class="detail-info-row"><span class="detail-label">Lokasi</span><span class="detail-value">${escapeHtml(p.lokasi)}</span></div>
+        <div class="detail-info-row"><span class="detail-label">Tanggal transaksi</span><span class="detail-value">${fmtTglIndo(p.tanggal)}${p.waktu ? ', ' + escapeHtml(String(p.waktu).slice(0, 5)) : ''}</span></div>
+        <div class="detail-info-row"><span class="detail-label">Diajukan oleh</span><span class="detail-value">${escapeHtml(p.diajukanOleh || '-')}</span></div>
+        <div class="detail-info-row"><span class="detail-label">Waktu pengajuan</span><span class="detail-value">${ntTanggalJam(p.waktuAjuan)}</span></div>
+        <div class="detail-info-row"><span class="detail-label">Keterangan</span><span class="detail-value">${escapeHtml(p.keterangan || '-')}</span></div>
+      </div>
+      <table class="detail-table">
+        <thead><tr><th>Kategori</th><th>Tipe</th><th>Nominal</th></tr></thead>
+        <tbody>${(p.items || []).map(it => `<tr><td>${escapeHtml(it.kategori)}</td><td><span class="tag ${it.tipe === 'PENDAPATAN' ? 'income' : 'expense'}">${it.tipe === 'PENDAPATAN' ? 'Pendapatan' : 'Pengeluaran'}</span></td><td>${fmtRupiah(it.nominal)}</td></tr>`).join('')}</tbody>
+      </table>
+      <div class="calc-summary" style="margin-bottom:18px;">
+        <div class="cs-item"><div class="cs-label">Total pendapatan</div><div class="cs-value income">${fmtRupiah(tp)}</div></div>
+        <div class="cs-item"><div class="cs-label">Total pengeluaran</div><div class="cs-value expense">${fmtRupiah(tk)}</div></div>
+        <div class="cs-item"><div class="cs-label">Nilai transaksi</div><div class="cs-value net">${apvNetTxt(p)}</div></div>
+      </div>
+      ${p.foto && p.foto.length ? `<div class="detail-photo-section"><div class="detail-photo-header">Foto Bukti (${p.foto.length})</div><div style="display:flex;flex-wrap:wrap;gap:8px;">${buildFotoGrid(p.foto)}</div></div>` : ''}
+      <div class="btn-row apv-btn-row">${tombol}</div>`);
+  bindFotoGrid(ov);
+  ov.querySelectorAll('[data-x]').forEach(b => b.onclick = () => {
+    const x = b.dataset.x; ov.remove();
+    if (x === 'setuju') konfirmasiSetujui(p);
+    else if (x === 'tolak') formTolak(p);
+    else if (x === 'perbaiki' && typeof formPerbaikiPengajuan === 'function') formPerbaikiPengajuan(p);
+    else if (x === 'batal' && typeof konfirmasiBatalPengajuan === 'function') konfirmasiBatalPengajuan(p);
+  });
+}
+function konfirmasiSetujui(p){
+  const ov = apvModal(`
+    <div class="apv-dialog">
+      <span class="apv-dialog-ic ok">${mIco('apv')}</span>
+      <h3>Setujui pengajuan?</h3>
+      <p>Transaksi <b>${escapeHtml(p.lokasi)}</b> senilai <b>${apvNetTxt(p)}</b> akan langsung masuk ke riwayat transaksi atas nama <b>${escapeHtml(p.diajukanOleh || '-')}</b>.</p>
+      <div class="btn-row apv-btn-row"><button type="button" class="btn-sm btn-outline" data-x="batal">Batal</button><button type="button" class="btn-sm btn-dark" data-x="ya"><span class="submit-spinner"></span><span class="lbl">Ya, setujui</span></button></div>
+    </div>`, { kecil: true });
+  ov.querySelector('[data-x="batal"]').onclick = () => ov.remove();
+  const btn = ov.querySelector('[data-x="ya"]');
+  btn.onclick = () => withSubmitGuard(btn, btn.querySelector('.lbl'), 'Menyimpan...', 'Ya, setujui', release => {
+    ov._sibuk = true;
+    google.script.run.withSuccessHandler(res => {
+      release(); ov._sibuk = false;
+      if (!res || !res.success) { showDesktopToast({ title: 'Gagal menyetujui', message: (res && res.message) || 'Terjadi kesalahan.', type: 'error' }); renderPersetujuan(true); ov.remove(); return; }
+      ov.remove();
+      showDesktopToast({ title: 'Pengajuan disetujui', message: `Masuk riwayat sebagai ${res.idTransaksi}.` });
+      if (window.swrInvalidate) ['trx', 'dash', 'mon', 'lap'].forEach(k => window.swrInvalidate(k));
+      renderPersetujuan(true); refreshPtxBadge();
+    }).withFailureHandler(err => {
+      release(); ov._sibuk = false;
+      showDesktopToast({ title: 'Gagal menyetujui', message: err.message, type: 'error' });
+    }).reviewPengajuanTransaksi(p.id, 'SETUJU', '', currentUser);
+  });
+}
+function formTolak(p){
+  const ov = apvModal(`
+    <div class="apv-dialog">
+      <span class="apv-dialog-ic tolak">${mIco('xc')}</span>
+      <h3>Tolak pengajuan</h3>
+      <p>${escapeHtml(p.lokasi)} · ${apvNetTxt(p)} · oleh ${escapeHtml(p.diajukanOleh || '-')}</p>
+      <div class="d-field"><label for="apvAlasan">Alasan penolakan <em>(wajib, terlihat oleh user)</em></label>
+        <textarea id="apvAlasan" rows="3" maxlength="500" placeholder="Contoh: Nominal setoran BCA tidak sesuai bukti transfer."></textarea></div>
+      <div class="btn-row apv-btn-row"><button type="button" class="btn-sm btn-outline" data-x="batal">Batal</button><button type="button" class="btn-sm apv-danger" data-x="ya"><span class="submit-spinner"></span><span class="lbl">Tolak pengajuan</span></button></div>
+    </div>`, { kecil: true });
+  const ta = ov.querySelector('#apvAlasan'); setTimeout(() => ta.focus(), 50);
+  ta.addEventListener('input', () => ta.classList.remove('apv-invalid'));
+  ov.querySelector('[data-x="batal"]').onclick = () => ov.remove();
+  const btn = ov.querySelector('[data-x="ya"]');
+  btn.onclick = () => {
+    const alasan = ta.value.trim();
+    if (alasan.length < 3) { ta.classList.add('apv-invalid'); ta.focus(); showDesktopToast({ title: 'Alasan wajib diisi', message: 'Tuliskan alasan penolakan agar user tahu apa yang perlu diperbaiki.', type: 'warning' }); return; }
+    withSubmitGuard(btn, btn.querySelector('.lbl'), 'Menolak...', 'Tolak pengajuan', release => {
+      ov._sibuk = true;
+      google.script.run.withSuccessHandler(res => {
+        release(); ov._sibuk = false;
+        if (!res || !res.success) { showDesktopToast({ title: 'Gagal menolak', message: (res && res.message) || 'Terjadi kesalahan.', type: 'error' }); return; }
+        ov.remove();
+        showDesktopToast({ title: 'Pengajuan ditolak', message: 'User bisa memperbaiki dan mengajukan ulang.', type: 'info' });
+        renderPersetujuan(true); refreshPtxBadge();
+      }).withFailureHandler(err => {
+        release(); ov._sibuk = false;
+        showDesktopToast({ title: 'Gagal menolak', message: err.message, type: 'error' });
+      }).reviewPengajuanTransaksi(p.id, 'TOLAK', alasan, currentUser);
+    });
+  };
+}
+
+// ---------- Tab Pengaturan (superadmin) ----------
+// Per perusahaan: saklar "semua lokasi" + daftar lokasi (bisa dibuka) dengan
+// saklar masing-masing.
+function renderPengaturanApproval(body){
+  body.innerHTML = '<div class="apv-empty">Memuat pengaturan…</div>';
+  const buka = _apv.setBuka || (_apv.setBuka = {});
+  google.script.run.withSuccessHandler(res => {
+    if (!res || !res.success) { body.innerHTML = `<div class="apv-empty err">${escapeHtml((res && res.message) || 'Gagal memuat pengaturan.')}</div>`; return; }
+    const list = res.data || [];
+    const ket = x => !x.lokasi.length ? (x.semua ? 'Aktif' : 'Nonaktif')
+      : x.semua ? 'Semua lokasi' : x.jumlahAktif ? `${x.jumlahAktif} dari ${x.lokasi.length} lokasi` : 'Nonaktif';
+    const sw = (attrs, on, label) => `<span class="apv-switch"><input type="checkbox" ${attrs} ${on ? 'checked' : ''} aria-label="${escapeHtml(label)}"><i></i></span>`;
+    const grup = (x, i) => `
+      <div class="apv-grp${buka[x.nama] ? ' open' : ''}" data-i="${i}">
+        <div class="apv-set-row">
+          <button type="button" class="apv-grp-tg" aria-expanded="${buka[x.nama] ? 'true' : 'false'}" ${x.lokasi.length ? '' : 'disabled'}>
+            <span class="apv-set-tx"><b>${escapeHtml(x.nama)}</b><small data-ket>${ket(x)}</small></span>
+            ${x.lokasi.length ? mIco('down').replace('<svg', '<svg class="chev"') : ''}
+          </button>
+          ${sw(`data-p="${i}"`, x.semua, 'Semua lokasi ' + x.nama)}
+        </div>
+        <div class="apv-lok-list">${x.lokasi.map((l, j) => `
+          <label class="apv-lok-row"><span>${escapeHtml(l.nama)}</span>${sw(`data-p="${i}" data-l="${j}"`, l.approval, l.nama)}</label>`).join('')}
+        </div>
+      </div>`;
+    body.innerHTML = `
+      <div class="apv-set-info">${mIco('apv')}<span>Lokasi yang <b>aktif</b>: transaksi role user perlu disetujui admin dulu.</span></div>
+      <div class="apv-set-list">${list.length ? list.map(grup).join('') : '<div class="apv-empty">Belum ada perusahaan di Master Perusahaan.</div>'}</div>`;
+    const sinkron = (grp, x) => {
+      grp.querySelector('[data-ket]').textContent = ket(x);
+      const all = grp.querySelector('input[data-p]:not([data-l])');
+      all.checked = x.semua;
+      all.parentElement.classList.toggle('part', !x.semua && x.jumlahAktif > 0); // sebagian lokasi aktif
+      grp.querySelectorAll('input[data-l]').forEach(inp => { inp.checked = !!x.lokasi[Number(inp.dataset.l)].approval; });
+    };
+    body.querySelectorAll('.apv-grp').forEach(grp => {
+      const x = list[Number(grp.dataset.i)];
+      sinkron(grp, x);
+      grp.querySelector('.apv-grp-tg').onclick = () => {
+        const o = grp.classList.toggle('open'); buka[x.nama] = o;
+        grp.querySelector('.apv-grp-tg').setAttribute('aria-expanded', String(o));
+      };
+    });
+    body.querySelectorAll('.apv-switch input').forEach(inp => inp.onchange = () => {
+      const grp = inp.closest('.apv-grp'), x = list[Number(inp.dataset.p)];
+      const lok = inp.dataset.l != null ? x.lokasi[Number(inp.dataset.l)] : null;
+      const aktif = inp.checked;
+      const semuaInput = grp.querySelectorAll('input');
+      semuaInput.forEach(el => el.disabled = true);
+      const selesai = () => semuaInput.forEach(el => el.disabled = false);
+      google.script.run.withSuccessHandler(r => {
+        selesai();
+        if (!r || !r.success) { sinkron(grp, x); showDesktopToast({ title: 'Gagal menyimpan', message: (r && r.message) || 'Terjadi kesalahan.', type: 'error' }); return; }
+        Object.assign(x, { lokasi: r.lokasi, jumlahAktif: r.jumlahAktif, approval: r.approval, semua: r.semua });
+        sinkron(grp, x);
+        setApprovalPerusahaan(r.daftar);
+        const nama = lok ? lok.nama : x.nama + (x.lokasi.length ? ' (semua lokasi)' : '');
+        showDesktopToast({ title: aktif ? 'Persetujuan aktif' : 'Persetujuan nonaktif', message: nama, type: aktif ? 'success' : 'info' });
+      }).withFailureHandler(err => {
+        selesai(); sinkron(grp, x);
+        showDesktopToast({ title: 'Gagal menyimpan', message: err.message, type: 'error' });
+      }).simpanPengaturanApproval(lok ? { perusahaan: x.nama, lokasi: lok.nama } : x.nama, aktif, currentUser);
+    });
+  }).withFailureHandler(err => { body.innerHTML = `<div class="apv-empty err">Gagal memuat: ${escapeHtml(err.message)}</div>`; })
+    .getPengaturanApproval(currentUser);
+}
+
+// ── Sisi USER: pengajuan transaksi (perusahaan dengan skema approval) ──
+const _ptxUser = { data: [], seq: 0 };
+function perusahaanFormUser(){ return document.getElementById('mPerusahaan')?.value || (getAccessiblePerusahaan(currentUser)[0] || ''); }
+function lokasiFormUser(){ return document.getElementById('mLokasi')?.value || ''; }
+function labelSimpanUser(){ return lokasiPerluApproval(perusahaanFormUser(), lokasiFormUser()) ? 'Ajukan Transaksi' : 'Simpan Transaksi'; }
+// Tombol simpan & catatan di form input mengikuti skema approval perusahaan.
+function refreshLabelAjukan(){
+  if (!currentUser || currentUser.role !== 'user') return;
+  const perlu = lokasiPerluApproval(perusahaanFormUser(), lokasiFormUser());
+  const lbl = document.getElementById('mSubmitLabel');
+  const btn = document.getElementById('mSubmitBtn');
+  if (lbl && btn && !btn._submitting) lbl.textContent = perlu ? 'Ajukan Transaksi' : 'Simpan Transaksi';
+  let note = document.getElementById('mApvNote');
+  if (!note && btn) {
+    note = document.createElement('div');
+    note.id = 'mApvNote'; note.className = 'mu-apv-note';
+    btn.before(note);
+  }
+  if (note) {
+    note.hidden = !perlu;
+    note.innerHTML = `${mIco('apv')}<span>Lokasi ini perlu <b>persetujuan admin</b>.</span>`;
+  }
+}
+// Daftar pengajuan milik user (menunggu & ditolak) di tab Riwayat.
+function muatPengajuanUser(){
+  if (!currentUser || currentUser.role !== 'user') return;
+  let box = document.getElementById('mPtxBox');
+  if (!box) {
+    const hist = document.querySelector('#mHistoryView .m-recent');
+    if (!hist) return;
+    box = document.createElement('div');
+    box.id = 'mPtxBox'; box.className = 'mu-ptx'; box.hidden = true;
+    hist.before(box);
+  }
+  const seq = ++_ptxUser.seq;
+  google.script.run.withSuccessHandler(res => {
+    if (seq !== _ptxUser.seq || !res || !res.success) return;
+    _ptxUser.data = res.data || [];
+    renderPengajuanUser();
+  }).withFailureHandler(() => {}).getPengajuanTransaksi({ status: 'AKTIF' }, currentUser);
+}
+function renderPengajuanUser(){
+  const box = document.getElementById('mPtxBox'); if (!box) return;
+  const data = _ptxUser.data;
+  const ditolak = data.filter(p => p.status === 'DITOLAK').length;
+  const dot = document.querySelector('.m-bottom-item[data-mobile-view="history"] .pill');
+  if (dot) {
+    let d = dot.querySelector('.mu-dot');
+    if (!d) { d = document.createElement('i'); d.className = 'mu-dot'; dot.appendChild(d); }
+    d.style.display = ditolak ? 'block' : 'none';
+  }
+  box.hidden = !data.length;
+  if (!data.length) { box.innerHTML = ''; return; }
+  box.innerHTML = `
+    <div class="mu-hist-head"><h4>Pengajuan transaksi</h4><span>${data.length} aktif</span></div>
+    <div class="apv-list user">${data.map(p => apvKartu(p, 'user')).join('')}</div>`;
+  pasangAksiKartuApv(box, data, 'user');
+}
+function lokasiUntukUser(perusahaan){
+  const semua = lokasiUntukPerusahaan(perusahaan).sort();
+  if (currentUser.lokasi === 'ALL') return semua;
+  const boleh = new Set(String(currentUser.lokasi || '').split(',').map(l => normalizeNama(l.trim())).filter(Boolean));
+  return semua.filter(l => boleh.has(normalizeNama(l)));
+}
+function konfirmasiBatalPengajuan(p){
+  const ov = apvModal(`
+    <div class="apv-dialog">
+      <span class="apv-dialog-ic tolak">${mIco('xc')}</span>
+      <h3>Batalkan pengajuan?</h3>
+      <p>Pengajuan ${escapeHtml(p.lokasi)} senilai ${apvNetTxt(p)} tidak akan diproses lagi.</p>
+      <div class="btn-row apv-btn-row"><button type="button" class="btn-sm btn-outline" data-x="tidak">Tidak</button><button type="button" class="btn-sm apv-danger" data-x="ya"><span class="submit-spinner"></span><span class="lbl">Ya, batalkan</span></button></div>
+    </div>`, { kecil: true });
+  ov.querySelector('[data-x="tidak"]').onclick = () => ov.remove();
+  const btn = ov.querySelector('[data-x="ya"]');
+  btn.onclick = () => withSubmitGuard(btn, btn.querySelector('.lbl'), 'Membatalkan...', 'Ya, batalkan', release => {
+    google.script.run.withSuccessHandler(res => {
+      release();
+      if (!res || !res.success) { showToast((res && res.message) || 'Gagal membatalkan.', true); return; }
+      ov.remove(); showToast('Pengajuan dibatalkan.', 'info'); muatPengajuanUser();
+    }).withFailureHandler(err => { release(); showToast('Gagal: ' + err.message, true); })
+      .batalkanPengajuanTransaksi(p.id, currentUser);
+  });
+}
+// Form perbaikan untuk pengajuan yang ditolak.
+function formPerbaikiPengajuan(p){
+  const lokasiList = lokasiUntukUser(p.perusahaan);
+  if (lokasiList.indexOf(p.lokasi) === -1) lokasiList.unshift(p.lokasi);
+  const ov = apvModal(`
+    <div class="detail-header"><h3>Perbaiki Pengajuan</h3><span class="detail-id-chip">${escapeHtml(p.id)}</span></div>
+    <div class="apv-note tolak"><b>Alasan ditolak:</b> ${escapeHtml(p.catatan || '-')}</div>
+    <form id="apvFixForm" class="apv-fix">
+      <div class="d-field"><label>Tanggal</label><input type="date" id="apvFixTgl" value="${escapeHtml(p.tanggal)}" required></div>
+      <div class="d-field"><label>Lokasi</label><select id="apvFixLok">${lokasiList.map(l => `<option value="${escapeHtml(l)}"${l === p.lokasi ? ' selected' : ''}>${escapeHtml(l)}</option>`).join('')}</select></div>
+      <div class="apv-fix-head"><b>Rincian item</b><button type="button" class="apv-btn ghost" id="apvFixAdd">+ Tambah item</button></div>
+      <div id="apvFixItems"></div>
+      <div class="apv-fix-total"><span>Total pembayaran</span><b id="apvFixTotal">Rp 0</b></div>
+      <div class="d-field"><label>Keterangan <em>(opsional)</em></label><textarea id="apvFixKet" rows="2" maxlength="500">${escapeHtml(p.keterangan || '')}</textarea></div>
+      <div class="d-field"><label>Foto bukti <em>(maks. 5)</em></label>
+        <div class="apv-fix-foto" id="apvFixFotoLama">${(p.foto || []).map((u, i) => `<label class="apv-foto-lama"><input type="checkbox" checked value="${escapeHtml(u)}"> Foto ${i + 1} (lama)</label>`).join('')}</div>
+        <div class="apv-fix-upload"><label class="apv-btn ghost" for="apvFixGaleri">Pilih dari galeri</label><label class="apv-btn ghost" for="apvFixKamera">Ambil foto</label></div>
+        <input type="file" id="apvFixGaleri" accept="image/*" multiple style="display:none;"><input type="file" id="apvFixKamera" accept="image/*" capture="environment" style="display:none;">
+        <div class="foto-preview-grid" id="apvFixPreview"></div>
+      </div>
+      <div class="btn-row apv-btn-row"><button type="button" class="btn-sm btn-outline" data-x="batal">Batal</button><button type="submit" class="btn-sm btn-dark" id="apvFixKirim"><span class="submit-spinner"></span><span class="lbl">Ajukan ulang</span></button></div>
+    </form>`);
+  const wadah = ov.querySelector('#apvFixItems');
+  const lokSel = ov.querySelector('#apvFixLok');
+  const hitung = () => {
+    let net = 0;
+    wadah.querySelectorAll('.apv-item').forEach(r => { const n = parseRibuan(r.querySelector('.apv-nom').value); net += r.querySelector('.apv-tipe').value === 'PENDAPATAN' ? n : -n; });
+    ov.querySelector('#apvFixTotal').textContent = (net < 0 ? '-' : '') + fmtRupiah(Math.abs(net));
+    const rm = wadah.querySelectorAll('.apv-rm'); rm.forEach(b => b.disabled = rm.length <= 1);
+  };
+  const tambah = (it) => {
+    it = it || { tipe: 'PENDAPATAN', kategori: '', nominal: '' };
+    const row = document.createElement('div');
+    row.className = 'apv-item';
+    row.innerHTML = `
+      <select class="apv-tipe"><option value="PENDAPATAN"${it.tipe === 'PENDAPATAN' ? ' selected' : ''}>Pendapatan</option><option value="PENGELUARAN"${it.tipe === 'PENGELUARAN' ? ' selected' : ''}>Pengeluaran</option></select>
+      <select class="apv-kat">${kategoriOptions(it.tipe, lokSel.value, it.kategori)}</select>
+      <div class="apv-nom-wrap"><span>Rp</span><input type="text" inputmode="numeric" class="apv-nom" placeholder="0" value="${it.nominal ? formatRibuan(it.nominal) : ''}"></div>
+      <button type="button" class="apv-rm" aria-label="Hapus item">&times;</button>`;
+    wadah.appendChild(row);
+    // Kategori lama yang tidak ada di daftar tetap bisa dipilih.
+    const kat = row.querySelector('.apv-kat');
+    if (it.kategori && ![...kat.options].some(o => o.value === it.kategori)) kat.insertAdjacentHTML('afterbegin', `<option value="${escapeHtml(it.kategori)}" selected>${escapeHtml(it.kategori)}</option>`);
+    row.querySelector('.apv-tipe').onchange = e => { kat.innerHTML = kategoriOptions(e.target.value, lokSel.value); hitung(); };
+    bindRibuanInput(row.querySelector('.apv-nom'));
+    row.querySelector('.apv-nom').addEventListener('input', hitung);
+    row.querySelector('.apv-rm').onclick = () => { row.remove(); hitung(); };
+    hitung();
+  };
+  (p.items && p.items.length ? p.items : [null]).forEach(tambah);
+  lokSel.onchange = () => wadah.querySelectorAll('.apv-item').forEach(r => { const k = r.querySelector('.apv-kat'); k.innerHTML = kategoriOptions(r.querySelector('.apv-tipe').value, lokSel.value, k.value); });
+  ov.querySelector('#apvFixAdd').onclick = () => tambah();
+  const fm = createFotoManager(['apvFixGaleri', 'apvFixKamera'], 'apvFixPreview', msg => showToast(msg, true));
+  ov.querySelector('[data-x="batal"]').onclick = () => ov.remove();
+  const form = ov.querySelector('#apvFixForm');
+  const btn = ov.querySelector('#apvFixKirim');
+  form.onsubmit = e => {
+    e.preventDefault();
+    const items = [];
+    let kosong = false;
+    wadah.querySelectorAll('.apv-item').forEach(r => {
+      const n = parseRibuan(r.querySelector('.apv-nom').value);
+      if (!(n > 0)) kosong = true;
+      items.push({ tipe: r.querySelector('.apv-tipe').value, kategori: r.querySelector('.apv-kat').value, nominal: n });
+    });
+    if (!items.length || kosong) { showToast('Isi nominal setiap item (lebih dari 0).', true); return; }
+    const fotoTetap = [...ov.querySelectorAll('#apvFixFotoLama input:checked')].map(i => i.value);
+    if (fotoTetap.length + fm.files.length > 5) { showToast('Maksimal 5 foto. Hapus centang foto lama atau kurangi foto baru.', true); return; }
+    withSubmitGuard(btn, btn.querySelector('.lbl'), 'Mengirim...', 'Ajukan ulang', async release => {
+      let foto = [];
+      try { foto = await encodeFotoManager(fm); } catch (err) { release(); showToast('Foto gagal diproses.', true); return; }
+      ov._sibuk = true;
+      google.script.run.withSuccessHandler(res => {
+        release(); ov._sibuk = false;
+        if (!res || !res.success) { showToast((res && res.message) || 'Gagal mengajukan ulang.', true); return; }
+        ov.remove(); showToast('Pengajuan dikirim ulang. Menunggu persetujuan admin.', 'success'); muatPengajuanUser();
+      }).withFailureHandler(err => { release(); ov._sibuk = false; showToast('Gagal: ' + err.message, true); })
+        .ajukanUlangTransaksi(p.id, {
+          tanggal: ov.querySelector('#apvFixTgl').value, lokasi: lokSel.value, items: items,
+          keterangan: ov.querySelector('#apvFixKet').value, fotoTetap: fotoTetap, foto: foto
+        }, currentUser);
+    });
+  };
+}
+
 // ── Superadmin: susun ulang dashboard mobile sesuai desain ─────────────
 // Hanya menambah kelas & label khusus mobile (.m-only); tampilan desktop
 // tidak berubah karena .m-only disembunyikan di luar media mobile.
@@ -4262,7 +5279,8 @@ function initMobileSuperDashboard(){
   const cnt = (document.getElementById('perusahaanBars')?.querySelectorAll('.mon-mini-row') || []).length;
   all.textContent = cnt ? `Semua (${cnt})` : 'Semua';
   all.onclick = () => mGo('laporan-bulanan');
-  setTitle(panelOf('perusahaanBars'), 'm-p-kinerja', 'Kinerja Lokasi Teratas', 'Akumulasi setor terbesar', all);
+  const admin = currentUser && currentUser.role === 'admin';
+  setTitle(panelOf('perusahaanBars'), 'm-p-kinerja', admin ? 'Kinerja Lokasi' : 'Kinerja Lokasi Teratas', 'Akumulasi setor terbesar', all);
   // Tren: pil pilihan tahun + grafik khusus mobile.
   if (trend && !trend.querySelector('.sa-trend')) {
     const yr = document.createElement('label');
@@ -4295,8 +5313,9 @@ function initMobileSuperDashboard(){
 
 
 // Superadmin di layar mobile? (dipakai untuk memilih gaya grafik)
+function isMsaRole(){ return !!(currentUser && (currentUser.role === 'superadmin' || currentUser.role === 'admin')); }
 function isSaMobile(){
-  return !!(currentUser && currentUser.role === 'superadmin' && window.matchMedia && window.matchMedia('(max-width:900px)').matches);
+  return !!(currentUser && isMsaRole() && window.matchMedia && window.matchMedia('(max-width:900px)').matches);
 }
 // ── Grafik "Tren Saldo Bersih" versi mobile superadmin ──────────────
 // Kurva halus per bulan dalam 1 tahun, tanpa sumbu Y; titik bulan terakhir
@@ -4365,7 +5384,7 @@ const NOTIF_POLL_MS = 30000;
 const _nt = { timer: null, items: [], unread: 0, lastReadSeq: 0, latestSeq: 0, seenSeq: null, busy: false, ready: false, err: '' };
 
 function initNotifTransaksi(){
-  if (!currentUser || currentUser.role !== 'superadmin') return;
+  if (!currentUser || !isMsaRole()) return;
   stopNotifTransaksi();
   Object.assign(_nt, { items: [], unread: 0, lastReadSeq: 0, latestSeq: 0, seenSeq: null, ready: false, err: '' });
   // Halaman notifikasi (hanya dipakai di tampilan mobile).
@@ -4374,17 +5393,19 @@ function initNotifTransaksi(){
     pg.className = 'd-page'; pg.id = 'page-notifikasi';
     pg.innerHTML = `
       <div class="nt-head">
-        <div><h2>Notifikasi</h2><p>Transaksi masuk terbaru</p></div>
+        <div><h2>Notifikasi</h2></div>
         <div class="nt-actions">
           <button type="button" class="nt-perm" id="ntPerm" hidden>${mIco('bell')}Aktifkan notifikasi browser</button>
           <button type="button" class="nt-readall" id="ntReadAll">${mIco('checkAll')}Tandai dibaca</button>
         </div>
       </div>
       <button type="button" class="nt-pj" id="ntPj"></button>
+      <button type="button" class="nt-pj nt-ptx" id="ntPtx" style="display:none;"></button>
       <div class="nt-list" id="ntList"><div class="nt-empty">Memuat notifikasi…</div></div>`;
     document.querySelector('#desktopApp .d-main')?.appendChild(pg);
     pg.querySelector('#ntReadAll').onclick = () => tandaiNotifDibaca();
     pg.querySelector('#ntPj').onclick = () => mGo('pengajuan-edit');
+    pg.querySelector('#ntPtx').onclick = () => mGo('persetujuan');
     pg.querySelector('#ntPerm').onclick = mintaIzinNotifBrowser;
   }
   // Tampilan web: menu "Notifikasi" di sidebar (di bawah Dashboard) + badge.
@@ -4413,7 +5434,8 @@ function stopNotifTransaksi(){
 function notifVisibility(){ if (document.visibilityState === 'visible' && _nt.timer) mNotifPoll(); }
 
 function mNotifPoll(){
-  if (_nt.busy || !currentUser || currentUser.role !== 'superadmin') return;
+  if (_nt.busy || !currentUser || !isMsaRole()) return;
+  if (!boleh('notifikasi', 'r')) { if (boleh('persetujuan', 'r')) refreshPtxBadge(); return; }
   _nt.busy = true;
   _nt.lastPoll = Date.now();
   google.script.run
@@ -4440,6 +5462,7 @@ function mNotifPoll(){
       _nt.seenSeq = _nt.latestSeq;
       // Jumlah pengajuan edit ikut diperbarui lewat polling yang sama.
       if (typeof res.pendingEdit === 'number' && res.pendingEdit !== _mPending) updatePengajuanBadge(res.pendingEdit);
+      if (typeof res.pendingTrx === 'number') setPtxBadge(res.pendingTrx);
       renderNotifBadges();
       renderNotifPage();
       // Sedang membuka halaman notifikasi -> langsung dianggap terbaca.
@@ -4520,7 +5543,7 @@ function renderNotifPage(markRead){
   const pj = document.getElementById('ntPj');
   if (pj) {
     pj.style.display = _mPending > 0 ? 'flex' : 'none';
-    pj.innerHTML = `<span class="ic">${mIco('edit')}</span><span class="tx"><b>${_mPending} pengajuan edit menunggu</b><small>Tinjau sebelum masuk ke riwayat</small></span>${mIco('chev')}`;
+    pj.innerHTML = `<span class="ic">${mIco('edit')}</span><span class="tx"><b>${_mPending} pengajuan edit menunggu</b></span>${mIco('chev')}`;
   }
   document.getElementById('ntReadAll').disabled = !_nt.unread;
   if (!_nt.ready) {
@@ -4529,22 +5552,19 @@ function renderNotifPage(markRead){
     return;
   }
   if (!_nt.items.length) {
-    list.innerHTML = `<div class="nt-empty"><span class="ic">${mIco('inbox')}</span><b>Belum ada transaksi masuk</b><small>Setiap transaksi baru dari user akan muncul di sini.</small></div>`;
+    list.innerHTML = `<div class="nt-empty"><span class="ic">${mIco('inbox')}</span><b>Belum ada transaksi masuk</b></div>`;
   } else {
     const row = it => {
       const unread = it.seq > _nt.lastReadSeq;
       const n = ntNominal(it);
-      const dIn = new Date(it.ts);
-      const baruSaja = !isNaN(dIn) && Date.now() - dIn.getTime() < 3600000; // < 1 jam: tampilkan juga "x mnt lalu"
 
       return `<button type="button" class="nt-item${unread ? ' unread' : ''}" data-id="${escapeHtml(it.id)}">
         <span class="ic">${mIco('trx')}</span>
         <span class="tx">
           <b>${escapeHtml(it.lokasi || '-')}</b>
-          <small>${escapeHtml(it.perusahaan || '')}</small>
-          <small class="by">Diinput oleh ${escapeHtml(it.oleh || '-')} · ${it.items || 1} item<span class="nt-id"> · ${escapeHtml(it.id)}</span></small>
+          <small class="by">${escapeHtml(it.oleh || '-')}</small>
         </span>
-        <span class="rt"><b class="${n.net < 0 ? 'neg' : ''}">${n.txt}</b><small title="Diinput ${ntTanggalJam(it.ts)}">${ntTanggalJam(it.ts)}</small>${baruSaja ? `<small class="rel">${ntWaktu(it.ts)}</small>` : ''}</span>
+        <span class="rt"><b class="${n.net < 0 ? 'neg' : ''}">${n.txt}</b><small title="${ntTanggalJam(it.ts)}">${ntWaktu(it.ts)}</small></span>
       </button>`;
     };
     const baru = _nt.items.filter(it => it.seq > _nt.lastReadSeq);
@@ -4633,7 +5653,7 @@ function renderMobileHome(){
     eye.innerHTML = mIco(_mHide ? 'eyeOff' : 'eye');
   }
   const now = new Date();
-  document.getElementById('mhPeriod').textContent = currentUser && currentUser.role === 'superadmin'
+  document.getElementById('mhPeriod').textContent = isMsaRole()
     ? now.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }).replace('.', '')
     : 'Saldo Bersih | ' + now.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
   if (!_mSaldo) return;
@@ -4677,7 +5697,7 @@ function updateMobileHome(summary, byBulan){
 function renderMobileSync(){
   const el = document.getElementById('mhSyncTxt'); if (!el) return;
   document.getElementById('mhSync')?.classList.remove('spin');
-  if (_mSyncAt && currentUser && currentUser.role === 'superadmin') {
+  if (_mSyncAt && isMsaRole()) {
     el.textContent = 'Sinkronisasi terakhir: ' + _mSyncAt.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':') + ' WIB';
     return;
   }
@@ -4699,7 +5719,7 @@ function renderMobileToday(){
   badge.className = 'mh-badge' + (pct >= 80 ? ' ok' : pct >= 50 ? ' mid' : '');
   const sub = document.getElementById('mhTodaySub');
   sub.className = belum ? 'late' : '';
-  const sa = currentUser && currentUser.role === 'superadmin';
+  const sa = isMsaRole();
   sub.textContent = !total ? 'Tambahkan di Master data' : belum ? (sa ? `${belum} belum setor` : `${belum} lokasi belum setor`) : (sa ? 'Semua sudah setor' : 'Semua lokasi sudah setor');
   document.getElementById('mhTodayBar').style.width = pct + '%';
 }
@@ -4740,6 +5760,36 @@ function labelMobileTable(table){
     });
   });
 }
+// Riwayat Transaksi (HP, admin & superadmin): kartu ringkas. Ketuk kartu =
+// detail (di sana ada PDF / Edit / Hapus). Template/Import/Export dipindah ke
+// tombol ⋯ di samping Filter supaya layar tidak penuh tombol.
+function initMobileRiwayat(){
+  const tb = document.getElementById('transaksiTbody');
+  if (tb && !tb._mTap) {
+    tb._mTap = true;
+    tb.addEventListener('click', e => {
+      if (!document.getElementById('desktopApp').classList.contains('m-sa') || !window.matchMedia('(max-width:900px)').matches) return;
+      const tr = e.target.closest('tr[data-id]'); if (!tr) return;
+      viewTransaksi(tr.dataset.id);
+    });
+  }
+  const tg = document.querySelector('#page-transaksi .m-ftoggle');
+  if (tg && !tg.parentElement.classList.contains('m-frow')) {
+    const row = document.createElement('div');
+    row.className = 'm-frow';
+    tg.before(row); row.appendChild(tg);
+    const more = document.createElement('button');
+    more.type = 'button'; more.className = 'm-fmore'; more.setAttribute('aria-label', 'Import / Export');
+    more.innerHTML = mIco('more');
+    more.onclick = () => openMSheet('Data transaksi', [
+      { label: 'Export Excel', fn: () => document.getElementById('btnExportTransaksi')?.click() },
+      ...(boleh('riwayat', 'c') ? [
+        { label: 'Import Excel', fn: () => document.getElementById('importTransaksiFile')?.click() },
+        { label: 'Unduh template import', fn: () => document.getElementById('btnTemplateTransaksi')?.click() }] : [])
+    ]);
+    row.appendChild(more);
+  }
+}
 function initMobileLists(){
   document.querySelectorAll('.d-main table:not(.detail-table)').forEach(table => {
     const tb = table.querySelector('tbody'); if (!tb || tb._mObs) return;
@@ -4774,6 +5824,7 @@ function initMobileLists(){
 }
 
 function switchPage(pageId) {
+  if (!bolehHalaman(pageId)) pageId = 'dashboard';
   document.querySelectorAll('.d-nav-item').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.d-nav-subitem').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.d-page').forEach(p => p.classList.remove('active'));
@@ -4796,6 +5847,8 @@ function switchPage(pageId) {
   if (pageId === 'master-tipe') loadMasterTipePage();
   if (pageId === 'master-kategori') loadMasterKategoriPage();
   if (pageId === 'notifikasi') renderNotifPage(true);
+  if (pageId === 'persetujuan') renderPersetujuan(true);
+  if (pageId === 'hak-akses') muatHakAkses();
   if (pageId === 'input' && document.getElementById('saUInput')) saLoadToday();
   updateMobileTitle(pageId);
 }
@@ -4875,7 +5928,7 @@ function updateDesktopCalcSummary(){
 
 function updateDesktopLokasi(){
   const perusahaan = document.getElementById('dPerusahaan').value;
-  const lokasi = lokasiUntukPerusahaan(perusahaan).sort();
+  const lokasi = lokasiAkses(perusahaan);
   document.getElementById('dLokasi').innerHTML = lokasi.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
   refreshDesktopItemKategori();
 }
@@ -5208,6 +6261,9 @@ function loadDashboard(forceRefresh){
     if (countEl) countEl.textContent = blEntriesAll.length > 10 ? `Top 10 dari ${blEntriesAll.length} lokasi` : blEntriesAll.length + ' lokasi';
     const mAllEl = document.getElementById('mKinerjaAll');
     if (mAllEl) mAllEl.textContent = `Semua (${blEntriesAll.length})`;
+    // Admin dengan 1 lokasi: peringkat lokasi tidak bermakna -> sembunyikan di HP.
+    document.getElementById('perusahaanBars')?.closest('.panel')?.classList.toggle('m-satu-lokasi',
+      !!currentUser && currentUser.role === 'admin' && blEntriesAll.length <= 1);
     document.getElementById('perusahaanBars').innerHTML = blEntries.length ? blEntries.map(loc => {
       const net = loc.pendapatan - loc.pengeluaran;
       const netColor = net >= 0 ? 'var(--signal)' : 'var(--alert)';
@@ -5537,11 +6593,7 @@ function loadTransaksiPage(){
   function updateTrxFilterLokasi() {
     const pil = [...document.getElementById('filterPerusahaan').selectedOptions]
       .map(option => option.value).filter(Boolean);
-    const lokasiList = [...new Set(
-      masterData.lokasiMap
-        .filter(x => !pil.length || pil.includes(x.perusahaan))
-        .map(x => x.lokasi)
-    )].sort();
+    const lokasiList = lokasiAkses(pil);
     const filterL = document.getElementById('filterLokasi');
     filterL.innerHTML = '<option value="">Semua lokasi</option>' + lokasiList.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
     [...filterL.options].forEach(option => { option.selected = false; });
@@ -5755,7 +6807,7 @@ function populatePjPerusahaanFilter(){
   const sel = document.getElementById('pjFilterPerusahaan');
   if (!sel) return;
   const cur = sel.value;
-  const list = (masterData.perusahaan || []).slice().sort();
+  const list = (getAccessiblePerusahaan(currentUser) || []).slice().sort();
   sel.innerHTML = '<option value="">Semua Perusahaan</option>' +
     list.map(p => `<option value="${escapeHtml(p)}" ${p === cur ? 'selected' : ''}>${escapeHtml(p)}</option>`).join('');
 }
@@ -5764,11 +6816,7 @@ function populatePjLokasiFilter(){
   const sel = document.getElementById('pjFilterLokasi');
   if (!sel) return;
   const perusahaan = (document.getElementById('pjFilterPerusahaan') || {}).value || '';
-  const list = [...new Set(
-    (masterData.lokasiMap || [])
-      .filter(x => !perusahaan || x.perusahaan === perusahaan)
-      .map(x => x.lokasi)
-  )].sort();
+  const list = lokasiAkses(perusahaan);
   sel.innerHTML = '<option value="">Semua Lokasi</option>' +
     list.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
 }
@@ -6075,11 +7123,7 @@ function loadLaporanBulananPage(){
   // Populate filter lokasi (update saat perusahaan berubah)
   function updateLapFilterLokasi() {
     const pil = document.getElementById('lapFilterPerusahaan').value;
-    const lokasiList = [...new Set(
-      masterData.lokasiMap
-        .filter(x => !pil || x.perusahaan === pil)
-        .map(x => x.lokasi)
-    )].sort();
+    const lokasiList = lokasiAkses(pil);
     document.getElementById('lapFilterLokasi').innerHTML =
       '<option value="">Semua lokasi</option>' + lokasiList.map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
     if (window.sdRefresh) { initSearchableDropdown('lapFilterLokasi'); sdRefresh('lapFilterLokasi'); }
@@ -6361,13 +7405,18 @@ function fmtTglIndo(ymd){
   if (!m) return String(ymd || '');
   return Number(m[3]) + ' ' + BULAN_LABEL[Number(m[2]) - 1] + ' ' + m[1];
 }
+// Versi pendek untuk kartu: tahun berjalan tidak ditulis ("22 Okt").
+function fmtTglRingkas(ymd){
+  const t = fmtTglIndo(ymd);
+  return t.endsWith(' ' + new Date().getFullYear()) ? t.slice(0, -5) : t;
+}
 function renderTransaksiTable() {
   renderPagination('transaksi', 8, (g) => {
     const net = g.totalPendapatan - g.totalPengeluaran;
     return `
-    <tr>
+    <tr data-id="${escapeHtml(g.id)}">
       <td style="font-family:monospace;font-size:12px;color:var(--muted);">${g.id}</td>
-      <td><span class="d-only">${g.tanggal}</span><span class="m-only m-meta">${fmtTglIndo(g.tanggal)}${g.waktu ? ', ' + String(g.waktu).slice(0, 5) : ''} · oleh ${escapeHtml(g.inputOleh || '-')}</span></td>
+      <td><span class="d-only">${g.tanggal}</span><span class="m-only m-meta">${fmtTglRingkas(g.tanggal)}${g.waktu ? ', ' + String(g.waktu).slice(0, 5) : ''} · ${escapeHtml(g.inputOleh || '-')}</span></td>
       <td>${escapeHtml(g.perusahaan)}</td>
       <td>${escapeHtml(g.lokasi)}</td>
       <td class="${(!g.keterangan || g.keterangan === '-') ? 'm-kosong' : ''}">${escapeHtml(g.keterangan)}</td>
@@ -6666,6 +7715,11 @@ function viewTransaksi(id){
         </div>
       </div>
       ` : ''}
+      ${isMsaRole() ? `<div class="m-only m-vact">
+        <button type="button" data-v="pdf">${mIco('log')}PDF</button>
+        <button type="button" data-v="edit">${mIco('edit')}Edit</button>
+        <button type="button" data-v="hapus" class="danger">${mIco('xc')}Hapus</button>
+      </div>` : ''}
       <div class="btn-row">
         <button type="button" class="btn-sm btn-outline" id="viewCloseBtn">Tutup</button>
       </div>
@@ -6673,6 +7727,12 @@ function viewTransaksi(id){
   `;
   document.body.appendChild(overlay);
   bindFotoGrid(overlay);
+  overlay.querySelectorAll('.m-vact [data-v]').forEach(b => b.onclick = () => {
+    const v = b.dataset.v;
+    if (v === 'pdf') { downloadTransaksiPDF(id); return; }
+    overlay.remove();
+    if (v === 'edit') editTransaksiModal(id); else deleteTransaksiConfirm(id);
+  });
   overlay.querySelector('#viewCloseBtn').onclick = () => overlay.remove();
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
@@ -6826,7 +7886,8 @@ function editTransaksiModal(id){
   }
   function updateEtLokasi(){
     const perusahaan = perusahaanSel.value;
-    const lokasi = [...new Set(masterData.lokasiMap.filter(x => x.perusahaan === perusahaan).map(x => x.lokasi))].sort();
+    const lokasi = lokasiAkses(perusahaan);
+    if (g.lokasi && lokasi.indexOf(g.lokasi) < 0 && perusahaan === g.perusahaan) lokasi.unshift(g.lokasi);
     overlay.querySelector('#etLokasi').innerHTML = lokasi.map(l => `<option value="${escapeHtml(l)}" ${l===g.lokasi?'selected':''}>${escapeHtml(l)}</option>`).join('');
     refreshEtItemKategori();
   }
@@ -7518,8 +8579,11 @@ function openUserModal(user){
 
   // Parse akses awal ('ALL' atau daftar dipisah koma) jadi array untuk multi-select
   const parseAkses = raw => (!raw || raw === 'ALL') ? ['ALL'] : String(raw).split(',').map(s => s.trim()).filter(Boolean);
-  const initialPerusahaan = isEdit ? parseAkses(user['PERUSAHAAN']) : ['ALL'];
-  const initialLokasi = isEdit ? parseAkses(user['LOKASI']) : ['ALL'];
+  const olehAdmin = currentUser && currentUser.role === 'admin';
+  const initialPerusahaan = isEdit ? parseAkses(user['PERUSAHAAN']) : (olehAdmin ? parseAkses(currentUser.perusahaan) : ['ALL']);
+  const initialLokasi = isEdit ? parseAkses(user['LOKASI']) : (olehAdmin ? parseAkses(currentUser.lokasi) : ['ALL']);
+  // Admin hanya boleh membuat/mengubah akun role user.
+  if (olehAdmin) overlay.querySelectorAll('#umRole option:not([value="user"])').forEach(o => o.remove());
 
   function lokasiOptionsFor(selectedPerusahaan){
     const options = (!selectedPerusahaan.length || selectedPerusahaan.includes('ALL'))
@@ -7788,6 +8852,7 @@ function switchMobileView(viewName){
   });
   const app = document.getElementById('mobileApp');
   if (app) app.dataset.view = viewName === 'history' ? 'history' : 'input';
+  if (viewName === 'history') muatPengajuanUser();
   window.scrollTo(0, 0);
 }
 
@@ -7843,7 +8908,9 @@ function initMobileApp(){
       ? openMobileProfile
       : (() => switchMobileView(item.dataset.mobileView));
   });
-  switchMobileView('input');
+  switchMobileView(boleh('input', 'c') || !boleh('riwayat', 'r') ? 'input' : 'history');
+  terapkanAkses();
+  mulaiPollingAkses();
   loadMobileTodaySummary();
 
   const accessiblePerusahaan = getAccessiblePerusahaan(currentUser);
@@ -7939,6 +9006,10 @@ function initMobileApp(){
   else mFotoManager.reset();
 
   document.getElementById('mobileInputForm').onsubmit = (submitMobileTransaksi);
+  mPerusahaan.addEventListener('change', refreshLabelAjukan);
+  document.getElementById('mLokasi')?.addEventListener('change', refreshLabelAjukan);
+  refreshLabelAjukan();
+  muatPengajuanUser();
 
   // Set tanggal transaksi default ke hari ini
   const mTanggalInput = document.getElementById('mTanggalTransaksi');
@@ -8130,7 +9201,7 @@ async function submitMobileTransaksi(e){
   status.textContent = '';
   status.className = 'submit-status';
 
-  withSubmitGuard(btn, label, 'Menyimpan...', 'Simpan Transaksi', async (release) => {
+  withSubmitGuard(btn, label, 'Menyimpan...', labelSimpanUser(), async (release) => {
     // mPerusahaan.value selalu terisi (lihat initMobileApp — select diisi meski hidden)
     const selectedPerusahaan = document.getElementById('mPerusahaan').value;
     const selectedLokasi = document.getElementById('mLokasi').value;
@@ -8169,6 +9240,19 @@ async function submitMobileTransaksi(e){
       release();
       if (res.success) {
         clearSubmitReqId('m');
+        if (res.pending) {
+          // Perusahaan memakai skema approval: transaksi masuk antrean.
+          document.getElementById('mItemsContainer').innerHTML = '';
+          mItemCounter = 0;
+          addMobileItem();
+          document.getElementById('mKeterangan').value = '';
+          mFotoManager.reset();
+          status.textContent = 'Transaksi diajukan. Menunggu persetujuan admin.';
+          status.classList.add('success');
+          showToast('Transaksi diajukan dan menunggu persetujuan admin. Statusnya bisa dilihat di menu Riwayat.', 'info');
+          muatPengajuanUser();
+          return;
+        }
         const lokasiEntry = masterData.lokasiMap.find(x => x.perusahaan === payload.perusahaan && x.lokasi === payload.lokasi);
         const idLokasi = lokasiEntry?.idLokasi || '';
         const keteranganStruk = idLokasi
