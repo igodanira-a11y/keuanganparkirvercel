@@ -2240,8 +2240,8 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 }
 
 /* Toast HP role user: bertumpuk di atas menu bawah */
-.mu-toast-stack{position:fixed;left:16px;right:16px;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:250;display:flex;flex-direction:column;gap:8px;pointer-events:none;font-family:'Plus Jakarta Sans',var(--font);}
-.mu-toast{position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;padding:13px 40px 15px 14px;border-radius:16px;background:#044424;color:#fff;font-size:14px;font-weight:500;line-height:1.4;box-shadow:0 12px 28px -10px rgba(0,0,0,.35);pointer-events:auto;transform:translateY(24px);opacity:0;transition:transform .3s cubic-bezier(.2,.9,.3,1.2),opacity .25s ease;}
+.mu-toast-stack{position:fixed;left:16px;right:16px;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:250;display:flex;flex-direction:column-reverse;gap:8px;pointer-events:none;font-family:'Plus Jakarta Sans',var(--font);}
+.mu-toast{position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;padding:13px 40px 15px 14px;border-radius:16px;background:#044424;color:#fff;font-size:14px;font-weight:500;line-height:1.4;box-shadow:0 0 0 1px rgba(255,255,255,.22),0 14px 30px -8px rgba(0,0,0,.45);pointer-events:auto;transform:translateY(-24px);opacity:0;transition:transform .3s cubic-bezier(.2,.9,.3,1.2),opacity .25s ease;}
 .mu-toast.show{transform:none;opacity:1;}
 .mu-toast.t-error{background:#b91c1c;}
 .mu-toast.t-info{background:#1d4ed8;}
@@ -2249,6 +2249,9 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .mu-toast-ic{flex:none;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;}
 .mu-toast-ic svg{width:16px;height:16px;}
 .mu-toast-tx{flex:1;min-width:0;overflow-wrap:anywhere;}
+.mu-toast-jd{display:block;font-weight:700;}
+.mu-toast.t-klik{cursor:pointer;}
+.mu-toast-tx small{display:block;margin-top:1px;font-size:12.5px;font-weight:500;opacity:.85;}
 .mu-toast-x{position:absolute;top:50%;right:8px;width:30px;height:30px;margin-top:-16px;border-radius:50%;color:rgba(255,255,255,.85);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;}
 .mu-toast-x:active{background:rgba(255,255,255,.15);}
 .mu-toast .t-bar{background:rgba(255,255,255,.55);}
@@ -3862,6 +3865,12 @@ function pasangPerilakuToast(el, durasi, tutup){
 // Toast web (juga dipakai tampilan HP superadmin/admin).
 // opts: { title, message | lines, type: success|error|info|warning, duration }
 function showDesktopToast(opts){
+  // Tampilan HP (semua role): pakai toast mobile yang sama dengan role user,
+  // supaya gaya notifikasi seragam di aplikasi/APK.
+  if (window.matchMedia && window.matchMedia('(max-width:900px)').matches) {
+    const isi = opts.message || (opts.lines || []).map(l => l.label + ': ' + l.value).join(' · ');
+    return showToast(isi, TOAST_TIPE.indexOf(opts.type) > -1 ? opts.type : 'success', opts.title, opts.duration);
+  }
   const container = document.getElementById('dToastContainer');
   if (!container) return;
   const type = TOAST_TIPE.indexOf(opts.type) > -1 ? opts.type : 'success';
@@ -4381,8 +4390,7 @@ function diAplikasiAndroid(){
   return /Android/i.test(ua) && (/; wv\)/.test(ua) || /Version\/\d+\.\d+ (Mobile )?Chrome\//.test(ua));
 }
 function kabarUnduh(judul, msg, jenis){
-  if (currentUser && currentUser.role === 'user') showToast(msg, jenis === 'error' ? true : jenis);
-  else showDesktopToast({ title: judul, message: msg, type: jenis });
+  showDesktopToast({ title: judul, message: msg, type: jenis }); // HP: otomatis toast mobile
 }
 function urlUnduhDrive(fileId){ return 'https://drive.google.com/uc?export=download&id=' + encodeURIComponent(fileId); }
 function idDariUrlDrive(url){ const m = String(url || '').match(/\/d\/([\w-]{10,})|[?&]id=([\w-]{10,})/); return m ? (m[1] || m[2]) : ''; }
@@ -5987,6 +5995,15 @@ function showNotifToast(fresh){
   document.querySelector('.m-ntoast:not(.t-keluar)')?.querySelector('.t-x')?.click();
   const it = fresh[0];
   const n = ntNominal(it);
+  // HP: gaya toast sama dengan notifikasi lain (bisa diketuk -> Notifikasi).
+  if (window.matchMedia && window.matchMedia('(max-width:900px)').matches) {
+    document.querySelector('.mu-toast.mu-notif:not(.t-keluar)')?.querySelector('.mu-toast-x')?.click();
+    try { if (navigator.vibrate) navigator.vibrate([60, 40, 60]); } catch (e) {}
+    showToast((it.lokasi || '-') + ' · ' + (it.oleh || '-') + ' · ' + n.txt, 'success',
+      fresh.length > 1 ? fresh.length + ' transaksi baru masuk' : 'Transaksi baru masuk', 6000,
+      { ikon: mIco('bell'), klik: () => mGo('notifikasi'), kelas: 'mu-notif' });
+    return;
+  }
   const el = document.createElement('div');
   el.className = 'm-ntoast';
   el.setAttribute('role', 'button'); el.tabIndex = 0;
@@ -10208,7 +10225,9 @@ function downloadMobileReceiptPDF(id){
 // atau nama jenis: 'success' | 'error' | 'info' | 'warning'.
 // Beberapa toast bisa tampil bertumpuk (maks. 3), masing-masing dengan
 // tombol tutup, progress bar, jeda saat disentuh, dan bisa digeser.
-function showToast(msg, jenis){
+// opsi (opsional): { ikon: svg, klik: fn, kelas: 'nama-kelas' }
+function showToast(msg, jenis, judul, durasi, opsi){
+  opsi = opsi || {};
   const type = typeof jenis === 'string' && TOAST_TIPE.indexOf(jenis) > -1 ? jenis : (jenis ? 'error' : 'success');
   let stack = document.getElementById('mToastStack');
   if (!stack) {
@@ -10217,19 +10236,26 @@ function showToast(msg, jenis){
     document.body.appendChild(stack); // di body supaya selalu tampil di atas popup
   }
   const el = document.createElement('div');
-  el.className = 'mu-toast t-' + type;
-  el.setAttribute('role', type === 'error' || type === 'warning' ? 'alert' : 'status');
-  el.innerHTML = `<span class="mu-toast-ic">${TOAST_IKON[type]}</span><span class="mu-toast-tx">${escapeHtml(msg)}</span><button type="button" class="mu-toast-x" aria-label="Tutup">&times;</button><div class="t-bar"></div>`;
+  el.className = 'mu-toast t-' + type + (opsi.kelas ? ' ' + opsi.kelas : '') + (opsi.klik ? ' t-klik' : '');
+  el.setAttribute('role', opsi.klik ? 'button' : (type === 'error' || type === 'warning' ? 'alert' : 'status'));
+  el.innerHTML = `<span class="mu-toast-ic">${opsi.ikon || TOAST_IKON[type]}</span><span class="mu-toast-tx">${judul ? `<b class="mu-toast-jd">${escapeHtml(judul)}</b>${msg ? `<small>${escapeHtml(msg)}</small>` : ''}` : escapeHtml(msg)}</span><button type="button" class="mu-toast-x" aria-label="Tutup">&times;</button><div class="t-bar"></div>`;
   stack.appendChild(el);
   const semua = stack.querySelectorAll('.mu-toast:not(.t-keluar)');
   if (semua.length > 3) semua[0].querySelector('.mu-toast-x').click();
   requestAnimationFrame(() => el.classList.add('show'));
-  const ctl = pasangPerilakuToast(el, type === 'error' ? 4500 : 3000, arah => {
+  const ctl = pasangPerilakuToast(el, durasi || (type === 'error' ? 4500 : 3000), arah => {
     el.classList.add('t-keluar');
     if (!arah) el.classList.remove('show');
     setTimeout(() => el.remove(), 320);
   });
   el.querySelector('.mu-toast-x').addEventListener('click', e => { e.stopPropagation(); ctl.tutup(); });
+  if (opsi.klik) {
+    el.tabIndex = 0;
+    const buka = () => { ctl.tutup(); opsi.klik(); };
+    el.addEventListener('click', buka);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); buka(); } });
+  }
+  return el;
 }
 
 // ============================================================
