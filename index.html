@@ -1094,7 +1094,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .receipt-actions .btn-close-receipt:hover{border-color:var(--brand);}
 
 .d-toast-container{
-  position:fixed;top:24px;right:24px;z-index:300;
+  position:fixed;top:24px;right:24px;z-index:1100; /* di atas popup (modal 400) */
   display:flex;flex-direction:column;gap:10px;
   pointer-events:none;
 }
@@ -1989,6 +1989,18 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
   .calc-summary .cs-value{font-size:14.5px;}
   .calc-summary .cs-item:last-child .cs-label{color:var(--ink);font-weight:700;}
 }
+/* Toast selalu di atas popup detail/review */
+#unduhBantu{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:1200;display:flex;align-items:center;gap:10px;padding:12px 12px 12px 16px;border-radius:14px;background:#1f2937;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.25);font-family:'Plus Jakarta Sans',var(--font);transform:translateY(140%);opacity:0;transition:transform .25s,opacity .25s;pointer-events:none;max-width:520px;margin:0 auto;}
+#unduhBantu.show{transform:none;opacity:1;pointer-events:auto;}
+#unduhBantu .ub-teks{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+#unduhBantu .ub-teks b{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#unduhBantu .ub-teks small{font-size:11.5px;opacity:.75;}
+#unduhBantu a{flex-shrink:0;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,.14);padding:8px 10px;border-radius:9px;text-decoration:none;}
+#unduhBantu button{flex-shrink:0;background:none;border:0;color:#fff;opacity:.7;font-size:15px;padding:4px 6px;cursor:pointer;}
+.mu-toast-stack{z-index:1100 !important;}
+/* Tombol ikon yang sedang memproses (mis. unduh Form PDF) */
+.user-table-actions button.memuat,.m-vact button.memuat{opacity:.45;cursor:progress;animation:berdenyut 1s ease-in-out infinite;}
+@keyframes berdenyut{50%{opacity:.2;}}
 /* ===== Review persetujuan ===== */
 .apv-cek{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;margin:4px 0 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);font-size:13.5px;line-height:1.45;color:var(--ink);cursor:pointer;}
 .apv-cek input{flex:none;width:18px;height:18px;margin:1px 0 0;accent-color:var(--brand,#05592d);cursor:pointer;}
@@ -4365,17 +4377,70 @@ function renderHakAkses(){
 // FORM TRANSAKSI (PDF) + HALAMAN VERIFIKASI E-SIGN
 // ============================================================
 // Unduh form PDF transaksi (dibuat server; kalau belum ada dibuat saat itu).
+// ============================================================
+// UNDUH FILE — browser biasa & aplikasi APK (Android WebView)
+// ============================================================
+// WebView di aplikasi APK mengabaikan unduhan blob/<a download>, jadi di sana
+// file diunduh lewat link https asli (Drive) yang ditangani pengelola unduhan
+// Android dan masuk ke folder Download HP.
+function diAplikasiAndroid(){
+  const ua = navigator.userAgent || '';
+  return /Android/i.test(ua) && (/; wv\)/.test(ua) || /Version\/\d+\.\d+ (Mobile )?Chrome\//.test(ua));
+}
+function kabarUnduh(judul, msg, jenis){
+  if (currentUser && currentUser.role === 'user') showToast(msg, jenis === 'error' ? true : jenis);
+  else showDesktopToast({ title: judul, message: msg, type: jenis });
+}
+function urlUnduhDrive(fileId){ return 'https://drive.google.com/uc?export=download&id=' + encodeURIComponent(fileId); }
+function idDariUrlDrive(url){ const m = String(url || '').match(/\/d\/([\w-]{10,})|[?&]id=([\w-]{10,})/); return m ? (m[1] || m[2]) : ''; }
+function unduhLewatUrl(url, nama){
+  try { window.location.href = url; } catch (e) {}
+  let el = document.getElementById('unduhBantu');
+  if (!el) { el = document.createElement('div'); el.id = 'unduhBantu'; document.body.appendChild(el); }
+  el.innerHTML = `<div class="ub-teks"><b>Mengunduh ${escapeHtml(nama)}</b><small>Cek notifikasi atau folder Download HP.</small></div>
+    <a href="${escapeHtml(url)}" target="_blank" rel="noopener">Buka di browser</a><button type="button" aria-label="Tutup">✕</button>`;
+  el.querySelector('button').onclick = () => el.classList.remove('show');
+  el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 15000);
+}
+function blobKeBase64(blob){
+  return new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1] || ''); r.onerror = () => no(r.error || new Error('Gagal membaca file')); r.readAsDataURL(blob); });
+}
+// Simpan blob ke perangkat. Hasil: 'langsung' (browser) atau 'apk'.
+async function simpanKePerangkat(blob, nama){
+  nama = String(nama || 'file').replace(/[^\w.-]+/g, '_');
+  if (!diAplikasiAndroid()) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = nama;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+    return 'langsung';
+  }
+  const b64 = await blobKeBase64(blob);
+  const res = await new Promise((ok, no) => google.script.run.withSuccessHandler(ok).withFailureHandler(no).siapkanUnduhan(b64, nama, blob.type || '', currentUser));
+  if (!res || !res.success || !res.id) throw new Error((res && res.message) || 'File gagal disiapkan.');
+  unduhLewatUrl(urlUnduhDrive(res.id), res.nama || nama);
+  return 'apk';
+}
+
 function bukaFormPdf(id, btn){
   if (!id || (btn && btn._sibuk)) return;
   const labelAsli = btn ? btn.innerHTML : '';
-  if (btn) { btn._sibuk = true; btn.disabled = true; btn.textContent = 'Menyiapkan…'; }
-  const selesai = () => { if (btn) { btn._sibuk = false; btn.disabled = false; btn.innerHTML = labelAsli; } };
-  const kabar = (judul, msg, jenis) => {
-    if (currentUser && currentUser.role === 'user') showToast(msg, jenis === 'error' ? true : jenis);
-    else showDesktopToast({ title: judul, message: msg, type: jenis });
-  };
+  const ikonSaja = !!(btn && btn.closest && btn.closest('.user-table-actions, .m-vact'));
+  if (btn) { btn._sibuk = true; btn.disabled = true; if (ikonSaja) btn.classList.add('memuat'); else btn.textContent = 'Menyiapkan…'; }
+  const selesai = () => { if (btn) { btn._sibuk = false; btn.disabled = false; btn.classList.remove('memuat'); if (!ikonSaja) btn.innerHTML = labelAsli; } };
+  if (ikonSaja && currentUser && currentUser.role !== 'user') showDesktopToast({ title: 'Menyiapkan Form PDF', message: 'File akan terunduh otomatis.', type: 'info' });
+  const kabar = kabarUnduh;
+  const apk = diAplikasiAndroid();
   google.script.run.withSuccessHandler(res => {
     selesai();
+    const nama = String((res && res.nama) || ('FORM-' + id + '.pdf')).replace(/[^\w.-]+/g, '_');
+    if (apk) {
+      // Aplikasi APK: unduh langsung dari file Drive-nya (tanpa blob).
+      const fid = res && res.success ? idDariUrlDrive(res.url) : '';
+      if (!fid) return kabar('Form PDF gagal', (res && res.message) || 'Form belum bisa dibuat.', 'error');
+      return unduhLewatUrl(urlUnduhDrive(fid), nama);
+    }
     if (!res || !res.success || !res.base64) return kabar('Form PDF gagal', (res && res.message) || 'Form belum bisa dibuat.', 'error');
     try {
       // Langsung disimpan ke perangkat (tanpa membuka pratinjau).
@@ -4392,7 +4457,7 @@ function bukaFormPdf(id, btn){
       kabar('Form PDF gagal', 'File tidak bisa disimpan: ' + e.message, 'error');
     }
   }).withFailureHandler(err => { selesai(); kabar('Form PDF gagal', err.message, 'error'); })
-    .getDokumenTransaksi(id, currentUser, { unduh: true });
+    .getDokumenTransaksi(id, currentUser, { unduh: !apk });
 }
 
 // Halaman verifikasi (dibuka dari QR di PDF: ?v=<ID>.<kode>) — tanpa login.
@@ -7725,7 +7790,7 @@ function renderTransaksiTable() {
       <td>${escapeHtml(g.inputOleh)}</td>
       <td class="user-table-actions">
         <button type="button" title="Lihat transaksi" aria-label="Lihat transaksi" data-action="view" onclick="viewTransaksi('${g.id}')"><i class="fi fi-rr-eye"></i></button>
-        <button type="button" title="Download PDF struk" aria-label="Download PDF struk" data-action="pdf" onclick="downloadTransaksiPDF('${g.id}')"><i class="fi fi-rr-file-pdf"></i></button>
+        <button type="button" title="Unduh Form PDF" aria-label="Unduh Form PDF" data-action="pdf" onclick="bukaFormPdf('${g.id}', this)"><i class="fi fi-rr-file-pdf"></i></button>
         <button type="button" title="Edit transaksi" aria-label="Edit transaksi" data-action="edit" onclick="editTransaksiModal('${g.id}')"><i class="fi fi-rr-edit"></i></button>
         <button type="button" title="Hapus transaksi" aria-label="Hapus transaksi" data-action="delete" onclick="deleteTransaksiConfirm('${g.id}')"><i class="fi fi-rr-trash"></i></button>
       </td>
@@ -7744,10 +7809,8 @@ function renderTransaksiTable() {
 // Helper: download workbook sebagai .xlsx
 function _downloadXlsx(wb, filename){
   const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([wbout], { type: 'application/octet-stream' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = filename;
-  a.click(); URL.revokeObjectURL(url);
+  const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  simpanKePerangkat(blob, filename).catch(err => kabarUnduh('Gagal mengunduh', err.message || String(err), 'error'));
 }
 
 // Helper: styling header kolom
@@ -8014,12 +8077,12 @@ function viewTransaksi(id){
       </div>
       ` : ''}
       ${isMsaRole() ? `<div class="m-only m-vact">
-        <button type="button" data-v="pdf">${mIco('log')}Struk</button>
+        <button type="button" data-v="pdf">${mIco('log')}Form</button>
         <button type="button" data-v="edit">${mIco('edit')}Edit</button>
         <button type="button" data-v="hapus" class="danger">${mIco('xc')}Hapus</button>
       </div>` : ''}
       <div class="btn-row dx-aksi">
-        <button type="button" class="btn-sm btn-dark" id="viewFormBtn">Form PDF</button>
+        <button type="button" class="btn-sm btn-dark" id="viewStrukBtn">Struk PDF</button>
       </div>
     </div>
   `;
@@ -8027,11 +8090,11 @@ function viewTransaksi(id){
   bindFotoGrid(overlay);
   overlay.querySelectorAll('.m-vact [data-v]').forEach(b => b.onclick = () => {
     const v = b.dataset.v;
-    if (v === 'pdf') { downloadTransaksiPDF(id); return; }
+    if (v === 'pdf') { bukaFormPdf(id, b); return; }
     overlay.remove();
     if (v === 'edit') editTransaksiModal(id); else deleteTransaksiConfirm(id);
   });
-  overlay.querySelector('#viewFormBtn').onclick = e => bukaFormPdf(id, e.currentTarget);
+  overlay.querySelector('#viewStrukBtn').onclick = () => downloadTransaksiPDF(id);
   overlay.querySelector('[data-tutup]').onclick = () => overlay.remove();
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
@@ -8715,11 +8778,10 @@ function __downloadReceiptPDF_(data, tglLabel, btnEl){
     const orientation = neededHeight >= pageWidth ? 'p' : 'l';
     const pdf = new jsPDF({ unit: 'mm', format: [pageWidth, neededHeight], orientation });
     draw(pdf, false);
-    pdf.save(`Struk-${data.batchId}.pdf`);
-
-    btnEl._submitting = false;
-    btnEl.disabled = false;
-    btnEl.innerHTML = originalLabel;
+    const pulih = () => { btnEl._submitting = false; btnEl.disabled = false; btnEl.innerHTML = originalLabel; };
+    simpanKePerangkat(pdf.output('blob'), `Struk-${data.batchId}.pdf`)
+      .then(pulih)
+      .catch(err => { pulih(); kabarUnduh('Gagal mengunduh struk', err.message || String(err), 'error'); });
   } catch (err) {
     btnEl._submitting = false;
     btnEl.disabled = false;
@@ -10145,7 +10207,7 @@ function showToast(msg, jenis){
   if (!stack) {
     stack = document.createElement('div');
     stack.id = 'mToastStack'; stack.className = 'mu-toast-stack';
-    (document.getElementById('mobileApp') || document.body).appendChild(stack);
+    document.body.appendChild(stack); // di body supaya selalu tampil di atas popup
   }
   const el = document.createElement('div');
   el.className = 'mu-toast t-' + type;
