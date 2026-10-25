@@ -37,8 +37,7 @@
   }
   function setRememberMe(remember) {
     try {
-      if (remember) localStorage.setItem(REMEMBER_KEY, '1');
-      else localStorage.removeItem(REMEMBER_KEY);
+      localStorage.setItem(REMEMBER_KEY, remember ? '1' : '0');
     } catch (e) {}
   }
   function setToken(t) {
@@ -53,24 +52,34 @@
       if (isRemembered() && user) {
         localStorage.setItem(USER_KEY, JSON.stringify(user));
         localStorage.setItem(USERNAME_KEY, user.username || '');
+        sessionStorage.removeItem(USER_KEY);
       } else {
         localStorage.removeItem(USER_KEY);
         localStorage.removeItem(USERNAME_KEY);
+        // Tanpa "Ingat saya": data akun tetap disimpan di tab ini saja, supaya
+        // halaman yang dimuat ulang (mis. HP memuat ulang aplikasi setelah
+        // ditinggal ke layar Home) tidak langsung kembali ke login.
+        if (user) sessionStorage.setItem(USER_KEY, JSON.stringify(user)); else sessionStorage.removeItem(USER_KEY);
       }
     } catch (e) {}
   }
+  // Token perangkat "Ingat saya" (jangka panjang) untuk memulihkan sesi otomatis.
+  var RT_KEY = 'spk_rt';
+  function getRt() { try { return isRemembered() ? (localStorage.getItem(RT_KEY) || '') : ''; } catch (e) { return ''; } }
+  function setRt(v) { try { if (v) localStorage.setItem(RT_KEY, v); else localStorage.removeItem(RT_KEY); } catch (e) {} }
   function getRememberedUsername() {
     try { return isRemembered() ? localStorage.getItem(USERNAME_KEY) || '' : ''; } catch (e) { return ''; }
   }
   function getRememberedUser() {
     try {
-      return isRemembered() ? JSON.parse(localStorage.getItem(USER_KEY) || 'null') : null;
+      return JSON.parse((isRemembered() ? localStorage : sessionStorage).getItem(USER_KEY) || 'null');
     } catch (e) { return null; }
   }
   function clearRememberedUser() {
     try {
       localStorage.removeItem(USER_KEY);
-      localStorage.removeItem(USERNAME_KEY);
+      sessionStorage.removeItem(USER_KEY);
+      setRt('');
     } catch (e) {}
   }
   window.__auth = {
@@ -80,7 +89,11 @@
     rememberUser: rememberUser,
     getRememberedUsername: getRememberedUsername,
     getRememberedUser: getRememberedUser,
-    clearRememberedUser: clearRememberedUser
+    clearRememberedUser: clearRememberedUser,
+    isRemembered: isRemembered,
+    getRt: getRt,
+    setRt: setRt,
+    pilihanIngat: function () { try { return localStorage.getItem(REMEMBER_KEY); } catch (e) { return null; } }
   };
 
   // Dipanggil kalau server bilang sesi sudah tidak valid/kedaluwarsa —
@@ -115,7 +128,28 @@
 
   // Fungsi simpan yang waktunya dicatat di console (untuk memantau kecepatan).
   var TIMED_FUNCTIONS = { simpanTransaksiBatch: true, simpanTransaksi: true, login: true };
-  function callServer(fnName, args, onSuccess, onFailure) {
+  // Satu permintaan pemulihan sesi untuk banyak request yang kedaluwarsa bersamaan.
+  var _pulih = null;
+  function pulihkanSesiDiam(cb) {
+    if (_pulih) { _pulih.push(cb); return; }
+    _pulih = [cb];
+    var selesai = function (ok) { var q = _pulih; _pulih = null; q.forEach(function (f) { try { f(ok); } catch (e) {} }); };
+    fetch(APPS_SCRIPT_URL, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ fn: 'pulihkanSesi', token: '', args: [getRt()] })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      var res = d && d.ok && d.result;
+      if (res && res.success && res.token) {
+        setToken(res.token);
+        if (res.user) {
+          rememberUser(res.user);
+          if (typeof window.currentUserSegarkan === 'function') window.currentUserSegarkan(res.user);
+        }
+        selesai(true);
+      } else { setRt(''); selesai(false); }
+    }).catch(function () { selesai(false); });
+  }
+  function callServer(fnName, args, onSuccess, onFailure, retried) {
     var t0 = Date.now();
     var reqBytes = 0;
     if (TIMED_FUNCTIONS[fnName]) { try { reqBytes = JSON.stringify(args).length; } catch (e) {} }
@@ -162,7 +196,19 @@
             }
           }
         } else {
-          if (data.code === 'SESSION_EXPIRED') forceReLogin();
+          if (data.code === 'SESSION_EXPIRED') {
+            // "Ingat saya": minta sesi baru diam-diam lalu ulangi request ini.
+            if (getRt() && !retried && fnName !== 'pulihkanSesi') {
+              pulihkanSesiDiam(function (ok) {
+                if (ok) { callServer(fnName, args, onSuccess, onFailure, true); return; }
+                forceReLogin();
+                var e1 = new Error(data.error || 'Sesi berakhir.'); e1.code = data.code;
+                if (onFailure) onFailure(e1);
+              });
+              return;
+            }
+            forceReLogin();
+          }
           // Ditolak karena hak akses: sesuaikan menu sekarang juga.
           if (data.code === 'FORBIDDEN' && typeof cekAksesSekarang === 'function') { try { cekAksesSekarang(); } catch (e) {} }
           var err = new Error(data.error || 'Terjadi kesalahan di server.');
@@ -1907,6 +1953,49 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 
 
 
+
+/* Detail/review pengajuan: header dengan tombol X, ringkasan rapi */
+.dx-box .apv-dhead,.apv-modal .apv-dhead{position:sticky;top:-28px;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:-28px -28px 14px;padding:22px 20px 12px 28px;background:var(--panel);border-bottom:1px solid var(--line);}
+.dx-box .apv-dhead h3,.apv-modal .apv-dhead h3{margin:0 0 6px;}
+.dx-box .apv-x,.apv-modal .apv-x{flex:none;width:38px;height:38px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}
+.dx-box .apv-x:hover,.apv-modal .apv-x:hover{background:var(--paper);}
+.dx-box .apv-x svg,.apv-modal .apv-x svg{width:20px;height:20px;}
+/* Detail transaksi: tombol bawah sama lebar, ringkasan berbentuk baris */
+.dx-box .dx-aksi{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:10px;margin-top:10px;}
+.dx-box .dx-aksi .btn-sm,.dx-box .dx-full{width:100%;justify-content:center;min-height:46px;margin:0 !important;}
+.dx-box .dx-full{display:flex;align-items:center;}
+.dx-box .calc-summary{display:flex;flex-direction:column;gap:0;padding:4px 16px;}
+.dx-box .calc-summary .cs-item{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 0;text-align:left;border-bottom:1px dashed var(--line);}
+.dx-box .calc-summary .cs-item:last-child{border-bottom:none;}
+.dx-box .calc-summary .cs-label{font-size:13px;margin:0;}
+.dx-box .calc-summary .cs-value{font-size:15px;}
+.dx-box .calc-summary .cs-item:last-child .cs-label{color:var(--ink);font-weight:700;}
+.dx-box .calc-summary .cs-item:last-child .cs-value{font-size:16.5px;}
+.apv-modal .apv-aksi-bawah{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:10px;}
+.apv-modal .apv-aksi-bawah .btn-sm{width:100%;justify-content:center;min-height:46px;margin:0 !important;}
+.apv-modal .calc-summary{display:flex;flex-direction:column;gap:0;padding:4px 16px;}
+.apv-modal .calc-summary .cs-item{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 0;text-align:left;border-bottom:1px dashed var(--line);}
+.apv-modal .calc-summary .cs-item:last-child{border-bottom:none;}
+.apv-modal .calc-summary .cs-label{font-size:13px;margin:0;}
+.apv-modal .calc-summary .cs-value{font-size:15px;}
+.apv-modal .calc-summary .cs-item:last-child .cs-label{color:var(--ink);font-weight:700;}
+.apv-modal .calc-summary .cs-item:last-child .cs-value{font-size:16.5px;}
+@media (max-width:700px){
+  /* Ringkasan transaksi di detail lain juga jadi baris (label kiri, nominal kanan) */
+  .calc-summary{display:flex;flex-direction:column;gap:0;padding:4px 14px;}
+  .calc-summary .cs-item{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;text-align:left;border-bottom:1px dashed var(--line);}
+  .calc-summary .cs-item:last-child{border-bottom:none;}
+  .calc-summary .cs-label{font-size:12.5px;margin:0;}
+  .calc-summary .cs-value{font-size:14.5px;}
+  .calc-summary .cs-item:last-child .cs-label{color:var(--ink);font-weight:700;}
+}
+/* ===== Review persetujuan ===== */
+.apv-cek{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;margin:4px 0 14px;border:1.5px solid var(--line);border-radius:12px;background:var(--paper);font-size:13.5px;line-height:1.45;color:var(--ink);cursor:pointer;}
+.apv-cek input{flex:none;width:18px;height:18px;margin:1px 0 0;accent-color:var(--brand,#05592d);cursor:pointer;}
+.apv-cek:has(input:checked){border-color:var(--brand,#05592d);background:#eef7f1;}
+.apv-btn-row .btn-dark:disabled{opacity:.45;cursor:not-allowed;}
+.apv-btn.apv-review{display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.apv-btn.apv-review svg{width:16px;height:16px;}
 /* ===== Logo perusahaan ===== */
 .logo-cell{white-space:nowrap;}
 @media (max-width:900px){
@@ -1990,12 +2079,10 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .apv-tab.active .apv-count{background:#fff;color:var(--brand);}
 .apv-list{display:flex;flex-direction:column;gap:10px;}
 /* Kartu ringkas: [isi | nominal | tombol] di layar lebar, bertumpuk di HP */
-.apv-card{display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"main total act";align-items:center;gap:6px 18px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);border-left:4px solid #d97706;border-radius:14px;cursor:pointer;transition:background .15s,box-shadow .15s;}
+.apv-card{display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"main total act";align-items:center;gap:6px 18px;padding:14px 18px;background:var(--panel);border:1px solid var(--line);border-radius:14px;cursor:pointer;transition:background .15s,box-shadow .15s;}
 .apv-card:hover{background:#fafcfb;box-shadow:0 4px 14px -8px rgba(16,21,28,.18);}
 .apv-card:focus-visible{outline:2px solid var(--brand);outline-offset:2px;}
-.apv-card.st-disetujui{border-left-color:var(--signal);}
-.apv-card.st-ditolak{border-left-color:var(--alert);}
-.apv-card.st-dibatalkan{border-left-color:#c0c9c3;}
+
 .apv-main{grid-area:main;min-width:0;display:flex;flex-direction:column;gap:3px;}
 .apv-lok{font-size:15px;font-weight:700;color:var(--ink);text-transform:uppercase;overflow-wrap:anywhere;line-height:1.3;}
 .apv-sub{font-size:12px;color:var(--muted);text-transform:uppercase;overflow-wrap:anywhere;}
@@ -3819,7 +3906,8 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('loginScreen').classList.remove('hidden');
   const rememberedUser = window.__auth && window.__auth.getRememberedUser();
   const rememberedUsername = window.__auth && window.__auth.getRememberedUsername();
-  document.getElementById('rememberMe').checked = !!rememberedUser;
+  // "Ingat saya" aktif secara bawaan (kecuali pernah dimatikan di perangkat ini).
+  document.getElementById('rememberMe').checked = !(window.__auth && window.__auth.pilihanIngat() === '0');
   if (rememberedUsername) document.getElementById('loginUsername').value = rememberedUsername;
 
   const today = new Date().toISOString().substring(0,10);
@@ -3832,7 +3920,7 @@ window.addEventListener('DOMContentLoaded', () => {
     this.classList.toggle('active', isHidden);
   });
 
-  if (rememberedUser && window.__auth.getToken()) {
+  if (rememberedUser && (window.__auth.getToken() || window.__auth.getRt())) {
     currentUser = rememberedUser;
     loadApp();
   }
@@ -3858,7 +3946,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e){
         release();
         if (res.success) {
           currentUser = res.user;
-          if (window.__auth) window.__auth.rememberUser(res.user);
+          if (window.__auth) { window.__auth.rememberUser(res.user); window.__auth.setRt(rememberMe ? (res.rememberToken || '') : ''); }
           // OPTIMASI: login() sekarang menumpangkan hasil getInitialData() di
           // res.initialData (1 round-trip, bukan 2) — lihat loadApp().
           loadApp(res.initialData);
@@ -3872,7 +3960,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e){
         errBox.textContent = 'Terjadi kesalahan: ' + err.message;
         errBox.classList.remove('hidden');
       })
-      .login(username, password);
+      .login(username, password, !!rememberMe);
   });
 });
 
@@ -4276,38 +4364,35 @@ function renderHakAkses(){
 // ============================================================
 // FORM TRANSAKSI (PDF) + HALAMAN VERIFIKASI E-SIGN
 // ============================================================
-// Buka form PDF transaksi (dibuat server; kalau belum ada dibuat saat itu).
-// Tab baru dibuka LEBIH DULU (sinkron dengan klik) supaya tidak diblokir
-// popup blocker, lalu diarahkan ke file PDF setelah siap.
+// Unduh form PDF transaksi (dibuat server; kalau belum ada dibuat saat itu).
 function bukaFormPdf(id, btn){
-  if (!id) return;
-  const w = window.open('', '_blank');
-  try { if (w) w.opener = null; } catch (e) {}
-  try {
-    if (w) w.document.write('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><title>Form ' + escapeHtml(id) + '</title>' +
-      '<style>body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#f1f5f2;color:#151b18;display:flex;align-items:center;justify-content:center;min-height:100vh}' +
-      '.c{background:#fff;border-radius:20px;padding:28px 26px;max-width:340px;text-align:center;box-shadow:0 10px 30px -10px rgba(0,0,0,.15)}' +
-      '.s{width:36px;height:36px;border:4px solid #d6e6dc;border-top-color:#05592d;border-radius:50%;margin:0 auto 16px;animation:r 1s linear infinite}@keyframes r{to{transform:rotate(360deg)}}' +
-      'b{display:block;font-size:16px;margin-bottom:6px}small{color:#5f6d66;font-size:13px;line-height:1.5}</style>' +
-      '<div class="c"><div class="s"></div><b>Menyiapkan form transaksi…</b><small id="m">' + escapeHtml(id) + '<br>Biasanya langsung terbuka. Kalau form baru dibuat, tunggu 5–15 detik.</small></div>');
-  } catch (e) {}
+  if (!id || (btn && btn._sibuk)) return;
   const labelAsli = btn ? btn.innerHTML : '';
-  if (btn) { btn.disabled = true; btn.textContent = 'Menyiapkan…'; }
-  const selesai = () => { if (btn) { btn.disabled = false; btn.innerHTML = labelAsli; } };
-  const gagal = msg => {
-    selesai();
-    try { if (w) w.close(); } catch (e) {}
-    if (currentUser && currentUser.role === 'user') showToast(msg, true);
-    else showDesktopToast({ title: 'Form PDF gagal', message: msg, type: 'error' });
+  if (btn) { btn._sibuk = true; btn.disabled = true; btn.textContent = 'Menyiapkan…'; }
+  const selesai = () => { if (btn) { btn._sibuk = false; btn.disabled = false; btn.innerHTML = labelAsli; } };
+  const kabar = (judul, msg, jenis) => {
+    if (currentUser && currentUser.role === 'user') showToast(msg, jenis === 'error' ? true : jenis);
+    else showDesktopToast({ title: judul, message: msg, type: jenis });
   };
   google.script.run.withSuccessHandler(res => {
-    if (!res || !res.success || !/^https:\/\/drive\.google\.com\//.test(String(res.url || ''))) return gagal((res && res.message) || 'Form belum bisa dibuat.');
     selesai();
-    if (w && !w.closed) {
-      try { w.location.replace(res.url); }
-      catch (e) { try { w.close(); } catch (e2) {} window.open(res.url, '_blank', 'noopener'); }
-    } else window.location.href = res.url;
-  }).withFailureHandler(err => gagal(err.message)).getDokumenTransaksi(id, currentUser);
+    if (!res || !res.success || !res.base64) return kabar('Form PDF gagal', (res && res.message) || 'Form belum bisa dibuat.', 'error');
+    try {
+      // Langsung disimpan ke perangkat (tanpa membuka pratinjau).
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = String(res.nama || ('FORM-' + id + '.pdf')).replace(/[^\w.-]+/g, '_');
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+      kabar('Form PDF diunduh', a.download, 'success');
+    } catch (e) {
+      kabar('Form PDF gagal', 'File tidak bisa disimpan: ' + e.message, 'error');
+    }
+  }).withFailureHandler(err => { selesai(); kabar('Form PDF gagal', err.message, 'error'); })
+    .getDokumenTransaksi(id, currentUser, { unduh: true });
 }
 
 // Halaman verifikasi (dibuka dari QR di PDF: ?v=<ID>.<kode>) — tanpa login.
@@ -5046,7 +5131,7 @@ function apvKartu(p, mode){
   const siapa = admin ? escapeHtml(p.diajukanOleh || '-') + ' · ' : '';
   const badge = admin && p.status === 'MENUNGGU' ? '' : apvBadgeStatus(p.status);
   const aksi = admin
-    ? (p.status === 'MENUNGGU' ? `<button type="button" class="apv-btn danger" data-act="tolak">Tolak</button><button type="button" class="apv-btn primary" data-act="setuju">Setujui</button>` : '')
+    ? (p.status === 'MENUNGGU' ? `<button type="button" class="apv-btn primary apv-review" data-act="review">${mIco('eye')}Review</button>` : '')
     : (p.status === 'DITOLAK' ? `<button type="button" class="apv-btn primary" data-act="perbaiki">Perbaiki &amp; ajukan ulang</button>` : '');
   return `
     <div class="apv-card st-${escapeHtml(String(p.status).toLowerCase())}${aksi ? '' : ' tanpa-aksi'}" data-id="${escapeHtml(p.id)}" role="button" tabindex="0" aria-label="Lihat detail pengajuan ${escapeHtml(p.lokasi)}">
@@ -5069,7 +5154,7 @@ function pasangAksiKartuApv(wadah, data, mode){
     card.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target === card) { e.preventDefault(); detail(); } });
     card.querySelectorAll('[data-act]').forEach(b => b.onclick = e => {
       e.stopPropagation();
-      if (b.dataset.act === 'setuju') konfirmasiSetujui(p);
+      if (b.dataset.act === 'review') detail();
       else if (b.dataset.act === 'tolak') formTolak(p);
       else if (b.dataset.act === 'perbaiki') formPerbaikiPengajuan(p);
     });
@@ -5097,17 +5182,19 @@ function apvModal(html, opts){
 function bukaDetailPengajuan(p, mode){
   const menunggu = p.status === 'MENUNGGU';
   const tp = Number(p.totalPendapatan) || 0, tk = Number(p.totalPengeluaran) || 0;
-  const tombol = mode === 'admin' && menunggu
-    ? `<button type="button" class="btn-sm btn-outline" data-x="tutup">Tutup</button><button type="button" class="btn-sm apv-danger" data-x="tolak">Tolak</button><button type="button" class="btn-sm btn-dark" data-x="setuju">Setujui</button>`
+  const review = mode === 'admin' && menunggu;
+  // Tutup = ikon X di kanan atas; di bawah hanya tombol keputusan.
+  const tombol = review
+    ? `<button type="button" class="btn-sm apv-danger" data-x="tolak">Tolak</button><button type="button" class="btn-sm btn-dark" data-x="setuju" disabled><span class="submit-spinner"></span><span class="lbl">Setujui</span></button>`
     : mode === 'user' && (menunggu || p.status === 'DITOLAK')
-      ? `<button type="button" class="btn-sm apv-batal-link" data-x="batal">Batalkan pengajuan</button><button type="button" class="btn-sm btn-outline" data-x="tutup">Tutup</button>` +
+      ? `<button type="button" class="btn-sm apv-batal-link" data-x="batal">Batalkan pengajuan</button>` +
         (p.status === 'DITOLAK' ? `<button type="button" class="btn-sm btn-dark" data-x="perbaiki">Perbaiki &amp; ajukan ulang</button>` : '')
-      : `<button type="button" class="btn-sm btn-outline" data-x="tutup">Tutup</button>`;
+      : '';
   let catatan = '';
   if (p.status === 'DITOLAK') catatan = `<div class="apv-note tolak"><b>Alasan ditolak (${escapeHtml(p.direviewOleh || '-')}):</b> ${escapeHtml(p.catatan || '-')}</div>`;
   else if (p.status === 'DISETUJUI') catatan = `<div class="apv-note ok"><b>Disetujui oleh ${escapeHtml(p.direviewOleh || '-')}</b> · ${escapeHtml(p.idTransaksi || '')}</div>`;
   const ov = apvModal(`
-      <div class="detail-header"><h3>Detail Pengajuan</h3><span class="detail-id-chip">${escapeHtml(p.id)}</span></div>
+      <div class="apv-dhead"><div><h3>${review ? 'Review Pengajuan' : 'Detail Pengajuan'}</h3><span class="detail-id-chip">${escapeHtml(p.id)}</span></div><button type="button" class="apv-x" data-x="tutup" aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <div class="apv-status-row">${apvBadgeStatus(p.status)}${p.revisi ? `<span class="apv-rev">Revisi ${p.revisi}</span>` : ''}</div>
       ${catatan}
       <div class="detail-info-list">
@@ -5128,15 +5215,51 @@ function bukaDetailPengajuan(p, mode){
         <div class="cs-item"><div class="cs-label">Nilai transaksi</div><div class="cs-value net">${apvNetTxt(p)}</div></div>
       </div>
       ${p.foto && p.foto.length ? `<div class="detail-photo-section"><div class="detail-photo-header">Foto Bukti (${p.foto.length})</div><div style="display:flex;flex-wrap:wrap;gap:8px;">${buildFotoGrid(p.foto)}</div></div>` : ''}
-      <div class="btn-row apv-btn-row">${tombol}</div>`);
+      ${review ? `<label class="apv-cek"><input type="checkbox" id="apvSudahCek"><span>Saya sudah memeriksa rincian nominal${p.foto && p.foto.length ? ' dan foto bukti' : ''}.</span></label>` : ''}
+      ${tombol ? `<div class="btn-row apv-btn-row apv-aksi-bawah">${tombol}</div>` : ''}`);
   bindFotoGrid(ov);
-  ov.querySelectorAll('[data-x]').forEach(b => b.onclick = () => {
+  // Wajib review: tombol Setujui baru aktif setelah kotak centang dicentang.
+  const cek = ov.querySelector('#apvSudahCek');
+  const tSetuju = ov.querySelector('[data-x="setuju"]');
+  if (cek && tSetuju) cek.onchange = () => { tSetuju.disabled = !cek.checked; };
+  if (tSetuju) tSetuju.onclick = () => {
+    if (!cek || !cek.checked) return;
+    setujuiPengajuan(p, tSetuju, ov);
+  };
+  ov.querySelectorAll('[data-x]:not([data-x="setuju"])').forEach(b => b.onclick = () => {
     const x = b.dataset.x; ov.remove();
-    if (x === 'setuju') konfirmasiSetujui(p);
-    else if (x === 'tolak') formTolak(p);
+    if (x === 'tolak') formTolak(p);
     else if (x === 'perbaiki' && typeof formPerbaikiPengajuan === 'function') formPerbaikiPengajuan(p);
     else if (x === 'batal' && typeof konfirmasiBatalPengajuan === 'function') konfirmasiBatalPengajuan(p);
   });
+}
+// Setujui dari dalam layar review (setelah kotak "sudah diperiksa" dicentang).
+function setujuiPengajuan(p, btn, ov){
+  withSubmitGuard(btn, btn.querySelector('.lbl'), 'Menyetujui...', 'Setujui', release => {
+    ov._sibuk = true;
+    ov.querySelectorAll('button, input').forEach(el => { if (el !== btn) el.disabled = true; });
+    google.script.run.withSuccessHandler(res => {
+      release(); ov._sibuk = false;
+      if (!res || !res.success) {
+        ov.querySelectorAll('button, input').forEach(el => { el.disabled = false; });
+        showDesktopToast({ title: 'Gagal menyetujui', message: (res && res.message) || 'Terjadi kesalahan.', type: 'error' });
+        renderPersetujuan(true); return;
+      }
+      ov.remove();
+      showDesktopToast({ title: 'Pengajuan disetujui', message: `Masuk riwayat sebagai ${res.idTransaksi}.` });
+      setelahPersetujuan();
+    }).withFailureHandler(err => {
+      release(); ov._sibuk = false;
+      ov.querySelectorAll('button, input').forEach(el => { el.disabled = false; });
+      showDesktopToast({ title: 'Gagal menyetujui', message: err.message, type: 'error' });
+    }).reviewPengajuanTransaksi(p.id, 'SETUJU', '', currentUser);
+  });
+}
+// Data dashboard/riwayat ikut segar setelah persetujuan (tanpa keluar-masuk aplikasi).
+function setelahPersetujuan(){
+  if (window.swrInvalidate) ['trx', 'mtrx', 'dash', 'mon', 'lap'].forEach(k => window.swrInvalidate(k));
+  renderPersetujuan(true); refreshPtxBadge();
+  try { loadDashboard(true); } catch (e) {}
 }
 function konfirmasiSetujui(p){
   const ov = apvModal(`
@@ -5155,8 +5278,7 @@ function konfirmasiSetujui(p){
       if (!res || !res.success) { showDesktopToast({ title: 'Gagal menyetujui', message: (res && res.message) || 'Terjadi kesalahan.', type: 'error' }); renderPersetujuan(true); ov.remove(); return; }
       ov.remove();
       showDesktopToast({ title: 'Pengajuan disetujui', message: `Masuk riwayat sebagai ${res.idTransaksi}.` });
-      if (window.swrInvalidate) ['trx', 'dash', 'mon', 'lap'].forEach(k => window.swrInvalidate(k));
-      renderPersetujuan(true); refreshPtxBadge();
+      setelahPersetujuan();
     }).withFailureHandler(err => {
       release(); ov._sibuk = false;
       showDesktopToast({ title: 'Gagal menyetujui', message: err.message, type: 'error' });
@@ -6025,6 +6147,9 @@ function switchPage(pageId) {
   if (pageId === 'notifikasi') renderNotifPage(true);
   if (pageId === 'persetujuan') renderPersetujuan(true);
   if (pageId === 'hak-akses') muatHakAkses();
+  // Kembali ke Beranda: muat ulang angka kalau cache sudah dibuang (mis. ada
+  // transaksi baru / persetujuan) atau sudah lewat 60 detik.
+  if (pageId === 'dashboard' && typeof loadDashboard === 'function') { try { loadDashboard(); } catch (e) {} }
   if (pageId === 'input' && document.getElementById('saUInput')) saLoadToday();
   updateMobileTitle(pageId);
 }
@@ -7854,11 +7979,8 @@ function viewTransaksi(id){
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay show';
   overlay.innerHTML = `
-    <div class="modal-box">
-      <div class="detail-header">
-        <h3>Detail Transaksi</h3>
-        <span class="detail-id-chip">${g.id}</span>
-      </div>
+    <div class="modal-box dx-box">
+      <div class="apv-dhead"><div><h3>Detail Transaksi</h3><span class="detail-id-chip">${escapeHtml(g.id)}</span></div><button type="button" class="apv-x" data-tutup aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <div class="detail-info-list">
         <div class="detail-info-row"><span class="detail-label">Tanggal</span><span class="detail-value">${g.tanggal}</span></div>
         <div class="detail-info-row"><span class="detail-label">Perusahaan</span><span class="detail-value">${escapeHtml(g.perusahaan)}</span></div>
@@ -7896,9 +8018,8 @@ function viewTransaksi(id){
         <button type="button" data-v="edit">${mIco('edit')}Edit</button>
         <button type="button" data-v="hapus" class="danger">${mIco('xc')}Hapus</button>
       </div>` : ''}
-      <div class="btn-row">
+      <div class="btn-row dx-aksi">
         <button type="button" class="btn-sm btn-dark" id="viewFormBtn">Form PDF</button>
-        <button type="button" class="btn-sm btn-outline" id="viewCloseBtn">Tutup</button>
       </div>
     </div>
   `;
@@ -7911,7 +8032,7 @@ function viewTransaksi(id){
     if (v === 'edit') editTransaksiModal(id); else deleteTransaksiConfirm(id);
   });
   overlay.querySelector('#viewFormBtn').onclick = e => bukaFormPdf(id, e.currentTarget);
-  overlay.querySelector('#viewCloseBtn').onclick = () => overlay.remove();
+  overlay.querySelector('[data-tutup]').onclick = () => overlay.remove();
   overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
 }
 
@@ -9538,8 +9659,8 @@ async function submitMobileTransaksi(e){
           addMobileItem();
           document.getElementById('mKeterangan').value = '';
           mFotoManager.reset();
-          status.textContent = 'Transaksi diajukan. Menunggu persetujuan admin.';
-          status.classList.add('success');
+          status.textContent = ''; // cukup toast, tidak menempel di bawah tombol
+          status.classList.remove('success', 'error');
           showToast('Transaksi diajukan dan menunggu persetujuan admin. Statusnya bisa dilihat di menu Riwayat.', 'info');
           muatPengajuanUser();
           return;
@@ -9736,11 +9857,8 @@ function viewMobileTransaksi(id){
   const overlay = document.createElement('div');
   overlay.className = 'modal-overlay show';
   overlay.innerHTML = `
-    <div class="modal-box">
-      <div class="detail-header">
-        <h3>Detail Transaksi</h3>
-        <span class="detail-id-chip">${g.tanggal}${g.waktu ? ' · ' + g.waktu : ''}</span>
-      </div>
+    <div class="modal-box dx-box">
+      <div class="apv-dhead"><div><h3>Detail Transaksi</h3><span class="detail-id-chip">${escapeHtml(g.tanggal)}${g.waktu ? ' · ' + escapeHtml(g.waktu) : ''}</span></div><button type="button" class="apv-x" data-tutup aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
       <div class="detail-info-list">
         <div class="detail-info-row"><span class="detail-label">Perusahaan</span><span class="detail-value">${escapeHtml(g.perusahaan)}</span></div>
         <div class="detail-info-row"><span class="detail-label">Lokasi</span><span class="detail-value">${escapeHtml(g.lokasi)}</span></div>
@@ -9772,17 +9890,16 @@ function viewMobileTransaksi(id){
       </div>
       ` : ''}
       ${pjNotice}
-      <button type="button" class="btn-sm btn-dark" id="mViewFormBtn" style="width:100%;margin-bottom:8px;">Form PDF</button>
-      <button type="button" class="btn-sm btn-outline" id="mViewEditBtn" style="width:100%;margin-bottom:4px;" ${pjMenunggu ? 'disabled' : ''}>${pjMenunggu ? 'Menunggu review admin' : 'Ajukan Edit'}</button>
-      <div class="btn-row" style="margin-top:10px;">
-        <button type="button" class="btn-sm btn-outline" id="mViewCloseBtn" style="flex:1;">Tutup</button>
-        <button type="button" class="btn-sm btn-outline" id="mViewPdfBtn" style="flex:1;">Struk PDF</button>
+      <button type="button" class="btn-sm btn-outline dx-full" id="mViewEditBtn" ${pjMenunggu ? 'disabled' : ''}>${pjMenunggu ? 'Menunggu review admin' : 'Ajukan Edit'}</button>
+      <div class="btn-row dx-aksi">
+        <button type="button" class="btn-sm btn-outline" id="mViewPdfBtn">Struk PDF</button>
+        <button type="button" class="btn-sm btn-dark" id="mViewFormBtn">Form PDF</button>
       </div>
     </div>
   `;
   document.body.appendChild(overlay);
   bindFotoGrid(overlay);
-  overlay.querySelector('#mViewCloseBtn').onclick = () => overlay.remove();
+  overlay.querySelector('[data-tutup]').onclick = () => overlay.remove();
   overlay.querySelector('#mViewPdfBtn').onclick = () => downloadMobileReceiptPDF(id);
   overlay.querySelector('#mViewFormBtn').onclick = e => bukaFormPdf(id, e.currentTarget);
   overlay.querySelector('#mViewEditBtn').onclick = () => { overlay.remove(); ajukanEditMobileModal(id); };
@@ -10220,6 +10337,8 @@ function showToast(msg, jenis){
 
   function onIdleTimeout() {
     if (!currentUser) return; // sudah logout / belum login, tidak perlu apa-apa
+    // "Ingat saya" aktif: perangkat pribadi -> tidak di-logout karena idle.
+    if (window.__auth && window.__auth.isRemembered() && window.__auth.getRt()) return;
     logout();
     var errBox = document.getElementById('loginError');
     if (errBox) {
@@ -10261,7 +10380,11 @@ function logout(){
   // Beritahu server supaya token sesi ini langsung dimatikan di sana juga
   // (bukan cuma dihapus di browser) — best-effort, tidak perlu menunggu hasilnya.
   try { google.script.run.withSuccessHandler(()=>{}).withFailureHandler(()=>{}).logout(); } catch(e) {}
-  if (window.__auth) window.__auth.setToken('');
+  try {
+    const rt = window.__auth && window.__auth.getRt();
+    if (rt) google.script.run.withSuccessHandler(()=>{}).withFailureHandler(()=>{}).lupakanPerangkat(rt);
+  } catch(e) {}
+  if (window.__auth) { window.__auth.setToken(''); window.__auth.setRt(''); window.__auth.clearRememberedUser(); }
   // Buang semua cache data (memori + localStorage) — data keuangan tidak
   // boleh tertinggal di browser setelah logout.
   if (window.swrInvalidate) window.swrInvalidate();
@@ -10282,6 +10405,11 @@ function logout(){
 // tidak valid/kedaluwarsa (lihat forceReLogin() di shim atas). Mengembalikan
 // user ke layar login dengan pesan yang jelas, alih-alih membiarkan halaman
 // menampilkan error atau data yang sudah basi.
+// Sesi dipulihkan otomatis ("Ingat saya"): kalau data akun berubah selama
+// aplikasi ditinggal, tampilan menyesuaikan.
+window.currentUserSegarkan = function(p){
+  if (currentUser && typeof terapkanProfilBaru === 'function') { try { terapkanProfilBaru(p); } catch (e) {} }
+};
 window.handleSessionExpired = function(){
   if (window.swrInvalidate) window.swrInvalidate();
   currentUser = null;
