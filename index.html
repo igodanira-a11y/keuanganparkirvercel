@@ -185,6 +185,9 @@
             invalidate.forEach(function (prefix) { window.swrInvalidate(prefix); });
           }
           if (onSuccess) onSuccess(data.result);
+          // Tanda versi hak akses/profil dari server: kalau berubah, aplikasi
+          // mengambil hak akses terbaru (pengganti polling tiap menit).
+          if (data.av && window.__cekTandaAkses) { try { window.__cekTandaAkses(data.av); } catch (e) {} }
           // Form PDF: minta server membuatnya sekarang lewat request TERPISAH
           // di latar belakang — simpan transaksi tidak ikut menunggu.
           if (PDF_SETELAH[fnName] && data.result && data.result.success && !data.result.pending) {
@@ -1041,7 +1044,18 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13.5px;}
 
 /* Struk / Receipt */
-.receipt-overlay .modal-box{max-width:380px;width:100%;padding:0;background:transparent;box-shadow:none;box-sizing:border-box;}
+.receipt-overlay .modal-box{position:relative;max-width:380px;width:100%;padding:0;background:var(--panel);border-radius:20px;overflow:hidden;box-shadow:0 24px 60px -12px rgba(0,0,0,.35);box-sizing:border-box;}
+/* Struk + tombol jadi satu kartu */
+.receipt-overlay .receipt-box{box-shadow:none;border-radius:0;padding:26px 22px 4px;}
+.receipt-overlay .receipt-box .r-brand{padding:0 30px;}
+.receipt-overlay .receipt-actions{margin:0;padding:16px 22px 20px;}
+.receipt-overlay .receipt-actions button{padding:12px 10px;border-radius:12px;font-size:14px;}
+.receipt-overlay .receipt-actions .btn-close-receipt{background:var(--panel);color:var(--brand);border:1.5px solid var(--brand);}
+.receipt-overlay .receipt-actions .btn-close-receipt:hover{background:var(--paper);}
+.receipt-overlay .rc-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1;}
+.receipt-overlay .rc-x svg{width:18px;height:18px;}
+.receipt-overlay .r-total-row.grand span:first-child{width:58%;}
+.receipt-overlay .r-total-row.grand span:last-child{width:42%;}
 .receipt-box{
   background:var(--panel);border-radius:10px;padding:22px 20px;
   font-family:var(--font);color:var(--ink);
@@ -4136,7 +4150,16 @@ function initDesktopApp(){
 // & tombol yang tidak boleh untuk akun yang login, (2) mengecek perubahan
 // tiap ±1 menit supaya berlaku tanpa login ulang. Server tetap menolak aksi
 // yang tidak diizinkan (bukan hanya disembunyikan).
-const _akses = { data: null, versi: '', timer: null };
+const _akses = { data: null, versi: '', aktif: false, av: '', cekTerakhir: 0, tunda: null };
+// Dipanggil shim untuk setiap balasan server yang membawa tanda "av".
+window.__cekTandaAkses = av => {
+  if (!_akses.aktif || !av) return;
+  if (!_akses.av) { _akses.av = av; return; }
+  if (av === _akses.av) return;
+  _akses.av = av;
+  clearTimeout(_akses.tunda);
+  _akses.tunda = setTimeout(cekAksesSekarang, 300);
+};
 const AKSES_HALAMAN = {
   dashboard: ['dashboard', 'r'], input: ['input', 'c'], transaksi: ['riwayat', 'r'], persetujuan: ['persetujuan', 'r'],
   'pengajuan-edit': ['pengajuan-edit', 'r'], monitoring: ['monitoring', 'r'], 'laporan-bulanan': ['laporan', 'r'],
@@ -4173,6 +4196,7 @@ function setAkses(akses, versi){
 }
 function cekAksesSekarang(){
   if (!currentUser || currentUser.role === 'superadmin') return;
+  _akses.cekTerakhir = Date.now();
   google.script.run.withSuccessHandler(r => {
     if (!r || !r.success) return;
     if (r.profil && terapkanProfilBaru(r.profil)) return; // aplikasi dimuat ulang
@@ -4203,17 +4227,22 @@ function terapkanProfilBaru(p){
   }, 600);
   return true;
 }
-function aksesSaatKembali(){ if (document.visibilityState === 'visible' && _akses.timer) cekAksesSekarang(); }
+// HEMAT KUOTA: tidak ada lagi polling tiap 60 detik. Perubahan hak akses /
+// profil terdeteksi dari tanda "av" di balasan request apa pun, ditambah
+// sekali cek saat aplikasi dibuka kembali (maks. 1x per 2 menit).
+function aksesSaatKembali(){
+  if (document.visibilityState === 'visible' && _akses.aktif && Date.now() - _akses.cekTerakhir > 120000) cekAksesSekarang();
+}
 function mulaiPollingAkses(){
   stopPollingAkses();
   if (!currentUser || currentUser.role === 'superadmin') return;
+  _akses.aktif = true; _akses.av = '';
   cekAksesSekarang();
   document.addEventListener('visibilitychange', aksesSaatKembali);
-  _akses.timer = setInterval(() => { if (document.visibilityState === 'visible') cekAksesSekarang(); }, 60000);
 }
 function stopPollingAkses(){
-  if (_akses.timer) clearInterval(_akses.timer);
-  _akses.timer = null;
+  _akses.aktif = false;
+  clearTimeout(_akses.tunda);
   document.removeEventListener('visibilitychange', aksesSaatKembali);
 }
 function resetAkses(){ stopPollingAkses(); _akses.data = null; _akses.versi = ''; document.getElementById('aksesStyle')?.remove(); }
@@ -5757,7 +5786,7 @@ function renderSaTrend(byBulan){
 // ScriptProperties). Polling berhenti saat tab/aplikasi tidak terlihat dan
 // langsung jalan lagi saat dibuka. Polling ini TIDAK memperpanjang sesi
 // login dan tidak mereset timer idle 30 menit.
-const NOTIF_POLL_MS = 30000;
+const NOTIF_POLL_MS = 60000;
 const _nt = { timer: null, items: [], unread: 0, lastReadSeq: 0, latestSeq: 0, seenSeq: null, busy: false, ready: false, err: '' };
 
 function initNotifTransaksi(){
@@ -5797,10 +5826,13 @@ function initNotifTransaksi(){
   updateTombolIzinNotif();
   document.addEventListener('visibilitychange', notifVisibility);
   mNotifPoll();
-  // Tab aktif: tiap 30 detik. Tab di latar belakang (web): tiap 60 detik,
-  // supaya superadmin yang sedang membuka tab lain tetap mendapat notifikasi.
+  // HEMAT KUOTA: aplikasi terlihat -> tiap 60 detik. Di latar belakang
+  // (HP terkunci / pindah aplikasi / tab lain) -> berhenti, kecuali web yang
+  // notifikasi browsernya diizinkan: tiap 5 menit. Saat dibuka lagi langsung cek.
   _nt.timer = setInterval(() => {
-    if (document.visibilityState === 'visible' || Date.now() - (_nt.lastPoll || 0) >= 60000) mNotifPoll();
+    if (document.visibilityState === 'visible') { mNotifPoll(); return; }
+    const notifWeb = bisaNotifBrowser() && Notification.permission === 'granted';
+    if (notifWeb && Date.now() - (_nt.lastPoll || 0) >= 300000) mNotifPoll();
   }, NOTIF_POLL_MS);
 }
 function stopNotifTransaksi(){
@@ -5808,7 +5840,7 @@ function stopNotifTransaksi(){
   _nt.timer = null;
   document.removeEventListener('visibilitychange', notifVisibility);
 }
-function notifVisibility(){ if (document.visibilityState === 'visible' && _nt.timer) mNotifPoll(); }
+function notifVisibility(){ if (document.visibilityState === 'visible' && _nt.timer && Date.now() - (_nt.lastPoll || 0) > 10000) mNotifPoll(); }
 
 function mNotifPoll(){
   if (_nt.busy || !currentUser || !isMsaRole()) return;
@@ -8628,6 +8660,7 @@ function showReceiptModal(data){
 
   overlay.innerHTML = `
     <div class="modal-box">
+      <button type="button" class="rc-x" id="receiptCloseBtn" aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
       <div class="receipt-box" id="receiptPrintArea">
         <div class="r-brand">${escapeHtml(data.perusahaan || 'STRUK TRANSAKSI')}</div>
         <div class="r-sub">${escapeHtml(data.lokasi || '')}</div>
@@ -8649,14 +8682,15 @@ function showReceiptModal(data){
         <div class="r-footer">Dicetak otomatis oleh Sistem Keuangan Parkir</div>
       </div>
       <div class="receipt-actions">
-        <button type="button" class="btn-close-receipt" id="receiptCloseBtn">Tutup</button>
-        <button type="button" class="btn-download" id="receiptDownloadBtn"><i class="fi fi-rr-download"></i> Unduh PDF</button>
+        <button type="button" class="btn-close-receipt" id="receiptDownloadBtn"><i class="fi fi-rr-download"></i> Struk PDF</button>
+        <button type="button" class="btn-download" id="receiptFormBtn"><i class="fi fi-rr-file-pdf"></i> Form PDF</button>
       </div>
     </div>
   `;
   document.body.appendChild(overlay);
   overlay.querySelector('#receiptCloseBtn').onclick = () => overlay.remove();
   overlay.querySelector('#receiptDownloadBtn').onclick = (e) => downloadReceiptPDF(data, tglLabel, e.currentTarget);
+  overlay.querySelector('#receiptFormBtn').onclick = (e) => bukaFormPdf(data.batchId, e.currentTarget);
 }
 
 // Membuat PDF struk dengan menulis teks langsung lewat jsPDF (vector text),
