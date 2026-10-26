@@ -1834,6 +1834,30 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 :is(#mobileApp,.mu-scope) .m-logout-btn svg{width:20px;height:20px;stroke:#86efac;}
 :is(#mobileApp,.mu-scope) .m-loc-badge{margin-top:16px;gap:6px;padding:6px 14px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#fff;max-width:100%;}
 :is(#mobileApp,.mu-scope) .m-loc-badge span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* Wilayah akses (chip perusahaan & lokasi) (top bar & header semua role) */
+:is(#mobileApp,.mu-scope) .m-loc-badge{display:flex;padding:0;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;letter-spacing:0;text-transform:none;}
+.wl{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%;padding:0;margin:0;background:none;border:0;font:inherit;cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;}
+.wl-chip{display:inline-flex;align-items:center;gap:5px;min-width:0;padding:4px 10px 4px 8px;border-radius:999px;font-size:11.5px;font-weight:600;line-height:1.3;letter-spacing:0;text-transform:none;white-space:nowrap;}
+.wl-chip svg{flex:none;width:13px;height:13px;}
+.wl-chip > span{overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.wl .wl-pt{flex:0 1 auto;}
+.wl .wl-lok{flex:0 0 auto;max-width:48%;}
+.wl-sheet .m-who{text-transform:none !important;}
+/* di top bar (latar terang) */
+.mt-txt .wl{margin-top:5px;}
+.mt-txt .wl-chip{background:#e8f3ec;color:#14532d;}
+.mt-txt .wl-chip svg{color:#15803d;}
+/* di header hijau (role user & halaman input) */
+.m-loc-badge .wl-chip{background:rgba(255,255,255,.16);color:#fff;}
+.m-loc-badge .wl-chip svg{color:#86efac;}
+/* lembar detail */
+.wl-sheet .wl-body{max-height:55vh;overflow:auto;margin:0 4px;}
+.wl-sec{padding:12px 0;border-top:1px solid #eceeec;}
+.wl-h{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#5f6d66;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+.wl-h svg{width:15px;height:15px;color:#15803d;}
+.wl-it{font-size:14.5px;font-weight:500;color:#151b18;padding:6px 0 6px 22px;}
+.wl-it.wl-all{color:#15803d;font-weight:600;}
+.m-sheet-ov.mu .wl-sheet button.wl-ok{justify-content:center;margin-top:6px;font-weight:600;color:#14532d;}
 :is(#mobileApp,.mu-scope) .m-loc-badge svg{width:14px;height:14px;stroke:none;fill:#86efac;flex:none;}
 :is(#mobileApp,.mu-scope) .mu-today{margin-top:16px;display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(3,45,23,.55);border:1px solid rgba(34,197,94,.2);border-radius:16px;padding:12px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
 #mobileApp[data-view="history"] .mu-today{display:none;}
@@ -1960,6 +1984,21 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .m-sheet-ov.mu .m-who{font-size:12.5px;color:#5f6d66;margin:0 4px 12px;line-height:1.4;}
 .m-sheet-ov.mu button{display:flex;width:100%;text-align:left;padding:15px 4px;border-top:1px solid #eceeec;font-size:15px;font-weight:500;color:#151b18;}
 .m-sheet-ov.mu button.danger{color:#d9383a;}
+/* Header role user & halaman input = top bar admin/superadmin */
+:is(#mobileApp,.mu-scope) .m-header,#mobileApp[data-view="history"] .m-header{position:sticky;top:0;z-index:50;overflow:visible;background:rgba(248,250,248,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-radius:0;padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 10px;min-height:64px;box-sizing:border-box;display:flex;align-items:center;box-shadow:0 1px 8px rgba(0,0,0,.04);}
+:is(#mobileApp,.mu-scope) .m-header-top{flex:1;min-width:0;display:flex;align-items:center;}
+:is(#mobileApp,.mu-scope) .mu-id{gap:10px;flex:1;min-width:0;}
+:is(#mobileApp,.mu-scope) .mu-avatar{width:36px;height:36px;border-radius:50%;background:#003629;border:0;box-shadow:none;color:#fff;}
+:is(#mobileApp,.mu-scope) .mu-avatar svg{width:18px;height:18px;}
+:is(#mobileApp,.mu-scope) .mu-txt{min-width:0;flex:1;}
+:is(#mobileApp,.mu-scope) .m-name{font-size:16px;font-weight:600;letter-spacing:0;color:var(--ink);margin:0;}
+:is(#mobileApp,.mu-scope) .m-loc-badge{margin-top:5px;}
+:is(#mobileApp,.mu-scope) .m-loc-badge .wl-chip{background:#e8f3ec;color:#14532d;}
+:is(#mobileApp,.mu-scope) .m-loc-badge .wl-chip svg{color:#15803d;}
+:is(#mobileApp,.mu-scope) .m-body,#mobileApp[data-view="history"] .m-body{margin-top:0;padding-top:12px;}
+/* Ringkasan hari ini: kartu hijau di atas form */
+:is(#mobileApp,.mu-scope) .mu-today{margin:0 0 14px;background:linear-gradient(160deg,#086a35 0%,#05592d 55%,#044424 100%);border:0;border-radius:20px;padding:14px 16px;box-shadow:0 10px 24px -12px rgba(4,68,36,.55);}
+@media (min-width:600px){:is(#mobileApp,.mu-scope) .m-header{max-width:none;}}
 @keyframes muUp{from{transform:translateY(100%);}to{transform:none;}}
 @keyframes muFade{from{opacity:0;}to{opacity:1;}}
 @media (min-width:600px){:is(#mobileApp,.mu-scope) .m-header,:is(#mobileApp,.mu-scope) .m-body{max-width:520px;margin-left:auto;margin-right:auto;}:is(#mobileApp,.mu-scope) .m-header{border-radius:0 0 40px 40px;}}
@@ -2210,6 +2249,15 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .mu-apv-note[hidden]{display:none;}
 .mu-apv-note svg{flex:none;width:18px;height:18px;margin-top:1px;}
 .mu-ptx{margin:0 0 16px;}
+#mobileApp[data-view="pengajuan"] .mu-today{display:none;}
+.mu-seg{display:flex;gap:4px;padding:4px;margin:0 0 14px;background:#e9efea;border-radius:14px;}
+.mu-seg button{flex:1;padding:9px 0;border-radius:11px;font-size:13.5px;font-weight:600;color:#5f6d66;background:none;border:0;}
+.mu-seg button.on{background:#fff;color:#044424;box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.mu-ptx-kosong{display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center;padding:36px 20px;background:#fff;border-radius:20px;color:#5f6d66;font-size:13px;line-height:1.5;}
+.mu-ptx-kosong b{font-size:15px;color:#151b18;}
+.m-bottom-item .pill{position:relative;}
+.mu-badge{position:absolute;top:-2px;right:4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;font-style:normal;line-height:17px;text-align:center;box-shadow:0 0 0 2px #fff;}
+.mu-badge[hidden]{display:none;}
 .mu-ptx[hidden]{display:none;}
 
 .m-bottom-item .pill{position:relative;}
@@ -2394,9 +2442,8 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
   #desktopApp.m-sa .mh-grid.mh-grid-5 .mh-tile{padding:6px 0;font-size:12px;}
   #desktopApp.m-sa .mh-grid.mh-grid-5 .mh-tile .ic.duo{width:46px;height:46px;border-radius:15px;}
   #desktopApp.m-sa .mh-grid.mh-grid-5 .mh-tile .m-dot{right:2px;}
-  #desktopApp.m-sa .mt-txt small.mt-wil{display:flex;max-width:calc(100vw - 120px);text-transform:uppercase;}
-  #desktopApp.m-sa .mt-txt small.mt-wil{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:block;}
-  #desktopApp.m-sa .mt-txt small.mt-wil i{display:inline-block;margin-right:5px;vertical-align:middle;}
+  #desktopApp.m-sa .mt-txt .wl{max-width:calc(100vw - 110px);}
+
   #desktopApp.m-sa .m-sa-p .panel-header{align-items:flex-start;}
   #desktopApp.m-sa .m-sa-p .panel-header h3{line-height:1.35;}
   #desktopApp.m-sa .m-sub{font-size:12px;font-weight:400;line-height:16px;color:var(--muted);margin-top:1px;}
@@ -3380,33 +3427,25 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
 <!-- ============= MOBILE APP (User) ============= -->
 <div id="mobileApp" data-view="input">
   <div class="m-header">
-    <div class="mu-glow a"></div><div class="mu-glow b"></div>
     <div class="m-header-top">
       <div class="mu-id">
-        <div class="mu-avatar" id="mAvatar" aria-hidden="true">–</div>
-        <div>
-          <div class="m-greet">Selamat bertugas,</div>
-          <div class="m-name" id="mUserName">-</div>
+        <div class="mu-avatar" id="mAvatar" aria-hidden="true"></div>
+        <div class="mu-txt">
+          <div class="m-name"><span id="mGreet">Selamat datang,</span> <span id="mUserName">-</span>!</div>
+          <div class="m-loc-badge"><span id="mUserPerusahaan"></span></div>
         </div>
       </div>
-      <button class="m-logout-btn" id="mLogoutBtn" aria-label="Keluar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
-      </button>
     </div>
-    <div class="m-loc-badge">
-      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.05 4.05a7 7 0 1 1 9.9 9.9L10 18.9l-4.95-4.95a7 7 0 0 1 0-9.9zM10 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>
-      <span id="mUserPerusahaan">-</span>
-    </div>
-    <div class="mu-today" id="mTodaySum">
+  </div>
+
+  <div class="m-body">
+      <div class="mu-today" id="mTodaySum">
       <div class="mu-today-l">
         <span class="mu-today-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l6-6"/><circle cx="9.5" cy="8.5" r=".6" fill="currentColor"/><circle cx="14.5" cy="13.5" r=".6" fill="currentColor"/><path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg></span>
         <span><small>Akumulasi Pembukuan Hari Ini</small><b id="mTodayAmt">Memuat…</b></span>
       </div>
       <span class="mu-today-n" id="mTodayCount">– Data</span>
     </div>
-  </div>
-
-  <div class="m-body">
     <div class="m-view active" id="mInputView">
     <div class="m-card">
       <form id="mobileInputForm">
@@ -3484,6 +3523,13 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
       </div>
     </div>
     </div>
+    <div class="m-view" id="mPengajuanView">
+      <div class="mu-seg" role="tablist" aria-label="Status pengajuan">
+        <button type="button" class="on" data-ptx="AKTIF" role="tab" aria-selected="true">Aktif</button>
+        <button type="button" data-ptx="RIWAYAT" role="tab" aria-selected="false">Selesai</button>
+      </div>
+      <div id="mPtxBox" class="mu-ptx"></div>
+    </div>
   </div>
 
   <nav class="m-bottom-nav" aria-label="Navigasi mobile">
@@ -3494,6 +3540,10 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
     <button type="button" class="m-bottom-item" data-mobile-view="history" aria-label="Riwayat Transaksi">
       <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M12 12h3M12 16h3M9 12h.01M9 16h.01"/></svg></span>
       <span>Riwayat</span>
+    </button>
+    <button type="button" class="m-bottom-item" data-mobile-view="pengajuan" aria-label="Pengajuan">
+      <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 14l2 2 4-4"/></svg><i class="mu-badge" hidden></i></span>
+      <span>Pengajuan</span>
     </button>
     <button type="button" class="m-bottom-item" data-mobile-profile="1" aria-label="Profil">
       <span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg></span>
@@ -4257,8 +4307,8 @@ function terapkanAkses(){
   const no = (m, a) => !boleh(m, a);
   const add = (cond, s) => { if (cond) sel.push(s); };
   if (currentUser.role === 'user') {
-    add(no('input', 'c'), '.m-bottom-item[data-mobile-view="input"], #mInputView');
-    add(no('riwayat', 'r'), '.m-bottom-item[data-mobile-view="history"], #mHistoryView .mu-filter, #mHistoryView .m-recent, #mPtxBox');
+    add(no('input', 'c'), '.m-bottom-item[data-mobile-view="input"], #mInputView, .m-bottom-item[data-mobile-view="pengajuan"], #mPengajuanView');
+    add(no('riwayat', 'r'), '.m-bottom-item[data-mobile-view="history"], #mHistoryView .mu-filter, #mHistoryView .m-recent');
     add(no('input', 'c'), '#mPtxBox [data-act="perbaiki"], .apv-modal [data-act="perbaiki"]');
     add(no('pengajuan-edit', 'c'), '#mViewEditBtn');
   } else {
@@ -4601,16 +4651,51 @@ const JAM_BATAS_SETOR = '14:00:00';
 
 // Ringkasan wilayah akses admin untuk header HP: 1 lokasi -> nama lokasi,
 // beberapa -> "3 lokasi · PT X", semua -> "Semua wilayah".
-function labelWilayahAdmin(){
+// Sapaan sesuai jam (dipakai di header semua role).
+function sapaanWaktu(){
+  const h = new Date().getHours();
+  return h < 11 ? 'Selamat pagi,' : h < 15 ? 'Selamat siang,' : h < 18 ? 'Selamat sore,' : 'Selamat malam,';
+}
+// Keterangan wilayah akses akun — SAMA untuk semua role: "PERUSAHAAN · LOKASI".
+// Masing-masing: 1 -> namanya, beberapa -> jumlahnya, ALL -> Semua ...
+function bagianWilayah(){
   const u = currentUser || {};
-  const lok = String(u.lokasi || 'ALL'), per = String(u.perusahaan || 'ALL');
-  const daftar = v => v.split(',').map(x => x.trim()).filter(Boolean);
-  const pList = per === 'ALL' ? [] : daftar(per);
-  const lList = lok === 'ALL' ? [] : daftar(lok);
-  if (lList.length === 1) return lList[0];
-  const pTxt = pList.length === 1 ? pList[0] : pList.length ? pList.length + ' perusahaan' : '';
-  if (lList.length > 1) return lList.length + ' lokasi' + (pTxt ? ' · ' + pTxt : '');
-  return pTxt || 'Semua wilayah';
+  const daftar = v => { v = String(v || 'ALL'); return v === 'ALL' ? [] : v.split(',').map(x => x.trim()).filter(Boolean); };
+  const p = daftar(u.perusahaan), l = daftar(u.lokasi);
+  return {
+    pt: !p.length ? 'Semua perusahaan' : p.length === 1 ? p[0] : p.length + ' perusahaan',
+    lok: !l.length ? 'Semua lokasi' : l.length === 1 ? l[0] : l.length + ' lokasi',
+    ptNama: p.length === 1, lokNama: l.length === 1
+  };
+}
+function labelWilayahAdmin(){ const w = bagianWilayah(); return w.pt + ' · ' + w.lok; }
+// Tampilan wilayah: 2 chip berikon (perusahaan & lokasi), huruf biasa.
+// Diketuk -> lembar "Akses wilayah" berisi daftar lengkapnya.
+const WL_IKON = {
+  pt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M16 9h2a2 2 0 0 1 2 2v10M9 7h3M9 11h3M9 15h3"/></svg>',
+  lok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>'
+};
+function judulWilayah(t){ return String(t).toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase()).replace(/\bPt\b/g, 'PT').replace(/\bCv\b/g, 'CV'); }
+function htmlWilayah(id){
+  const w = bagianWilayah();
+  return `<button type="button" class="wl"${id ? ` id="${id}"` : ''} onclick="bukaInfoWilayah()" aria-label="Lihat akses wilayah">
+    <span class="wl-chip wl-pt">${WL_IKON.pt}<span>${escapeHtml(w.ptNama ? judulWilayah(w.pt) : w.pt)}</span></span>
+    <span class="wl-chip wl-lok">${WL_IKON.lok}<span>${escapeHtml(w.lokNama ? judulWilayah(w.lok) : w.lok)}</span></span></button>`;
+}
+function bukaInfoWilayah(){
+  const u = currentUser || {};
+  const daftar = v => { v = String(v || 'ALL'); return v === 'ALL' ? null : v.split(',').map(x => x.trim()).filter(Boolean); };
+  const blok = (judul, ikon, arr, semua) => `<div class="wl-sec"><div class="wl-h">${ikon}${judul}</div>${arr
+    ? arr.map(x => `<div class="wl-it">${escapeHtml(x)}</div>`).join('')
+    : `<div class="wl-it wl-all">${semua}</div>`}</div>`;
+  document.querySelector('.m-sheet-ov')?.remove();
+  const ov = document.createElement('div');
+  ov.className = 'm-sheet-ov mu';
+  ov.innerHTML = `<div class="m-sheet wl-sheet"><h4>Akses wilayah</h4><div class="m-who">Data yang bisa Anda lihat & kelola.</div>
+    <div class="wl-body">${blok('Perusahaan', WL_IKON.pt, daftar(u.perusahaan), 'Semua perusahaan')}${blok('Lokasi', WL_IKON.lok, daftar(u.lokasi), 'Semua lokasi')}</div>
+    <button type="button" class="wl-ok">Tutup</button></div>`;
+  ov.addEventListener('click', e => { if (e.target === ov || e.target.classList.contains('wl-ok')) ov.remove(); });
+  document.body.appendChild(ov);
 }
 function mGo(pageId){
   switchPage(pageId);
@@ -4650,7 +4735,7 @@ function initMobileHome(){
   top.innerHTML = `
     <div class="mt-who">
       <span class="mt-av" aria-hidden="true">${mIco('me')}<i></i></span>
-      <span class="mt-txt"><small${isAdmin ? ' class="mt-wil"' : ''}><i></i>${isAdmin ? escapeHtml(labelWilayahAdmin()) : 'Beranda'}</small><b><span id="mhHi">Halo</span> ${escapeHtml(firstName)}!</b></span>
+      <span class="mt-txt"><b><span id="mhHi">Halo</span> ${escapeHtml(firstName)}!</b>${htmlWilayah()}</span>
     </div>
     `;
 
@@ -4812,7 +4897,7 @@ function initMobileHome(){
   });
   document.getElementById('desktopApp').appendChild(nav);
   const h = new Date().getHours();
-  document.getElementById('mhHi').textContent = h < 11 ? 'Selamat pagi,' : h < 15 ? 'Selamat siang,' : h < 18 ? 'Selamat sore,' : 'Selamat malam,';
+  document.getElementById('mhHi').textContent = sapaanWaktu();
   if (isSuper) { initMobileSuperDashboard(); initNotifTransaksi(); initSaInputForm(); }
   initMobileLists();
   if (isSuper) initMobileRiwayat();
@@ -4862,18 +4947,17 @@ function initSaInputForm(){
   wrap.id = 'saUInput';
   wrap.innerHTML = `
   <div class="m-header">
-    <div class="mu-glow a"></div><div class="mu-glow b"></div>
     <div class="m-header-top">
       <div class="mu-id">
-        <div class="mu-avatar" aria-hidden="true">${escapeHtml(mobileInitials(currentUser.name))}</div>
-        <div><div class="m-greet">Selamat bertugas,</div><div class="m-name">${escapeHtml(currentUser.name)}</div></div>
+        <div class="mu-avatar" aria-hidden="true">${mIco('me')}</div>
+        <div class="mu-txt">
+          <div class="m-name">${sapaanWaktu()} ${escapeHtml(String(currentUser.name || '').trim().split(/\s+/)[0] || currentUser.username)}!</div>
+          <div class="m-loc-badge">${htmlWilayah()}</div>
+        </div>
       </div>
-      <button type="button" class="m-logout-btn" id="saLogoutBtn" aria-label="Keluar">${saSvg('logout')}</button>
     </div>
-    <div class="m-loc-badge">
-      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.05 4.05a7 7 0 1 1 9.9 9.9L10 18.9l-4.95-4.95a7 7 0 0 1 0-9.9zM10 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>
-      <span>${currentUser.perusahaan === 'ALL' ? 'Semua Perusahaan' : escapeHtml(currentUser.perusahaan)}</span>
-    </div>
+  </div>
+  <div class="m-body">
     <div class="mu-today">
       <div class="mu-today-l">
         <span class="mu-today-ic">${saSvg('today')}</span>
@@ -4881,8 +4965,6 @@ function initSaInputForm(){
       </div>
       <span class="mu-today-n" id="saTodayCount">– Data</span>
     </div>
-  </div>
-  <div class="m-body">
     <div class="m-card">
       <form id="saInputForm">
         <div class="m-field">
@@ -4930,7 +5012,7 @@ function initSaInputForm(){
   </div>`;
   page.prepend(wrap);
 
-  document.getElementById('saLogoutBtn').onclick = logout;
+  const saOut = document.getElementById('saLogoutBtn'); if (saOut) saOut.onclick = logout;
   const saTgl = document.getElementById('saTanggal');
   const saSyncTgl = () => saTgl.parentElement.classList.toggle('has-value', Boolean(saTgl.value));
   saTgl.value = Utilities_formatDateLocal(new Date());
@@ -5495,7 +5577,7 @@ function renderPengaturanApproval(body){
 }
 
 // ── Sisi USER: pengajuan transaksi (perusahaan dengan skema approval) ──
-const _ptxUser = { data: [], seq: 0 };
+const _ptxUser = { data: [], selesai: [], seq: 0, tab: 'AKTIF', ada: {} };
 function perusahaanFormUser(){ return document.getElementById('mPerusahaan')?.value || (getAccessiblePerusahaan(currentUser)[0] || ''); }
 function lokasiFormUser(){ return document.getElementById('mLokasi')?.value || ''; }
 function labelSimpanUser(){ return lokasiPerluApproval(perusahaanFormUser(), lokasiFormUser()) ? 'Ajukan Transaksi' : 'Simpan Transaksi'; }
@@ -5518,37 +5600,50 @@ function refreshLabelAjukan(){
   }
 }
 // Daftar pengajuan milik user (menunggu & ditolak) di tab Riwayat.
+// Menu "Pengajuan" (role user): tab Aktif (menunggu/ditolak) & Selesai.
 function muatPengajuanUser(){
   if (!currentUser || currentUser.role !== 'user') return;
-  let box = document.getElementById('mPtxBox');
-  if (!box) {
-    const hist = document.querySelector('#mHistoryView .m-recent');
-    if (!hist) return;
-    box = document.createElement('div');
-    box.id = 'mPtxBox'; box.className = 'mu-ptx'; box.hidden = true;
-    hist.before(box);
+  const box = document.getElementById('mPtxBox');
+  if (!box) return;
+  if (!box._siap) {
+    box._siap = true;
+    document.querySelectorAll('#mPengajuanView .mu-seg button').forEach(b => b.onclick = () => {
+      if (_ptxUser.tab === b.dataset.ptx) return;
+      _ptxUser.tab = b.dataset.ptx;
+      document.querySelectorAll('#mPengajuanView .mu-seg button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', String(x === b)); });
+      renderPengajuanUser(true);
+      muatPengajuanUser();
+    });
   }
+  const tab = _ptxUser.tab || 'AKTIF';
   const seq = ++_ptxUser.seq;
+  if (!_ptxUser.ada[tab]) renderPengajuanUser(true);
   google.script.run.withSuccessHandler(res => {
     if (seq !== _ptxUser.seq || !res || !res.success) return;
-    _ptxUser.data = res.data || [];
+    _ptxUser.ada[tab] = true;
+    if (tab === 'AKTIF') _ptxUser.data = res.data || [];
+    else _ptxUser.selesai = (res.data || []).filter(p => p.status !== 'DITOLAK'); // ditolak ada di tab Aktif
     renderPengajuanUser();
-  }).withFailureHandler(() => {}).getPengajuanTransaksi({ status: 'AKTIF' }, currentUser);
+  }).withFailureHandler(() => {}).getPengajuanTransaksi({ status: tab }, currentUser);
 }
-function renderPengajuanUser(){
+function renderPengajuanUser(memuat){
+  // Lencana merah di tab "Pengajuan" = jumlah pengajuan yang ditolak.
+  const ditolak = (_ptxUser.data || []).filter(p => p.status === 'DITOLAK').length;
+  const badge = document.querySelector('.m-bottom-item[data-mobile-view="pengajuan"] .mu-badge');
+  if (badge) { badge.hidden = !ditolak; badge.textContent = ditolak > 9 ? '9+' : String(ditolak); }
   const box = document.getElementById('mPtxBox'); if (!box) return;
-  const data = _ptxUser.data;
-  const ditolak = data.filter(p => p.status === 'DITOLAK').length;
-  const dot = document.querySelector('.m-bottom-item[data-mobile-view="history"] .pill');
-  if (dot) {
-    let d = dot.querySelector('.mu-dot');
-    if (!d) { d = document.createElement('i'); d.className = 'mu-dot'; dot.appendChild(d); }
-    d.style.display = ditolak ? 'block' : 'none';
+  const tab = _ptxUser.tab || 'AKTIF';
+  const data = tab === 'AKTIF' ? (_ptxUser.data || []) : (_ptxUser.selesai || []);
+  box.hidden = false;
+  if (memuat && !_ptxUser.ada[tab]) { box.innerHTML = '<div class="mu-ptx-kosong">Memuat…</div>'; return; }
+  if (!data.length) {
+    box.innerHTML = `<div class="mu-ptx-kosong"><b>${tab === 'AKTIF' ? 'Tidak ada pengajuan aktif' : 'Belum ada pengajuan selesai'}</b>
+      <span>${tab === 'AKTIF' ? 'Transaksi di lokasi yang memakai persetujuan admin akan muncul di sini sampai disetujui.' : 'Pengajuan yang sudah disetujui atau dibatalkan tampil di sini.'}</span></div>`;
+    return;
   }
-  box.hidden = !data.length;
-  if (!data.length) { box.innerHTML = ''; return; }
+  const menunggu = data.filter(p => p.status === 'MENUNGGU' || p.status === 'DIPROSES').length;
   box.innerHTML = `
-    <div class="mu-hist-head"><h4>Pengajuan transaksi</h4><span>${data.length} aktif</span></div>
+    <div class="mu-hist-head"><h4>${tab === 'AKTIF' ? 'Pengajuan aktif' : 'Pengajuan selesai'}</h4><span>${tab === 'AKTIF' ? (menunggu + ' menunggu' + (ditolak ? ' · ' + ditolak + ' ditolak' : '')) : data.length + ' pengajuan'}</span></div>
     <div class="apv-list user">${data.map(p => apvKartu(p, 'user')).join('')}</div>`;
   pasangAksiKartuApv(box, data, 'user');
 }
@@ -9378,13 +9473,13 @@ function loadMasterLokasiPage(){
 // ============================================================
 function switchMobileView(viewName){
   document.querySelectorAll('.m-view').forEach(view => view.classList.remove('active'));
-  document.getElementById(viewName === 'history' ? 'mHistoryView' : 'mInputView')?.classList.add('active');
+  document.getElementById(viewName === 'history' ? 'mHistoryView' : viewName === 'pengajuan' ? 'mPengajuanView' : 'mInputView')?.classList.add('active');
   document.querySelectorAll('.m-bottom-item').forEach(item => {
     item.classList.toggle('active', item.dataset.mobileView === viewName);
   });
   const app = document.getElementById('mobileApp');
-  if (app) app.dataset.view = viewName === 'history' ? 'history' : 'input';
-  if (viewName === 'history') muatPengajuanUser();
+  if (app) app.dataset.view = viewName === 'history' || viewName === 'pengajuan' ? viewName : 'input';
+  if (viewName === 'pengajuan') muatPengajuanUser();
   window.scrollTo(0, 0);
 }
 
@@ -9430,11 +9525,12 @@ function openMobileProfile(){
 
 function initMobileApp(){
   document.getElementById('mobileApp').style.display = 'block';
-  document.getElementById('mUserName').textContent = currentUser.name;
-  document.getElementById('mAvatar').textContent = mobileInitials(currentUser.name);
-  document.getElementById('mUserPerusahaan').textContent = currentUser.perusahaan === 'ALL' ? 'Semua Perusahaan' : currentUser.perusahaan;
+  document.getElementById('mUserName').textContent = String(currentUser.name || '').trim().split(/\s+/)[0] || currentUser.username;
+  document.getElementById('mAvatar').innerHTML = mIco('me');
+  document.getElementById('mUserPerusahaan').outerHTML = htmlWilayah('mUserPerusahaan');
+  const mg = document.getElementById('mGreet'); if (mg) mg.textContent = sapaanWaktu();
 
-  document.getElementById('mLogoutBtn').onclick = (logout);
+  const mOut = document.getElementById('mLogoutBtn'); if (mOut) mOut.onclick = logout;
   document.querySelectorAll('.m-bottom-item').forEach(item => {
     item.onclick = item.dataset.mobileProfile
       ? openMobileProfile
@@ -9781,7 +9877,7 @@ async function submitMobileTransaksi(e){
           mFotoManager.reset();
           status.textContent = ''; // cukup toast, tidak menempel di bawah tombol
           status.classList.remove('success', 'error');
-          showToast('Transaksi diajukan dan menunggu persetujuan admin. Statusnya bisa dilihat di menu Riwayat.', 'info');
+          showToast('Transaksi diajukan dan menunggu persetujuan admin. Statusnya bisa dilihat di menu Pengajuan.', 'info');
           muatPengajuanUser();
           return;
         }
