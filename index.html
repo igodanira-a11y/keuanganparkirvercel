@@ -1994,7 +1994,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 :is(#mobileApp,.mu-scope) .m-name{font-size:16px;font-weight:600;letter-spacing:0;color:var(--ink);margin:0;}
 :is(#mobileApp,.mu-scope) .m-loc-badge{margin-top:5px;}
 :is(#mobileApp,.mu-scope) .m-loc-badge .wl-chip{background:#e8f3ec;color:#14532d;}
-:is(#mobileApp,.mu-scope) .m-loc-badge .wl-chip svg{color:#15803d;}
+:is(#mobileApp,.mu-scope) .m-loc-badge .wl-chip svg{color:#15803d;stroke:currentColor;fill:none;width:13px;height:13px;}
 :is(#mobileApp,.mu-scope) .m-body,#mobileApp[data-view="history"] .m-body{margin-top:0;padding-top:12px;}
 /* Ringkasan hari ini: kartu hijau di atas form */
 :is(#mobileApp,.mu-scope) .mu-today{margin:0 0 14px;background:linear-gradient(160deg,#086a35 0%,#05592d 55%,#044424 100%);border:0;border-radius:20px;padding:14px 16px;box-shadow:0 10px 24px -12px rgba(4,68,36,.55);}
@@ -2255,6 +2255,11 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .mu-seg button.on{background:#fff;color:#044424;box-shadow:0 1px 4px rgba(0,0,0,.08);}
 .mu-ptx-kosong{display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center;padding:36px 20px;background:#fff;border-radius:20px;color:#5f6d66;font-size:13px;line-height:1.5;}
 .mu-ptx-kosong b{font-size:15px;color:#151b18;}
+.mu-ptx-ic{width:52px;height:52px;border-radius:16px;background:#e8f3ec;color:#15803d;display:flex;align-items:center;justify-content:center;margin-bottom:4px;}
+.mu-ptx-ic svg{width:26px;height:26px;}
+.mu-ptx-load{width:26px;height:26px;border-radius:50%;border:3px solid #dce8df;border-top-color:#15803d;animation:muPutar .8s linear infinite;}
+@keyframes muPutar{to{transform:rotate(360deg);}}
+.mu-ptx-ulang{margin-top:6px;padding:9px 18px;border-radius:12px;background:#05592d;color:#fff;font-weight:600;font-size:13px;border:0;}
 .m-bottom-item .pill{position:relative;}
 .mu-badge{position:absolute;top:-2px;right:4px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#dc2626;color:#fff;font-size:10px;font-weight:700;font-style:normal;line-height:17px;text-align:center;box-shadow:0 0 0 2px #fff;}
 .mu-badge[hidden]{display:none;}
@@ -3525,8 +3530,8 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
     </div>
     <div class="m-view" id="mPengajuanView">
       <div class="mu-seg" role="tablist" aria-label="Status pengajuan">
-        <button type="button" class="on" data-ptx="AKTIF" role="tab" aria-selected="true">Aktif</button>
-        <button type="button" data-ptx="RIWAYAT" role="tab" aria-selected="false">Selesai</button>
+        <button type="button" class="on" data-ptab="AKTIF" role="tab" aria-selected="true">Aktif</button>
+        <button type="button" data-ptab="RIWAYAT" role="tab" aria-selected="false">Selesai</button>
       </div>
       <div id="mPtxBox" class="mu-ptx"></div>
     </div>
@@ -5608,8 +5613,8 @@ function muatPengajuanUser(){
   if (!box._siap) {
     box._siap = true;
     document.querySelectorAll('#mPengajuanView .mu-seg button').forEach(b => b.onclick = () => {
-      if (_ptxUser.tab === b.dataset.ptx) return;
-      _ptxUser.tab = b.dataset.ptx;
+      if (_ptxUser.tab === b.dataset.ptab) return;
+      _ptxUser.tab = b.dataset.ptab;
       document.querySelectorAll('#mPengajuanView .mu-seg button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', String(x === b)); });
       renderPengajuanUser(true);
       muatPengajuanUser();
@@ -5617,14 +5622,21 @@ function muatPengajuanUser(){
   }
   const tab = _ptxUser.tab || 'AKTIF';
   const seq = ++_ptxUser.seq;
-  if (!_ptxUser.ada[tab]) renderPengajuanUser(true);
+  _ptxUser.gagal = '';
+  renderPengajuanUser(true);
+  const gagal = msg => {
+    if (seq !== _ptxUser.seq) return;
+    _ptxUser.gagal = msg || 'Pengajuan gagal dimuat.';
+    renderPengajuanUser();
+  };
   google.script.run.withSuccessHandler(res => {
-    if (seq !== _ptxUser.seq || !res || !res.success) return;
+    if (seq !== _ptxUser.seq) return;
+    if (!res || !res.success) return gagal(res && res.message);
     _ptxUser.ada[tab] = true;
     if (tab === 'AKTIF') _ptxUser.data = res.data || [];
     else _ptxUser.selesai = (res.data || []).filter(p => p.status !== 'DITOLAK'); // ditolak ada di tab Aktif
     renderPengajuanUser();
-  }).withFailureHandler(() => {}).getPengajuanTransaksi({ status: tab }, currentUser);
+  }).withFailureHandler(err => gagal(err && err.message)).getPengajuanTransaksi({ status: tab }, currentUser);
 }
 function renderPengajuanUser(memuat){
   // Lencana merah di tab "Pengajuan" = jumlah pengajuan yang ditolak.
@@ -5635,10 +5647,18 @@ function renderPengajuanUser(memuat){
   const tab = _ptxUser.tab || 'AKTIF';
   const data = tab === 'AKTIF' ? (_ptxUser.data || []) : (_ptxUser.selesai || []);
   box.hidden = false;
-  if (memuat && !_ptxUser.ada[tab]) { box.innerHTML = '<div class="mu-ptx-kosong">Memuat…</div>'; return; }
+  const ikon = '<span class="mu-ptx-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 14l2 2 4-4"/></svg></span>';
+  if (_ptxUser.gagal && !_ptxUser.ada[tab]) {
+    box.innerHTML = `<div class="mu-ptx-kosong">${ikon}<b>Pengajuan belum bisa dimuat</b><span>${escapeHtml(_ptxUser.gagal)}</span><button type="button" class="mu-ptx-ulang">Coba lagi</button></div>`;
+    box.querySelector('.mu-ptx-ulang').onclick = muatPengajuanUser;
+    return;
+  }
+  if (memuat && !_ptxUser.ada[tab]) { box.innerHTML = '<div class="mu-ptx-kosong"><span class="mu-ptx-load"></span><span>Memuat pengajuan…</span></div>'; return; }
   if (!data.length) {
-    box.innerHTML = `<div class="mu-ptx-kosong"><b>${tab === 'AKTIF' ? 'Tidak ada pengajuan aktif' : 'Belum ada pengajuan selesai'}</b>
-      <span>${tab === 'AKTIF' ? 'Transaksi di lokasi yang memakai persetujuan admin akan muncul di sini sampai disetujui.' : 'Pengajuan yang sudah disetujui atau dibatalkan tampil di sini.'}</span></div>`;
+    box.innerHTML = `<div class="mu-ptx-kosong">${ikon}<b>${tab === 'AKTIF' ? 'Belum ada pengajuan' : 'Belum ada pengajuan selesai'}</b>
+      <span>${tab === 'AKTIF'
+        ? 'Transaksi yang perlu persetujuan admin akan tampil di sini, lengkap dengan statusnya (menunggu atau ditolak).'
+        : 'Pengajuan yang sudah disetujui atau dibatalkan akan tampil di sini.'}</span></div>`;
     return;
   }
   const menunggu = data.filter(p => p.status === 'MENUNGGU' || p.status === 'DIPROSES').length;
