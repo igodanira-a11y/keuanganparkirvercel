@@ -2249,6 +2249,7 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .mu-apv-note[hidden]{display:none;}
 .mu-apv-note svg{flex:none;width:18px;height:18px;margin-top:1px;}
 .mu-ptx{margin:0 0 16px;}
+#mhTodaySub[hidden]{display:none !important;}
 #mobileApp[data-view="pengajuan"] .mu-today{display:none;}
 .mu-seg{display:flex;gap:4px;padding:4px;margin:0 0 14px;background:#e9efea;border-radius:14px;}
 .mu-seg button{flex:1;padding:9px 0;border-radius:11px;font-size:13.5px;font-weight:600;color:#5f6d66;background:none;border:0;}
@@ -6254,6 +6255,8 @@ function renderMobileToday(){
   sub.className = belum ? 'late' : '';
   const sa = isMsaRole();
   sub.textContent = !total ? 'Tambahkan di Master data' : belum ? (sa ? `${belum} belum setor` : `${belum} lokasi belum setor`) : (sa ? 'Semua sudah setor' : 'Semua lokasi sudah setor');
+  // Admin & superadmin: cukup "x dari y lokasi" + persentase (tanpa label belum setor).
+  sub.hidden = sa && !!total;
   document.getElementById('mhTodayBar').style.width = pct + '%';
 }
 function setMPending(n){
