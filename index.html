@@ -2249,6 +2249,11 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .mu-apv-note[hidden]{display:none;}
 .mu-apv-note svg{flex:none;width:18px;height:18px;margin-top:1px;}
 .mu-ptx{margin:0 0 16px;}
+label .wajib{color:#dc2626;font-weight:700;}
+input[type="date"].tgl-wajib,.m-date-input.tgl-wajib{border-color:#dc2626 !important;box-shadow:0 0 0 3px rgba(220,38,38,.14) !important;}
+.m-date-input.tgl-wajib input{border-color:#dc2626 !important;}
+input.isian-salah,select.isian-salah,.isian-salah > .sd-trigger,.m-nominal-wrap.isian-salah{border-color:#dc2626 !important;box-shadow:0 0 0 3px rgba(220,38,38,.14) !important;}
+.m-date-input.isian-salah input,.mu-sel.isian-salah select{border-color:#dc2626 !important;box-shadow:0 0 0 3px rgba(220,38,38,.14) !important;}
 #mhTodaySub[hidden]{display:none !important;}
 #mobileApp[data-view="pengajuan"] .mu-today{display:none;}
 .mu-seg{display:flex;gap:4px;padding:4px;margin:0 0 14px;background:#e9efea;border-radius:14px;}
@@ -2977,23 +2982,19 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
         <div><h2>Input Transaksi</h2><p>Catat pendapatan atau pengeluaran secara manual.</p></div>
       </div>
       <div class="panel" style="max-width:1040px;">
-        <form id="desktopInputForm">
+        <form id="desktopInputForm" novalidate>
           <div class="form-grid-3" style="margin-bottom:8px;">
             <div class="d-field">
-              <label>Tanggal</label>
+              <label>Tanggal <span class="wajib">*</span></label>
               <input type="date" id="dTanggal" required>
             </div>
             <div class="d-field">
-              <label>Perusahaan</label>
+              <label>Perusahaan <span class="wajib">*</span></label>
               <select id="dPerusahaan" required></select>
             </div>
             <div class="d-field">
-              <label>Lokasi</label>
+              <label>Lokasi <span class="wajib">*</span></label>
               <select id="dLokasi" required></select>
-            </div>
-            <div class="d-field full">
-              <label>Keterangan (opsional)</label>
-              <input type="text" id="dKeterangan" placeholder="Catatan untuk transaksi ini...">
             </div>
           </div>
 
@@ -3003,7 +3004,12 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
           </div>
           <div id="dItemsContainer"></div>
 
-          <div class="d-field" style="margin:22px 0 14px;">
+          <div class="d-field" style="margin:22px 0 0;">
+            <label>Keterangan (opsional)</label>
+            <input type="text" id="dKeterangan" placeholder="Catatan untuk transaksi ini...">
+          </div>
+
+          <div class="d-field" style="margin:16px 0 14px;">
             <label>Foto bukti (opsional, bisa lebih dari satu)</label>
             <label class="foto-upload-btn" for="dFotoInput"><i class="fi fi-rr-camera"></i> Pilih / ambil foto</label>
             <input type="file" id="dFotoInput" accept="image/*" multiple capture="environment" style="display:none;">
@@ -3454,17 +3460,17 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
     </div>
     <div class="m-view active" id="mInputView">
     <div class="m-card">
-      <form id="mobileInputForm">
+      <form id="mobileInputForm" novalidate>
         <div class="m-field" id="mPerusahaanField" style="display:none;">
-          <label>Perusahaan</label>
+          <label>Perusahaan <span class="wajib">*</span></label>
           <div class="mu-sel"><select id="mPerusahaan" required></select></div>
         </div>
         <div class="m-field">
-          <label>Tanggal</label>
+          <label>Tanggal <span class="wajib">*</span></label>
           <div class="m-date-input"><input type="date" id="mTanggalTransaksi" required><span>dd/mm/tttt</span></div>
         </div>
         <div class="m-field">
-          <label>Lokasi Cabang</label>
+          <label>Lokasi Cabang <span class="wajib">*</span></label>
           <div class="mu-sel"><select id="mLokasi" required></select></div>
         </div>
 
@@ -3994,8 +4000,8 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('rememberMe').checked = !(window.__auth && window.__auth.pilihanIngat() === '0');
   if (rememberedUsername) document.getElementById('loginUsername').value = rememberedUsername;
 
-  const today = new Date().toISOString().substring(0,10);
-  document.getElementById('dTanggal').value = today;
+  // Tanggal transaksi WAJIB dipilih manual (tidak diisi otomatis).
+  pasangTanggalWajib('dTanggal');
 
   document.getElementById('togglePasswordBtn').addEventListener('click', function(){
     const input = document.getElementById('loginPassword');
@@ -4972,17 +4978,17 @@ function initSaInputForm(){
       <span class="mu-today-n" id="saTodayCount">– Data</span>
     </div>
     <div class="m-card">
-      <form id="saInputForm">
+      <form id="saInputForm" novalidate>
         <div class="m-field">
-          <label>Tanggal</label>
+          <label>Tanggal <span class="wajib">*</span></label>
           <div class="m-date-input"><input type="date" id="saTanggal" required><span>dd/mm/tttt</span></div>
         </div>
         <div class="m-field">
-          <label>Perusahaan</label>
+          <label>Perusahaan <span class="wajib">*</span></label>
           <div class="mu-sel"><select id="saPerusahaan" required>${per.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('')}</select></div>
         </div>
         <div class="m-field">
-          <label>Lokasi Cabang</label>
+          <label>Lokasi Cabang <span class="wajib">*</span></label>
           <div class="mu-sel"><select id="saLokasi" required></select></div>
         </div>
         <div class="mu-sec">
@@ -5021,7 +5027,8 @@ function initSaInputForm(){
   const saOut = document.getElementById('saLogoutBtn'); if (saOut) saOut.onclick = logout;
   const saTgl = document.getElementById('saTanggal');
   const saSyncTgl = () => saTgl.parentElement.classList.toggle('has-value', Boolean(saTgl.value));
-  saTgl.value = Utilities_formatDateLocal(new Date());
+  saTgl.value = ''; // wajib dipilih manual
+  pasangTanggalWajib('saTanggal');
   saTgl.addEventListener('input', saSyncTgl);
   saTgl.addEventListener('change', saSyncTgl);
   saSyncTgl();
@@ -5065,18 +5072,18 @@ function saAddItem(){
       <button type="button" class="m-item-remove" title="Hapus item" aria-label="Hapus item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 18L18 6M6 6l12 12"/></svg></button>
     </div>
     <div class="m-field">
-      <label>Tipe Transaksi</label>
+      <label>Tipe Transaksi <span class="wajib">*</span></label>
       <div class="mu-sel"><select class="m-item-tipe">
         <option value="PENDAPATAN">Pendapatan</option>
         <option value="PENGELUARAN">Pengeluaran</option>
       </select></div>
     </div>
     <div class="m-field">
-      <label>Kategori / Rekening</label>
+      <label>Kategori / Rekening <span class="wajib">*</span></label>
       <div class="mu-sel"><select class="m-item-kategori">${kategoriOptions('PENDAPATAN', document.getElementById('saLokasi')?.value)}</select></div>
     </div>
     <div class="m-field">
-      <label>Nominal (IDR)</label>
+      <label>Nominal (IDR) <span class="wajib">*</span></label>
       <div class="m-nominal-wrap"><span>Rp</span><input type="text" inputmode="numeric" class="m-item-nominal" placeholder="0" required></div>
       <div class="mu-chips">
         <button type="button" data-add="50000">+50rb</button>
@@ -5140,6 +5147,8 @@ function saLoadToday(){
 
 async function saSubmit(e){
   e.preventDefault();
+  if (!cekIsianWajib(isianWajibTransaksi({ tanggal: 'saTanggal', perusahaan: 'saPerusahaan', lokasi: 'saLokasi',
+    baris: '#saItems .m-item-row', tipe: '.m-item-tipe', kategori: '.m-item-kategori', nominal: '.m-item-nominal' }), 'sa')) return;
   const toastErr = msg => showDesktopToast({ title: 'Gagal', message: msg, type: 'error' });
   const perusahaan = document.getElementById('saPerusahaan').value;
   const lokasi = document.getElementById('saLokasi').value;
@@ -5165,7 +5174,7 @@ async function saSubmit(e){
     }
     label.textContent = 'Menyimpan...';
     const payload = {
-      tanggal: document.getElementById('saTanggal').value || Utilities_formatDateLocal(new Date()),
+      tanggal: document.getElementById('saTanggal').value,
       perusahaan: ent ? ent.perusahaan : perusahaan,
       lokasi: ent ? ent.lokasi : lokasi,
       keterangan: document.getElementById('saKeterangan').value,
@@ -5193,6 +5202,7 @@ async function saSubmit(e){
       document.getElementById('saItems').innerHTML = '';
       saItemCounter = 0; saAddItem();
       document.getElementById('saKeterangan').value = '';
+      kosongkanTanggal('saTanggal');
       saFotoManager.reset();
       status.textContent = 'Transaksi berhasil disimpan.';
       status.classList.add('success');
@@ -6415,18 +6425,18 @@ function addDesktopItem(){
   wrap.dataset.idx = dItemCounter;
   wrap.innerHTML = `
     <div class="d-field">
-      <label>Tipe</label>
+      <label>Tipe <span class="wajib">*</span></label>
       <select class="item-tipe">
         <option value="PENDAPATAN">Pendapatan</option>
         <option value="PENGELUARAN">Pengeluaran</option>
       </select>
     </div>
     <div class="d-field">
-      <label>Kategori</label>
+      <label>Kategori <span class="wajib">*</span></label>
       <select class="item-kategori">${kategoriOptions('PENDAPATAN', document.getElementById('dLokasi')?.value)}</select>
     </div>
     <div class="d-field">
-      <label>Nominal (Rp)</label>
+      <label>Nominal (Rp) <span class="wajib">*</span></label>
       <input type="text" inputmode="numeric" class="item-nominal" placeholder="0" required>
     </div>
     <button type="button" class="item-remove-btn" title="Hapus item">&times;</button>
@@ -8661,6 +8671,9 @@ async function encodeFotoManager(manager){
 let dFotoManager, mFotoManager;
 
 async function submitDesktopTransaksi(e){
+  if (e && e.preventDefault) e.preventDefault();
+  if (!cekIsianWajib(isianWajibTransaksi({ tanggal: 'dTanggal', perusahaan: 'dPerusahaan', lokasi: 'dLokasi',
+    baris: '#dItemsContainer .item-row', tipe: '.item-tipe', kategori: '.item-kategori', nominal: '.item-nominal' }), 'd')) return;
   e.preventDefault();
   const items = [];
   document.querySelectorAll('#dItemsContainer .item-row').forEach(row => {
@@ -8742,6 +8755,7 @@ async function submitDesktopTransaksi(e){
         dItemCounter = 0;
         addDesktopItem();
         document.getElementById('dKeterangan').value = '';
+        kosongkanTanggal('dTanggal');
         dFotoManager.reset();
         loadDashboard();
         fetchTransaksiTable();
@@ -9665,7 +9679,8 @@ function initMobileApp(){
   // Set tanggal transaksi default ke hari ini
   const mTanggalInput = document.getElementById('mTanggalTransaksi');
   if (mTanggalInput) {
-    mTanggalInput.value = Utilities_formatDateLocal(new Date());
+    mTanggalInput.value = ''; // wajib dipilih manual
+    pasangTanggalWajib('mTanggalTransaksi');
     mTanggalInput.addEventListener('input', syncMobileDatePlaceholders);
     mTanggalInput.addEventListener('change', syncMobileDatePlaceholders);
   }
@@ -9705,6 +9720,95 @@ function Utilities_formatDateLocal(d){
   return `${y}-${m}-${day}`;
 }
 
+// ===== Isian wajib form input transaksi =====
+// Semua wajib kecuali Keterangan & Foto bukti.
+function tandaiIsian(el, salah){
+  if (!el) return;
+  el.classList.toggle('isian-salah', salah);
+  const box = el.closest('.m-date-input, .mu-sel, .m-nominal-wrap'); if (box) box.classList.toggle('isian-salah', salah);
+  if (el.tagName === 'SELECT' && el.id) { const sd = document.getElementById('sd-' + el.id); if (sd) sd.classList.toggle('isian-salah', salah); }
+  if (!el._isianPasang) {
+    el._isianPasang = true;
+    ['input', 'change'].forEach(ev => el.addEventListener(ev, () => tandaiIsian(el, false)));
+  }
+}
+// daftar: [{ el, label, cek?: el => boolean }]. true = lengkap.
+function cekIsianWajib(daftar, kunci){
+  const kurang = []; let pertama = null;
+  daftar.forEach(f => {
+    if (!f.el) return;
+    const isi = f.cek ? f.cek(f.el) : String(f.el.value || '').trim() !== '';
+    tandaiIsian(f.el, !isi);
+    if (!isi) { if (kurang.indexOf(f.label) < 0) kurang.push(f.label); pertama = pertama || f.el; }
+  });
+  if (!kurang.length) return true;
+  const target = (pertama.id && document.getElementById('sd-' + pertama.id)) || pertama.closest('.m-date-input, .mu-sel, .m-nominal-wrap') || pertama;
+  try { target.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+  const now = Date.now();
+  cekIsianWajib._t = cekIsianWajib._t || {};
+  if (!cekIsianWajib._t[kunci] || now - cekIsianWajib._t[kunci] > 1500) {
+    cekIsianWajib._t[kunci] = now;
+    const tglSaja = kurang.length === 1 && kurang[0] === 'Tanggal';
+    showDesktopToast(tglSaja
+      ? { title: 'Tanggal belum dipilih', message: 'Pilih tanggal transaksi terlebih dahulu.', type: 'error' }
+      : { title: 'Data belum lengkap', message: 'Lengkapi: ' + kurang.join(', ') + '.', type: 'error' });
+  }
+  return false;
+}
+// Susun daftar isian wajib untuk satu form input transaksi.
+function isianWajibTransaksi(f){
+  const adaNominal = el => parseRibuan(el.value) > 0;
+  const daftar = [
+    { el: document.getElementById(f.tanggal), label: 'Tanggal', cek: el => /^\d{4}-\d{2}-\d{2}$/.test(el.value || '') },
+    { el: document.getElementById(f.perusahaan), label: 'Perusahaan' },
+    { el: document.getElementById(f.lokasi), label: 'Lokasi' }
+  ];
+  const baris = document.querySelectorAll(f.baris);
+  baris.forEach((row, i) => {
+    const no = baris.length > 1 ? ' item ' + (i + 1) : '';
+    daftar.push({ el: row.querySelector(f.tipe), label: 'Tipe' + no });
+    daftar.push({ el: row.querySelector(f.kategori), label: 'Kategori' + no });
+    daftar.push({ el: row.querySelector(f.nominal), label: 'Nominal' + no, cek: adaNominal });
+  });
+  return daftar;
+}
+
+// ===== Tanggal transaksi wajib dipilih manual =====
+const PESAN_TGL_WAJIB = 'Pilih tanggal transaksi terlebih dahulu.';
+function tandaiTanggal(el, salah){
+  if (!el) return;
+  el.classList.toggle('tgl-wajib', salah);
+  const box = el.closest('.m-date-input'); if (box) box.classList.toggle('tgl-wajib', salah);
+}
+function pasangTanggalWajib(id){
+  const el = document.getElementById(id);
+  if (!el || el._tglWajib) return;
+  el._tglWajib = true;
+  // Ganti gelembung bawaan browser dengan notifikasi aplikasi.
+  el.addEventListener('invalid', e => { e.preventDefault(); cekTanggalWajib(id); });
+  el.addEventListener('change', () => { if (el.value) tandaiTanggal(el, false); });
+  el.addEventListener('input', () => { if (el.value) tandaiTanggal(el, false); });
+}
+// true kalau tanggal sudah dipilih; kalau belum -> tandai merah + notifikasi.
+function cekTanggalWajib(id){
+  const el = document.getElementById(id);
+  if (!el) return true;
+  if (el.value && /^\d{4}-\d{2}-\d{2}$/.test(el.value)) { tandaiTanggal(el, false); return true; }
+  tandaiTanggal(el, true);
+  try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+  const now = Date.now();
+  if (!el._tglToast || now - el._tglToast > 1500) { // cegah notifikasi dobel
+    el._tglToast = now;
+    showDesktopToast({ title: 'Tanggal belum dipilih', message: PESAN_TGL_WAJIB, type: 'error' });
+  }
+  return false;
+}
+function kosongkanTanggal(id){
+  const el = document.getElementById(id); if (!el) return;
+  el.value = ''; tandaiTanggal(el, false);
+  const box = el.closest('.m-date-input'); if (box) box.classList.remove('has-value');
+}
+
 function syncMobileDatePlaceholders(){
   ['mTanggalTransaksi', 'mFilterFrom', 'mFilterTo'].forEach(id => {
     const input = document.getElementById(id);
@@ -9742,18 +9846,18 @@ function addMobileItem(){
       <button type="button" class="m-item-remove" title="Hapus item" aria-label="Hapus item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 18L18 6M6 6l12 12"/></svg></button>
     </div>
     <div class="m-field">
-      <label>Tipe Transaksi</label>
+      <label>Tipe Transaksi <span class="wajib">*</span></label>
       <div class="mu-sel"><select class="m-item-tipe">
         <option value="PENDAPATAN">Pendapatan</option>
         <option value="PENGELUARAN">Pengeluaran</option>
       </select></div>
     </div>
     <div class="m-field">
-      <label>Kategori / Rekening</label>
+      <label>Kategori / Rekening <span class="wajib">*</span></label>
       <div class="mu-sel"><select class="m-item-kategori">${kategoriOptions('PENDAPATAN', document.getElementById('mLokasi')?.value)}</select></div>
     </div>
     <div class="m-field">
-      <label>Nominal (IDR)</label>
+      <label>Nominal (IDR) <span class="wajib">*</span></label>
       <div class="m-nominal-wrap">
         <span>Rp</span>
         <input type="text" inputmode="numeric" class="m-item-nominal" placeholder="0" required>
@@ -9825,6 +9929,9 @@ function updateMobileCalcSummary(){
 }
 
 async function submitMobileTransaksi(e){
+  if (e && e.preventDefault) e.preventDefault();
+  if (!cekIsianWajib(isianWajibTransaksi({ tanggal: 'mTanggalTransaksi', perusahaan: 'mPerusahaan', lokasi: 'mLokasi',
+    baris: '#mItemsContainer .m-item-row', tipe: '.m-item-tipe', kategori: '.m-item-kategori', nominal: '.m-item-nominal' }), 'm')) return;
   e.preventDefault();
 
   const mLokasiEl = document.getElementById('mLokasi');
@@ -9862,7 +9969,7 @@ async function submitMobileTransaksi(e){
       x => normalizeNama(x.perusahaan) === normalizeNama(selectedPerusahaan) &&
            normalizeNama(x.lokasi) === normalizeNama(selectedLokasi)
     );
-    const mTanggalVal = document.getElementById('mTanggalTransaksi')?.value || new Date().toISOString().substring(0,10);
+    const mTanggalVal = document.getElementById('mTanggalTransaksi')?.value || '';
 
     let fotoEncoded = [];
     try {
@@ -9897,6 +10004,7 @@ async function submitMobileTransaksi(e){
           mItemCounter = 0;
           addMobileItem();
           document.getElementById('mKeterangan').value = '';
+          kosongkanTanggal('mTanggalTransaksi');
           mFotoManager.reset();
           status.textContent = ''; // cukup toast, tidak menempel di bawah tombol
           status.classList.remove('success', 'error');
@@ -9927,6 +10035,7 @@ async function submitMobileTransaksi(e){
         mItemCounter = 0;
         addMobileItem();
         document.getElementById('mKeterangan').value = '';
+        kosongkanTanggal('mTanggalTransaksi');
         mFotoManager.reset();
         status.textContent = 'Transaksi berhasil disimpan.';
         status.classList.add('success');
