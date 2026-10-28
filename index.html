@@ -5180,7 +5180,7 @@ async function saSubmit(e){
   const items = [];
   document.querySelectorAll('#saItems .m-item-row').forEach(row => {
     const nominal = parseRibuan(row.querySelector('.m-item-nominal').value);
-    if (nominal > 0) items.push({ tipe: row.querySelector('.m-item-tipe').value, kategori: row.querySelector('.m-item-kategori').value, nominal });
+    if (/\d/.test(row.querySelector('.m-item-nominal').value)) items.push({ tipe: row.querySelector('.m-item-tipe').value, kategori: row.querySelector('.m-item-kategori').value, nominal });
   });
   if (!items.length) { toastErr('Isi minimal satu item dengan nominal.'); return; }
 
@@ -8701,8 +8701,9 @@ async function submitDesktopTransaksi(e){
   e.preventDefault();
   const items = [];
   document.querySelectorAll('#dItemsContainer .item-row').forEach(row => {
-    const nominal = parseRibuan(row.querySelector('.item-nominal').value);
-    if (nominal > 0) {
+    const nominalEl = row.querySelector('.item-nominal');
+    const nominal = parseRibuan(nominalEl.value);
+    if (/\d/.test(nominalEl.value)) { // 0 tetap dihitung
       items.push({
         tipe: row.querySelector('.item-tipe').value,
         kategori: row.querySelector('.item-kategori').value,
@@ -9781,7 +9782,8 @@ function cekIsianWajib(daftar, kunci){
 }
 // Susun daftar isian wajib untuk satu form input transaksi.
 function isianWajibTransaksi(f){
-  const adaNominal = el => parseRibuan(el.value) > 0;
+  // Nominal wajib diisi; angka 0 tetap dihitung sebagai nilai.
+  const adaNominal = el => /\d/.test(String(el.value || ''));
   const daftar = [
     { el: document.getElementById(f.tanggal), label: 'Tanggal', cek: el => /^\d{4}-\d{2}-\d{2}$/.test(el.value || '') },
     { el: document.getElementById(f.perusahaan), label: 'Perusahaan' },
@@ -9966,8 +9968,9 @@ async function submitMobileTransaksi(e){
 
   const items = [];
   document.querySelectorAll('#mItemsContainer .m-item-row').forEach(row => {
-    const nominal = parseRibuan(row.querySelector('.m-item-nominal').value);
-    if (nominal > 0) {
+    const nominalEl = row.querySelector('.m-item-nominal');
+    const nominal = parseRibuan(nominalEl.value);
+    if (/\d/.test(nominalEl.value)) { // 0 tetap dihitung
       items.push({
         tipe: row.querySelector('.m-item-tipe').value,
         kategori: row.querySelector('.m-item-kategori').value,
@@ -10438,8 +10441,9 @@ function ajukanEditMobileModal(id){
 
     const items = [];
     overlay.querySelectorAll('#pjItemsContainer .m-item-row').forEach(row => {
-      const nominal = parseRibuan(row.querySelector('.m-item-nominal').value);
-      if (nominal > 0) {
+      const nominalEl = row.querySelector('.m-item-nominal');
+      const nominal = parseRibuan(nominalEl.value);
+      if (/\d/.test(nominalEl.value)) { // 0 tetap dihitung
         items.push({
           tipe: row.querySelector('.m-item-tipe').value,
           kategori: row.querySelector('.m-item-kategori').value,
