@@ -5396,7 +5396,7 @@ function renderStokPage(pageId){
 function renderMasterStok(body, jenis){
   body.innerHTML = '<div class="stk-kosong"><span class="stk-load"></span><span>Memuat master…</span></div>';
   muatStokMaster(m => {
-    const lokTeks = g => g.lokasi === 'ALL' ? 'Semua lokasi' : g.lokasi.length + ' lokasi';
+    const lokTeks = g => g.lokasi === 'ALL' ? 'Semua perusahaan · Semua lokasi' : (() => { const p = [...new Set(g.lokasi.map(x => x.perusahaan))]; return (p.length === 1 ? p[0] : p.length + ' perusahaan') + ' · ' + g.lokasi.length + ' lokasi'; })();
     body.innerHTML = `
       <div class="stk-master satu">
         <section class="panel stk-msec"${jenis === 'barang' ? ' hidden' : ''}>
@@ -5417,27 +5417,40 @@ function renderMasterStok(body, jenis){
   }, true);
 }
 function formGudang(g){
-  const semuaLok = (masterData.lokasiMap || []).map(x => x.perusahaan + '||' + x.lokasi);
-  const label = v => { const [p, l] = v.split('||'); return l + ' — ' + p; };
+  const peta = (masterData.lokasiMap || []).map(x => ({ perusahaan: x.perusahaan, lokasi: x.lokasi }));
+  const semuaP = [...new Set(peta.map(x => x.perusahaan))].sort((a, b) => a.localeCompare(b));
+  const lokasiUntuk = pList => [...new Set(peta.filter(x => pList.includes('ALL') || pList.includes(x.perusahaan)).map(x => x.lokasi))].sort((a, b) => a.localeCompare(b));
   const ov = apvModal(`
     <div class="apv-dhead"><div><h3>${g ? 'Ubah gudang' : 'Tambah gudang'}</h3>${g ? `<span class="detail-id-chip">${escapeHtml(g.id)}</span>` : ''}</div><button type="button" class="apv-x" data-x="tutup" aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
     <div class="d-field"><label>Nama gudang <span class="wajib">*</span></label><input id="sgNama" maxlength="80" value="${escapeHtml(g ? g.nama : '')}"></div>
     <div class="d-field"><label>Alamat <em>(opsional)</em></label><input id="sgAlamat" maxlength="200" value="${escapeHtml(g ? g.alamat : '')}"></div>
+    <div class="d-field"><label>Perusahaan yang dilayani <span class="wajib">*</span></label>
+      <div class="multiselect" id="sgPerMS"><button type="button" class="multiselect-trigger"><span class="ms-summary"></span><span class="ms-caret">▾</span></button><div class="multiselect-panel"></div></div></div>
     <div class="d-field"><label>Lokasi yang dilayani <span class="wajib">*</span></label>
-      <div class="multiselect" id="sgLokMS"><button type="button" class="multiselect-trigger"><span class="ms-summary"></span><span class="ms-caret">▾</span></button><div class="multiselect-panel"></div></div></div>
+      <div class="multiselect" id="sgLokMS"><button type="button" class="multiselect-trigger"><span class="ms-summary"></span><span class="ms-caret">▾</span></button><div class="multiselect-panel"></div></div>
+      <small class="stk-hint">Pilih "ALL" untuk semua lokasi milik perusahaan yang dipilih.</small></div>
     ${g ? `<label class="apv-cek"><input type="checkbox" id="sgAktif"${g.aktif !== false ? ' checked' : ''}><span>Gudang aktif</span></label>` : ''}
     <div class="btn-row apv-btn-row apv-aksi-bawah"><button type="button" class="btn-sm btn-dark" data-x="simpan"><span class="submit-spinner"></span><span class="lbl">Simpan</span></button></div>`);
   ov.querySelector('[data-x="tutup"]').onclick = () => ov.remove();
-  const awal = !g || g.lokasi === 'ALL' ? ['ALL'] : g.lokasi.map(x => x.perusahaan + '||' + x.lokasi);
-  const ms = initMultiSelect(ov, 'sgLokMS', ['ALL', ...semuaLok], awal, null, label);
+  // Isi awal dari data gudang (pasangan perusahaan–lokasi).
+  let awalP = ['ALL'], awalL = ['ALL'];
+  if (g && g.lokasi !== 'ALL' && g.lokasi.length) {
+    const pList = [...new Set(g.lokasi.map(x => x.perusahaan))];
+    awalP = pList.length === semuaP.length ? ['ALL'] : pList;
+    const lList = [...new Set(g.lokasi.map(x => x.lokasi))];
+    awalL = lList.length === lokasiUntuk(awalP).length ? ['ALL'] : lList;
+  }
+  const msL = initMultiSelect(ov, 'sgLokMS', ['ALL', ...lokasiUntuk(awalP)], awalL);
+  const msP = initMultiSelect(ov, 'sgPerMS', ['ALL', ...semuaP], awalP, pList => msL.setOptions(['ALL', ...lokasiUntuk(pList)], msL.getValue()));
   const btn = ov.querySelector('[data-x="simpan"]');
   btn.onclick = () => {
     const nama = ov.querySelector('#sgNama');
-    const pilih = ms.getValue();
     if (!cekIsianWajib([{ el: nama, label: 'Nama gudang' }], 'sg')) return;
-    if (!pilih.length) { stkKabar('Lokasi wajib dipilih', 'Pilih lokasi yang dilayani gudang ini (atau Semua).', 'error'); return; }
-    const data = { id: g ? g.id : null, nama: nama.value, alamat: ov.querySelector('#sgAlamat').value,
-      lokasi: pilih.includes('ALL') ? [] : pilih.map(v => { const [perusahaan, lokasi] = v.split('||'); return { perusahaan, lokasi }; }),
+    const pList = msP.getValue(), lList = msL.getValue();
+    const semua = pList.includes('ALL') && lList.includes('ALL');
+    const pasangan = semua ? [] : peta.filter(x => (pList.includes('ALL') || pList.includes(x.perusahaan)) && (lList.includes('ALL') || lList.includes(x.lokasi)));
+    if (!semua && !pasangan.length) { stkKabar('Lokasi belum sesuai', 'Lokasi yang dipilih tidak ada di perusahaan yang dipilih.', 'error'); return; }
+    const data = { id: g ? g.id : null, nama: nama.value, alamat: ov.querySelector('#sgAlamat').value, lokasi: pasangan,
       aktif: g ? ov.querySelector('#sgAktif').checked : true };
     withSubmitGuard(btn, btn.querySelector('.lbl'), 'Menyimpan...', 'Simpan', release => {
       google.script.run.withSuccessHandler(res => {
