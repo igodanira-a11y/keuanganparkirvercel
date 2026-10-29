@@ -2719,6 +2719,7 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
 .stk-mrow > span{flex:none;font-size:12px;font-weight:600;color:var(--brand);}
 .stk-mrow.off{opacity:.55;}
 .stk-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media (max-width:520px){.stk-tujuan{grid-template-columns:1fr;gap:0;}}
 .apv-modal .d-field{margin-bottom:14px;}
 @media (max-width:900px){
   .stk-master{grid-template-columns:1fr;}
@@ -2754,6 +2755,19 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
 .stk-tag.aman{background:#e3f4e9;color:#047857;}
 .stk-lap-note{font-size:11.5px;color:#94a3b8;margin:10px 2px 0;line-height:1.5;}
 @media (max-width:700px){ .stk-sum{grid-template-columns:repeat(2,minmax(0,1fr));} .stk-fseg{min-width:0;max-width:none;width:100%;} .stk-bar .btn-sm{width:100%;} }
+
+.stk-dtbl td{vertical-align:top;}
+.stk-dtbl td.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;white-space:nowrap;}
+.stk-dbrg{white-space:nowrap;line-height:1.6;}
+.stk-dbrg b{font-variant-numeric:tabular-nums;}
+.stk-dbrg span{color:var(--muted);font-size:12px;}
+.stk-dsub{display:block;font-size:11.5px;color:var(--muted);margin-top:2px;}
+.stk-dsub.tolak{color:#b91c1c;max-width:220px;}
+.stk-dket{max-width:260px;color:var(--muted);}
+
+.stk-ew-box{max-width:620px !important;width:100%;}
+.stk-ew .m-card{box-shadow:none;border:0;padding:4px 0 0;margin:0;background:transparent;}
+.stk-ew.mu-scope{background:transparent;}
 </style>
 </head>
 <body>
@@ -4781,12 +4795,94 @@ function renderPanelMutasi(el, jenis){
     if (!res || !res.success) { lst.innerHTML = `<div class="stk-kosong"><b>Gagal memuat</b><span>${escapeHtml((res && res.message) || '')}</span></div>`; return; }
     if (typeof res.menunggu === 'number') setStkBadge(res.menunggu);
     const data = res.data || [];
+    // Web (superadmin, layar lebar): tabel data seperti Riwayat Transaksi.
+    if (currentUser.role === 'superadmin' && !(window.matchMedia && window.matchMedia('(max-width:900px)').matches)) { renderStkTabel(lst, jenis, data); return; }
     lst.innerHTML = data.length ? `<div class="apv-list">${data.map(kartuMutasi).join('')}</div>`
       : `<div class="stk-kosong">${stkSvg(keluar ? 'out' : 'in')}<b>${keluar ? 'Belum ada stok keluar' : 'Belum ada stok masuk'}</b><span>${keluar ? 'Pengambilan barang beserta statusnya tampil di sini.' : 'Catatan barang masuk & stok awal tampil di sini.'}</span></div>`;
     pasangKartuMutasi(lst, data);
   }).withFailureHandler(err => { lst.innerHTML = `<div class="stk-kosong"><b>Gagal memuat</b><span>${escapeHtml(err.message)}</span></div>`; })
     .getMutasiStok(filter, currentUser);
 }
+// ---------- Tabel Stok Masuk / Keluar (web) ----------
+function renderStkTabel(lst, jenis, data){
+  const keluar = jenis === 'KELUAR', key = 'stk' + jenis;
+  const st = _pgState[key] = _pgState[key] || { page: 1, pageSize: 25, data: [] };
+  st.data = data; st.page = 1;
+  const kol = keluar
+    ? ['No. Pengambilan', 'Tanggal', 'Gudang', 'Perusahaan', 'Lokasi', 'Keterangan', 'Dibuat oleh', 'Status', 'Aksi']
+    : ['No. Masuk', 'Tanggal', 'Gudang', 'Keterangan', 'Dibuat oleh', 'Aksi'];
+  lst.innerHTML = `
+    <div class="panel stk-dpanel" style="padding:0;overflow-x:auto;">
+      <table class="stk-dtbl">
+        <thead><tr>${kol.map(k => `<th>${k}</th>`).join('')}</tr></thead>
+        <tbody id="${key}Tbody"></tbody>
+      </table>
+      <div class="pagination-bar" id="${key}PaginationBar">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="pagination-info" id="${key}PaginationInfo"></span>
+          <select class="pg-size-select" id="${key}PageSize">${[10, 25, 50, 100].map(n => `<option value="${n}"${n === st.pageSize ? ' selected' : ''}>${n} / hal</option>`).join('')}</select>
+        </div>
+        <div class="pagination-controls" id="${key}PaginationControls"></div>
+      </div>
+    </div>`;
+  lst.querySelector('#' + key + 'PageSize').onchange = e => { st.pageSize = Number(e.target.value) || 25; st.page = 1; renderStkTabelRows(key); };
+  renderStkTabelRows(key);
+}
+function renderStkTabelRows(key){
+  const keluar = key === 'stkKELUAR';
+  renderPagination(key, keluar ? 9 : 6, m => {
+    const id = escapeHtml(m.id);
+    const bisaUbah = !keluar || m.status === 'MENUNGGU';
+    const aksi = `<td class="user-table-actions">
+      <button type="button" title="Lihat detail" aria-label="Lihat detail" data-action="view" onclick="stkLihat('${key}','${id}')"><i class="fi fi-rr-eye"></i></button>
+      ${keluar && m.status === 'DISETUJUI' ? `<button type="button" title="Unduh Surat Jalan" aria-label="Unduh Surat Jalan" data-action="pdf" onclick="unduhDokStok('${id}','SJ',this)"><i class="fi fi-rr-file-pdf"></i></button>
+      <button type="button" title="Unduh Berita Acara" aria-label="Unduh Berita Acara" data-action="pdf" onclick="unduhDokStok('${id}','BA',this)"><i class="fi fi-rr-document"></i></button>` : ''}
+      ${bisaUbah ? `<button type="button" title="Edit" aria-label="Edit" data-action="edit" onclick="stkUbah('${key}','${id}')"><i class="fi fi-rr-edit"></i></button>` : ''}
+      <button type="button" title="Hapus" aria-label="Hapus" data-action="delete" onclick="stkHapus('${key}','${id}')"><i class="fi fi-rr-trash"></i></button>
+    </td>`;
+    return `<tr>
+      <td class="mono">${id}</td>
+      <td style="white-space:nowrap">${escapeHtml(m.tanggal)}</td>
+      <td>${escapeHtml(m.gudangNama)}</td>
+      ${keluar ? `<td>${escapeHtml(m.perusahaan)}</td><td>${escapeHtml(m.lokasi)}</td>` : ''}
+      <td class="stk-dket">${escapeHtml(m.keterangan || '-')}</td>
+      <td>${escapeHtml(m.dibuatOleh || '-')}</td>
+      ${keluar ? `<td>${apvBadgeStatus(m.status)}</td>` : ''}
+      ${aksi}
+    </tr>`;
+  });
+}
+function stkCari(key, id){ return ((_pgState[key] || {}).data || []).find(x => x.id === id); }
+function stkLihat(key, id){
+  const m = stkCari(key, id);
+  if (m) bukaDetailMutasi(m);
+}
+function stkUbah(key, id){
+  const m = stkCari(key, id); if (!m) return;
+  const ov = apvModal(`
+    <div class="apv-dhead"><div><h3>Edit ${m.jenis === 'KELUAR' ? 'pengambilan' : 'barang masuk'}</h3><span class="detail-id-chip">${escapeHtml(m.id)}</span></div><button type="button" class="apv-x" data-x="tutup" aria-label="Tutup"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+    <div class="stk-ew mu-scope"></div>`);
+  ov.querySelector('.modal-box').classList.add('stk-ew-box');
+  ov.querySelector('[data-x="tutup"]').onclick = () => ov.remove();
+  formMutasiStok(ov.querySelector('.stk-ew'), m.jenis, () => { ov.remove(); stkSegarkan(); }, m);
+}
+function stkHapus(key, id){
+  const m = stkCari(key, id); if (!m) return;
+  const pesan = m.jenis === 'MASUK'
+    ? `Hapus barang masuk <b>${escapeHtml(m.id)}</b>? Stok gudang akan berkurang sesuai jumlah barang ini.`
+    : m.status === 'DISETUJUI'
+      ? `Hapus pengambilan <b>${escapeHtml(m.id)}</b> yang sudah disetujui? Stok akan kembali ke gudang dan Surat Jalan / BA-nya tidak berlaku lagi.`
+      : `Hapus pengambilan <b>${escapeHtml(m.id)}</b>?`;
+  showDeleteConfirm(pesan, done => {
+    google.script.run.withSuccessHandler(res => {
+      done();
+      if (!res || !res.success) { stkKabar('Gagal menghapus', (res && res.message) || '', 'error'); return; }
+      stkKabar('Data dihapus', m.id + ' sudah dihapus.', 'info');
+      stkSegarkan();
+    }).withFailureHandler(err => { done(); stkKabar('Gagal menghapus', err.message, 'error'); }).hapusMutasiStok(m.id, currentUser);
+  });
+}
+
 // Muat ulang tampilan stok yang sedang terbuka (setelah setujui/tolak/batal).
 function stkSegarkan(){
   _stk.listSa = null; _stk.listGd = null; _stk.ringkas = null;
@@ -4874,7 +4970,7 @@ function exportLaporanStok(){
 // ---------- Form barang masuk / pengambilan ----------
 // Foto wajib langsung dari kamera: input ber-capture + tolak file lama (galeri).
 const STK_FOTO_SEGAR_MS = 10 * 60 * 1000;
-function formMutasiStok(wadah, jenis, selesai){
+function formMutasiStok(wadah, jenis, selesai, edit){
   const keluar = jenis === 'KELUAR';
   const fid = 'stk' + jenis + Math.random().toString(36).slice(2, 7);
   muatStokMaster(m => {
@@ -4886,36 +4982,53 @@ function formMutasiStok(wadah, jenis, selesai){
     }
     wadah.innerHTML = `
       <form class="m-card stk-form" novalidate>
-        <div class="stk-form-h">${stkSvg(keluar ? 'out' : 'in')}<div><b>${keluar ? 'Pengambilan Barang' : 'Barang Masuk'}</b><small>${keluar ? 'Perlu persetujuan superadmin. Surat Jalan & BA terbit setelah disetujui.' : 'Stok langsung bertambah setelah disimpan.'}</small></div></div>
+        ${edit ? '' : `<div class="stk-form-h">${stkSvg(keluar ? 'out' : 'in')}<div><b>${keluar ? 'Pengambilan Barang' : 'Barang Masuk'}</b><small>${keluar ? 'Perlu persetujuan superadmin. Surat Jalan & BA terbit setelah disetujui.' : 'Stok langsung bertambah setelah disimpan.'}</small></div></div>`}
         <div class="m-field"><label>Tanggal <span class="wajib">*</span></label>
           <div class="m-date-input"><input type="date" id="${fid}Tgl"><span>dd/mm/tttt</span></div></div>
         <div class="m-field"${gudang.length === 1 ? ' style="display:none"' : ''}><label>Gudang <span class="wajib">*</span></label>
           <div class="mu-sel"><select id="${fid}Gdg">${gudang.length > 1 ? '<option value="">Pilih gudang</option>' : ''}${gudang.map(g => `<option value="${escapeHtml(g.id)}">${escapeHtml(g.nama)}</option>`).join('')}</select></div></div>
-        ${keluar ? `<div class="m-field"><label>Lokasi tujuan <span class="wajib">*</span></label>
-          <div class="mu-sel"><select id="${fid}Lok"></select></div></div>` : ''}
+        ${keluar ? `<div class="stk-grid2 stk-tujuan">
+          <div class="m-field"><label>Perusahaan <span class="wajib">*</span></label>
+            <div class="mu-sel"><select id="${fid}Per"></select></div></div>
+          <div class="m-field"><label>Lokasi <span class="wajib">*</span></label>
+            <div class="mu-sel"><select id="${fid}Lok"></select></div></div>
+        </div>` : ''}
         <div class="stk-items-h"><label>Barang <span class="wajib">*</span></label><span class="stk-items-n"></span></div>
         <div class="stk-items" id="${fid}Items"></div>
         <button type="button" class="stk-add" id="${fid}Add">+ Tambah barang</button>
         <div class="m-field"><label>Keterangan <em>(Opsional)</em></label>
           <textarea id="${fid}Ket" rows="2" maxlength="500" placeholder="${keluar ? 'Contoh: Untuk penggantian karcis loket utama' : 'Contoh: Kiriman supplier / stok awal'}"></textarea></div>
-        <div class="m-field"><label>Foto bukti ${keluar ? '<span class="wajib">*</span>' : '<em>(Opsional)</em>'}</label>
+        <div class="m-field"${edit ? ' style="display:none"' : ''}><label>Foto bukti ${keluar ? '<span class="wajib">*</span>' : '<em>(Opsional)</em>'}</label>
           <button type="button" class="stk-cam" id="${fid}CamBtn">${stkSvg('cam')}<span>Ambil foto dengan kamera</span></button>
           <input type="file" id="${fid}Cam" accept="image/*" capture="environment" style="display:none">
           <div class="foto-preview-grid" id="${fid}Prev"></div>
           <small class="stk-hint">Foto harus diambil langsung dari kamera, tidak bisa dari galeri.</small></div>
-        <button type="submit" class="m-submit-btn stk-submit" id="${fid}Btn"><span class="submit-spinner"></span><span id="${fid}Lbl">${keluar ? 'Ajukan Pengambilan' : 'Simpan Barang Masuk'}</span></button>
+        <button type="submit" class="m-submit-btn stk-submit" id="${fid}Btn"><span class="submit-spinner"></span><span id="${fid}Lbl">${edit ? 'Simpan Perubahan' : keluar ? 'Ajukan Pengambilan' : 'Simpan Barang Masuk'}</span></button>
       </form>`;
     const $ = s => wadah.querySelector(s);
-    const tgl = $('#' + fid + 'Tgl'), gdg = $('#' + fid + 'Gdg'), lok = keluar ? $('#' + fid + 'Lok') : null;
+    const tgl = $('#' + fid + 'Tgl'), gdg = $('#' + fid + 'Gdg'), lok = keluar ? $('#' + fid + 'Lok') : null, per = keluar ? $('#' + fid + 'Per') : null;
     const syncTgl = () => tgl.parentElement.classList.toggle('has-value', !!tgl.value);
     tgl.addEventListener('input', syncTgl); tgl.addEventListener('change', syncTgl);
-    const isiLokasi = () => {
-      if (!lok) return;
+    // Tujuan: perusahaan & lokasi dipilih terpisah (sesuai lokasi yang dilayani gudang).
+    const tujuanGudang = () => {
       const g = gudang.find(x => x.id === gdg.value);
-      const daftar = !g ? [] : g.lokasi === 'ALL' ? (masterData.lokasiMap || []).map(x => ({ perusahaan: x.perusahaan, lokasi: x.lokasi })) : g.lokasi;
-      lok.innerHTML = '<option value="">Pilih lokasi tujuan</option>' + daftar.slice().sort((a, b) => a.lokasi.localeCompare(b.lokasi))
-        .map(x => `<option value="${escapeHtml(x.perusahaan + '||' + x.lokasi)}">${escapeHtml(x.lokasi)} — ${escapeHtml(x.perusahaan)}</option>`).join('');
+      return !g ? [] : g.lokasi === 'ALL' ? (masterData.lokasiMap || []).map(x => ({ perusahaan: x.perusahaan, lokasi: x.lokasi })) : g.lokasi;
     };
+    const isiLokasiSaja = () => {
+      if (!lok) return;
+      const daftar = tujuanGudang().filter(x => x.perusahaan === per.value).map(x => x.lokasi).sort((a, b) => a.localeCompare(b));
+      lok.innerHTML = `<option value="">${per.value ? 'Pilih lokasi' : 'Pilih perusahaan dulu'}</option>` + [...new Set(daftar)].map(l => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join('');
+      if (daftar.length === 1) lok.value = daftar[0];
+    };
+    const isiLokasi = () => {
+      if (!per) return;
+      const sebelum = per.value;
+      const daftarP = [...new Set(tujuanGudang().map(x => x.perusahaan))].sort((a, b) => a.localeCompare(b));
+      per.innerHTML = '<option value="">Pilih perusahaan</option>' + daftarP.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+      per.value = daftarP.includes(sebelum) ? sebelum : (daftarP.length === 1 ? daftarP[0] : '');
+      isiLokasiSaja();
+    };
+    if (per) per.onchange = isiLokasiSaja;
     gdg.onchange = isiLokasi; isiLokasi();
     const items = $('#' + fid + 'Items');
     const tambah = () => {
@@ -4929,7 +5042,21 @@ function formMutasiStok(wadah, jenis, selesai){
       items.appendChild(row); hitung();
     };
     const hitung = () => { $('.stk-items-n').textContent = items.children.length + ' barang'; items.classList.toggle('satu', items.children.length === 1); };
-    $('#' + fid + 'Add').onclick = tambah; tambah();
+    $('#' + fid + 'Add').onclick = tambah;
+    if (edit) {
+      // Isi awal dari data yang diedit.
+      tgl.value = edit.tanggal || ''; syncTgl();
+      if (gudang.some(g => g.id === edit.gudangId)) { gdg.value = edit.gudangId; isiLokasi(); }
+      if (per) { per.value = edit.perusahaan; isiLokasiSaja(); lok.value = edit.lokasi; }
+      (edit.items || []).forEach(it => {
+        tambah();
+        const r = items.lastElementChild;
+        r.querySelector('.stk-brg').value = it.barangId;
+        r.querySelector('.stk-qty-in').value = String(it.qty);
+      });
+      if (!items.children.length) tambah();
+      $('#' + fid + 'Ket').value = edit.keterangan || '';
+    } else tambah();
     // Kamera saja
     const cam = $('#' + fid + 'Cam');
     cam.addEventListener('change', e => {
@@ -4948,7 +5075,7 @@ function formMutasiStok(wadah, jenis, selesai){
         { el: tgl, label: 'Tanggal', cek: el => /^\d{4}-\d{2}-\d{2}$/.test(el.value || '') },
         { el: gdg, label: 'Gudang' }
       ];
-      if (lok) daftar.push({ el: lok, label: 'Lokasi tujuan' });
+      if (per) daftar.push({ el: per, label: 'Perusahaan' }, { el: lok, label: 'Lokasi' });
       const rows = [...items.querySelectorAll('.stk-row')];
       rows.forEach((r, i) => {
         const no = rows.length > 1 ? ' ' + (i + 1) : '';
@@ -4958,7 +5085,7 @@ function formMutasiStok(wadah, jenis, selesai){
       if (!cekIsianWajib(daftar, fid)) return;
       const dipilih = rows.map(r => r.querySelector('.stk-brg').value);
       if (new Set(dipilih).size !== dipilih.length) { stkKabar('Barang dobel', 'Setiap barang cukup dipilih sekali; gabungkan jumlahnya.', 'error'); return; }
-      if (keluar && !fm.files.length) {
+      if (keluar && !edit && !fm.files.length) {
         $('#' + fid + 'CamBtn').classList.add('isian-salah');
         try { $('#' + fid + 'CamBtn').scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (er) {}
         stkKabar('Foto bukti wajib', 'Ambil foto barang dengan kamera terlebih dahulu.', 'error');
@@ -4967,11 +5094,20 @@ function formMutasiStok(wadah, jenis, selesai){
       const btn = $('#' + fid + 'Btn'), lbl = $('#' + fid + 'Lbl'), asli = lbl.textContent;
       withSubmitGuard(btn, lbl, 'Menyimpan...', asli, async release => {
         let foto = [];
-        try { foto = await encodeFotoManager(fm); } catch (er) { release(); stkKabar('Foto gagal diproses', er.message || String(er), 'error'); return; }
-        const [perusahaan, lokasi] = lok ? lok.value.split('||') : ['', ''];
+        if (!edit) { try { foto = await encodeFotoManager(fm); } catch (er) { release(); stkKabar('Foto gagal diproses', er.message || String(er), 'error'); return; } }
+        const perusahaan = per ? per.value : '', lokasi = lok ? lok.value : '';
         const payload = { jenis, tanggal: tgl.value, gudangId: gdg.value, perusahaan, lokasi, keterangan: $('#' + fid + 'Ket').value,
           items: rows.map(r => ({ barangId: r.querySelector('.stk-brg').value, qty: Number(r.querySelector('.stk-qty-in').value) })),
           foto, clientRequestId: submitReqId(fid) };
+        if (edit) {
+          google.script.run.withSuccessHandler(res => {
+            release();
+            if (!res || !res.success) { stkKabar('Belum tersimpan', (res && res.message) || 'Coba lagi.', 'error'); return; }
+            stkKabar('Perubahan disimpan', edit.id + ' sudah diperbarui.');
+            if (selesai) selesai(res);
+          }).withFailureHandler(err => { release(); stkKabar('Belum tersimpan', err.message, 'error'); }).ubahMutasiStok(edit.id, payload, currentUser);
+          return;
+        }
         google.script.run.withSuccessHandler(res => {
           release();
           if (!res || !res.success) { stkKabar('Belum tersimpan', (res && res.message) || 'Coba lagi.', 'error'); return; }
@@ -4995,7 +5131,6 @@ function kartuMutasi(m){
       <b class="apv-lok">${keluar ? escapeHtml(m.lokasi || '-') : 'Masuk ke ' + escapeHtml(m.gudangNama)}</b>
       <span class="apv-sub">${escapeHtml(m.id)}${keluar ? ' · ' + escapeHtml(m.gudangNama) : ''}</span>
       <span class="apv-meta"><span>${escapeHtml(m.dibuatOleh || '-')} · ${escapeHtml(typeof fmtTglIndo === 'function' ? fmtTglIndo(m.tanggal) : m.tanggal)}</span>${keluar ? apvBadgeStatus(m.status) : ''}</span>
-      ${m.status === 'DITOLAK' ? `<span class="apv-alasan">${escapeHtml(m.catatan || '-')}</span>` : ''}
     </div>
     <b class="apv-total stk-tot">${m.items.length === 1 ? stkAngka(m.items[0].qty) + '<small>' + escapeHtml(m.items[0].satuan) + '</small>' : m.items.length + '<small>jenis barang</small>'}</b>
   </div>`;
@@ -5027,7 +5162,7 @@ function bukaDetailMutasi(m){
       ${keluar ? baris('Status', apvBadgeStatus(m.status)) : ''}
       ${baris('Tanggal', escapeHtml(typeof fmtTglIndo === 'function' ? fmtTglIndo(m.tanggal) : m.tanggal))}
       ${baris('Gudang', escapeHtml(m.gudangNama))}
-      ${keluar ? baris('Lokasi tujuan', escapeHtml(m.lokasi) + '<br><small class="stk-muted">' + escapeHtml(m.perusahaan) + '</small>') : ''}
+      ${keluar ? baris('Perusahaan', escapeHtml(m.perusahaan)) + baris('Lokasi', escapeHtml(m.lokasi)) : ''}
       ${baris('Dibuat oleh', escapeHtml(m.dibuatOleh || '-') + '<br><small class="stk-muted">' + escapeHtml(wkt(m.waktuBuat)) + '</small>')}
       ${keluar && m.direviewOleh ? baris(m.status === 'DITOLAK' ? 'Ditolak oleh' : 'Disetujui oleh', escapeHtml(m.direviewOleh) + '<br><small class="stk-muted">' + escapeHtml(wkt(m.waktuReview)) + '</small>') : ''}
       ${baris('Keterangan', escapeHtml(m.keterangan || '-'))}
@@ -8086,6 +8221,7 @@ function _pgGo(key, colSpan, val, isNext) {
   else if (key === 'monitoring') renderMonitoringTable();
   else if (key === 'log') renderLogTable();
   else if (key === 'pengajuan') renderPengajuanTable();
+  else if (key === 'stkMASUK' || key === 'stkKELUAR') renderStkTabelRows(key);
 }
 
 // ============================================================
