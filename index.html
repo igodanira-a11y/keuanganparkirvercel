@@ -2768,6 +2768,18 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
 .stk-ew-box{max-width:620px !important;width:100%;}
 .stk-ew .m-card{box-shadow:none;border:0;padding:4px 0 0;margin:0;background:transparent;}
 .stk-ew.mu-scope{background:transparent;}
+
+/* Sidebar web: tetap di tempat; hanya daftar menu yang bisa digulir sendiri */
+@media (min-width:901px){
+  .d-shell{height:100vh;overflow:hidden;}
+  .d-sidebar{position:sticky;top:0;height:100vh;overflow:hidden;}
+  .d-nav{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding-right:4px;margin-right:-4px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.28) transparent;}
+  .d-nav::-webkit-scrollbar{width:6px;}
+  .d-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.28);border-radius:6px;}
+  .d-nav::-webkit-scrollbar-track{background:transparent;}
+  .d-brand,.d-user-box{flex-shrink:0;}
+  .d-main{height:100vh;max-height:100vh;overscroll-behavior:contain;}
+}
 </style>
 </head>
 <body>
