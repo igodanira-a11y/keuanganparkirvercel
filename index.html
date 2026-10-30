@@ -2802,6 +2802,70 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
 .stk-lapw-grid input::placeholder{color:#94a3b8;font-weight:500;}
 .stk-lap-cari{grid-column:1/-1;}
 .stk-lap-f .stk-lap-btn{grid-column:1/-1;}
+
+/* Persetujuan Stok (web) */
+.stk-apv-f{display:grid;grid-template-columns:minmax(200px,290px) 1fr;gap:12px;padding:14px !important;margin-bottom:16px;}
+.stk-apv-in{width:100%;height:46px;box-sizing:border-box;padding:0 14px;border:1px solid var(--line);border-radius:8px;font:inherit;font-size:14px;color:var(--ink);background:#fff;outline:none;}
+.stk-apv-in::placeholder{color:#94a3b8;}
+.stk-apv-in:focus{border-color:var(--brand,#05592d);box-shadow:0 0 0 3px rgba(5,89,45,.12);}
+.stk-apv-sel{appearance:none;-webkit-appearance:none;padding-right:36px;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:14px;}
+.stk-apv-aksi{white-space:nowrap;}
+.stk-apv-aksi .stk-apv-ok{color:#15803d !important;}
+.stk-apv-aksi .stk-apv-ok:hover{background:#e3f4ea !important;}
+.stk-apv-aksi .stk-apv-no{color:#c0262d !important;}
+.stk-apv-aksi .stk-apv-no:hover{background:#fde8e8 !important;}
+.stk-apv-aksi svg{width:15px;height:15px;}
+.stk-apv-items{margin:4px 0 14px;border:1px solid var(--line);border-radius:10px;text-align:left;font-size:13.5px;}
+.stk-apv-items > div{display:flex;justify-content:space-between;gap:12px;padding:9px 12px;}
+.stk-apv-items > div + div{border-top:1px solid #eef2ef;}
+
+/* Konfirmasi "Setujui pengambilan" */
+.sap-box{max-width:480px !important;width:calc(100vw - 32px) !important;padding:0 !important;overflow:hidden;}
+.sap{display:flex;flex-direction:column;gap:14px;padding:20px 22px 22px;text-align:left;}
+.sap-head{display:flex;align-items:center;gap:12px;}
+.sap-badge{flex:none;width:42px;height:42px;border-radius:12px;background:#e3f4ea;color:#15803d;display:grid;place-items:center;}
+.sap-badge svg{width:22px;height:22px;}
+.sap-ttl{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px;}
+.sap-ttl h3{margin:0;font-size:17px;font-weight:700;color:var(--ink);}
+.sap-head .apv-x{flex:none;align-self:flex-start;}
+.sap-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sap-info{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fafcfb;min-width:0;}
+.sap-ic{flex:none;width:28px;height:28px;border-radius:8px;background:#fff;border:1px solid #e6ece8;color:#4b6358;display:grid;place-items:center;}
+.sap-ic svg{width:15px;height:15px;}
+.sap-info > div{min-width:0;display:flex;flex-direction:column;}
+.sap-info small{font-size:11.5px;color:var(--muted);}
+.sap-info b{font-size:13.5px;font-weight:600;color:var(--ink);line-height:1.35;word-break:break-word;}
+.sap-info em{font-style:normal;font-size:12px;color:var(--muted);line-height:1.35;}
+.sap-ket{font-size:13.5px;color:var(--ink);background:#f8faf9;border-radius:10px;padding:10px 12px;line-height:1.45;}
+.sap-ket small{display:block;font-size:11.5px;color:var(--muted);margin-bottom:2px;}
+.sap-items{border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+.sap-items-h,.sap-items-f{display:flex;justify-content:space-between;padding:8px 14px;font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#64748b;background:#f8faf9;}
+.sap-items-f{text-transform:none;letter-spacing:0;font-weight:500;border-top:1px solid #eef2ef;gap:10px;}
+.sap-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid #eef2ef;}
+.sap-item b{display:block;font-size:13.5px;font-weight:600;color:var(--ink);}
+.sap-item small{font-size:11.5px;color:#94a3b8;}
+.sap-qty{font-size:15px;font-weight:700;color:var(--ink);white-space:nowrap;font-variant-numeric:tabular-nums;}
+.sap-qty small{font-size:12px;font-weight:500;color:var(--muted);}
+.sap-note{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;line-height:1.45;color:#1e5b3a;background:#eef7f1;border-radius:10px;padding:10px 12px;}
+.sap-note svg{flex:none;width:16px;height:16px;margin-top:1px;}
+.sap-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px;}
+.sap-tolak{background:#fff !important;border:1.5px solid #f3c9cb !important;color:#c0262d !important;}
+.sap-tolak:hover{background:#fde8e8 !important;}
+.sap-btns .btn-sm{height:44px;justify-content:center;display:flex;align-items:center;gap:6px;}
+@media (max-width:480px){ .sap-grid{grid-template-columns:1fr;} }
+
+/* Tombol aksi Persetujuan Stok */
+.stk-apv-tbl td.stk-apv-aksi{white-space:nowrap;vertical-align:middle;}
+.sapa{display:flex;align-items:center;gap:6px;}
+.sapa-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;height:32px !important;min-height:32px !important;line-height:1 !important;box-sizing:border-box;margin:0 !important;padding:0 12px !important;border-radius:8px;border:1px solid transparent;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:background .15s,border-color .15s,color .15s,box-shadow .15s;}
+.sapa-btn svg{width:14px;height:14px;flex:none;}
+.sapa-lihat{width:32px;padding:0 !important;background:#fff;border-color:var(--line);color:#475569;}
+.sapa-lihat:hover{border-color:#cbd5e1;background:#f8fafc;color:var(--ink);}
+.sapa-tolak{background:#fff;border-color:#f3c9cb;color:#c0262d;}
+.sapa-tolak:hover{background:#fde8e8;border-color:#eba6a9;}
+.sapa-setuju{background:#05592d;color:#fff;box-shadow:0 1px 2px rgba(5,89,45,.25);}
+.sapa-setuju:hover{background:#044424;}
+.sapa-btn:focus-visible{outline:none;box-shadow:0 0 0 3px rgba(5,89,45,.2);}
 </style>
 </head>
 <body>
@@ -5419,7 +5483,7 @@ function teardownGudangApp(){
 // Menu superadmin: Monitoring Stock
 // ============================================================
 const STK_HALAMAN = {
-  'stok-persetujuan': ['Persetujuan Stok', 'Pengambilan barang yang menunggu persetujuan Anda.'],
+  'stok-persetujuan': ['Persetujuan Stok', 'Pengambilan barang yang menunggu persetujuan.'],
   'stok-masuk': ['Stok Masuk', 'Riwayat barang masuk & stok awal per gudang.'],
   'stok-keluar': ['Stok Keluar', 'Pengambilan barang beserta statusnya.'],
   'stok-report': ['Stock Report', 'Stok awal, masuk, keluar, dan stok akhir per periode.'],
@@ -5472,6 +5536,8 @@ function renderStokPage(pageId){
   const body = document.querySelector('#page-' + pageId + ' .stk-page-body'); if (!body) return;
   const t = pageId.replace(/^stok-|^master-/, '');
   if (pageId === 'master-gudang' || pageId === 'master-barang') { renderMasterStok(body, t); return; }
+  const lebar = !(window.matchMedia && window.matchMedia('(max-width:900px)').matches);
+  if (t === 'persetujuan' && lebar) { renderStkApvWeb(body); return; }
   if (t === 'persetujuan') {
     body.innerHTML = '<div id="saList"></div>';
     const el = document.getElementById('saList');
@@ -5493,6 +5559,133 @@ function renderStokPage(pageId){
     body.innerHTML = '<div class="stk-sa-report"></div>';
     muatStokMaster(() => renderLaporanStok(body.firstChild));
   }
+}
+
+
+// ---------- Persetujuan Stok (web superadmin): filter + tabel + tombol setujui/tolak ----------
+const _stkApv = { gudangId: '', cari: '', data: [] };
+function renderStkApvWeb(body){
+  const gudang = ((_stk.master && _stk.master.gudang) || []);
+  if (!_stk.master) { body.innerHTML = '<div class="stk-kosong"><span class="stk-load"></span><span>Memuat…</span></div>'; muatStokMaster(() => renderStkApvWeb(body)); return; }
+  const st = _pgState.stkAPV = _pgState.stkAPV || { page: 1, pageSize: 25, data: [] };
+  st.data = []; st.page = 1; st.pesan = 'Memuat data...'; st.err = false;
+  body.innerHTML = `
+    <div class="panel stk-apv-f">
+      <select class="stk-apv-in stk-apv-sel" data-af="gudang"><option value="">Semua gudang</option>${gudang.map(g => `<option value="${escapeHtml(g.id)}"${g.id === _stkApv.gudangId ? ' selected' : ''}>${escapeHtml(g.nama)}</option>`).join('')}</select>
+      <input type="search" class="stk-apv-in" data-af="cari" value="${escapeHtml(_stkApv.cari)}" placeholder="Cari keterangan / gudang / barang" autocomplete="off">
+    </div>
+    <div class="panel stk-dpanel" style="padding:0;overflow-x:auto;">
+      <table class="stk-dtbl stk-apv-tbl">
+        <thead><tr><th>No. Pengambilan</th><th>Tanggal</th><th>Gudang</th><th>Perusahaan</th><th>Lokasi</th><th>Keterangan</th><th>Dibuat oleh</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody id="stkAPVTbody"></tbody>
+      </table>
+      <div class="pagination-bar" id="stkAPVPaginationBar">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="pagination-info" id="stkAPVPaginationInfo"></span>
+          <select class="pg-size-select" id="stkAPVPageSize">${[10, 25, 50, 100].map(n => `<option value="${n}"${n === st.pageSize ? ' selected' : ''}>${n} / hal</option>`).join('')}</select>
+        </div>
+        <div class="pagination-controls" id="stkAPVPaginationControls"></div>
+      </div>
+    </div>`;
+  body.querySelector('#stkAPVPageSize').onchange = e => { st.pageSize = Number(e.target.value) || 25; st.page = 1; renderStkApvRows(); };
+  body.querySelector('[data-af="gudang"]').onchange = e => { _stkApv.gudangId = e.target.value; st.page = 1; renderStkApvRows(); };
+  let t;
+  body.querySelector('[data-af="cari"]').oninput = e => { clearTimeout(t); t = setTimeout(() => { _stkApv.cari = e.target.value; st.page = 1; renderStkApvRows(); }, 200); };
+  renderStkApvRows();
+  const tbody = body.querySelector('#stkAPVTbody');
+  google.script.run.withSuccessHandler(res => {
+    if (!tbody.isConnected) return;
+    if (!res || !res.success) { st.pesan = 'Gagal memuat: ' + ((res && res.message) || ''); st.err = true; renderStkApvRows(); return; }
+    if (typeof res.menunggu === 'number') setStkBadge(res.menunggu);
+    _stkApv.data = res.data || []; st.pesan = ''; st.err = false;
+    renderStkApvRows();
+  }).withFailureHandler(err => { if (!tbody.isConnected) return; st.pesan = 'Gagal memuat: ' + err.message; st.err = true; renderStkApvRows(); })
+    .getMutasiStok({ jenis: 'KELUAR', status: 'MENUNGGU' }, currentUser);
+}
+function stkApvTersaring(){
+  const q = String(_stkApv.cari || '').trim().toLowerCase();
+  return (_stkApv.data || []).filter(m => (!_stkApv.gudangId || m.gudangId === _stkApv.gudangId)
+    && (!q || [m.id, m.keterangan, m.gudangNama, m.perusahaan, m.lokasi, m.dibuatOleh].concat((m.items || []).map(i => i.nama + ' ' + i.kode)).some(v => String(v || '').toLowerCase().includes(q))));
+}
+function renderStkApvRows(){
+  const st = _pgState.stkAPV; if (!st) return;
+  st.data = st.pesan ? [] : stkApvTersaring();
+  renderPagination('stkAPV', 9, m => {
+    const id = escapeHtml(m.id);
+    return `<tr>
+      <td class="mono">${id}</td>
+      <td style="white-space:nowrap">${escapeHtml(m.tanggal)}</td>
+      <td>${escapeHtml(m.gudangNama)}</td>
+      <td>${escapeHtml(m.perusahaan)}</td>
+      <td>${escapeHtml(m.lokasi)}</td>
+      <td class="stk-dket">${escapeHtml(m.keterangan || '-')}</td>
+      <td>${escapeHtml(m.dibuatOleh || '-')}</td>
+      <td>${apvBadgeStatus(m.status)}</td>
+      <td class="stk-apv-aksi"><div class="sapa">
+        <button type="button" class="sapa-btn sapa-lihat" title="Lihat detail" aria-label="Lihat detail" onclick="stkApvAksi('lihat','${id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+        <button type="button" class="sapa-btn sapa-setuju" onclick="stkApvAksi('review','${id}')">Review</button>
+      </div>
+      </td>
+    </tr>`;
+  });
+  if (!st.data.length) {
+    const tb = document.getElementById('stkAPVTbody');
+    const q = String(_stkApv.cari || '').trim() || _stkApv.gudangId;
+    const teks = st.pesan || (q && (_stkApv.data || []).length ? 'Tidak ada pengambilan yang sesuai filter.' : 'Belum ada pengambilan yang menunggu persetujuan.');
+    if (tb) tb.innerHTML = `<tr><td colspan="9" class="empty-state"${st.err ? ' style="color:var(--alert);"' : ''}>${escapeHtml(teks)}</td></tr>`;
+  }
+}
+function stkApvAksi(aksi, id){
+  const m = (_stkApv.data || []).find(x => x.id === id); if (!m) return;
+  if (aksi === 'lihat') return bukaDetailMutasi(m);
+  if (aksi === 'tolak') return formTolakStok(m);
+  // 'review': kartu ringkasan dengan pilihan Tolak / Setujui.
+  // Setujui langsung dari tabel — konfirmasi berisi ringkasan pengambilan & daftar barang.
+  const items = m.items || [];
+  const tgl = typeof fmtTglIndo === 'function' ? fmtTglIndo(m.tanggal) : m.tanggal;
+  const info = (ikon, label, isi, sub) => `<div class="sap-info"><span class="sap-ic">${ikon}</span><div><small>${label}</small><b>${isi}</b>${sub ? `<em>${sub}</em>` : ''}</div></div>`;
+  const ic = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const ov = apvModal(`
+    <div class="sap">
+      <div class="sap-head">
+        <span class="sap-badge">${ic('<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9.5 13l2 2 3.5-4"/>')}</span>
+        <div class="sap-ttl"><h3>Review pengambilan</h3><span class="detail-id-chip">${escapeHtml(m.id)}</span></div>
+        <button type="button" class="apv-x" data-x="batal" aria-label="Tutup">${ic('<path d="M18 6L6 18M6 6l12 12"/>')}</button>
+      </div>
+      <div class="sap-grid">
+        ${info(ic('<path d="M3 21V8l9-5 9 5v13"/><path d="M7 21v-8h10v8"/>'), 'Dari gudang', escapeHtml(m.gudangNama || '-'))}
+        ${info(ic('<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>'), 'Tujuan', escapeHtml(m.lokasi || '-'), escapeHtml(m.perusahaan || ''))}
+        ${info(ic('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/>'), 'Tanggal', escapeHtml(tgl || '-'))}
+        ${info(ic('<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>'), 'Diajukan oleh', escapeHtml(m.dibuatOleh || '-'))}
+      </div>
+      ${m.keterangan ? `<div class="sap-ket"><small>Keterangan</small>${escapeHtml(m.keterangan)}</div>` : ''}
+      <div class="sap-items">
+        <div class="sap-items-h"><span>Barang</span><span>Jumlah</span></div>
+        ${items.map(it => `<div class="sap-item"><div><b>${escapeHtml(it.nama)}</b><small>${escapeHtml(it.kode || '')}</small></div><span class="sap-qty">${stkAngka(it.qty)} <small>${escapeHtml(it.satuan || '')}</small></span></div>`).join('')}
+        <div class="sap-items-f"><span>${items.length} jenis barang</span>${m.foto && m.foto.length ? `<span>${m.foto.length} foto bukti</span>` : ''}</div>
+      </div>
+      <div class="sap-note">${ic('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>')}<span>Setelah disetujui, stok gudang berkurang dan <b>Surat Jalan</b> serta <b>Berita Acara</b> dibuat otomatis.</span></div>
+      <div class="sap-btns">
+        <button type="button" class="btn-sm sap-tolak" data-x="tolak">Tolak</button>
+        <button type="button" class="btn-sm btn-dark" data-x="ya"><span class="submit-spinner"></span><span class="lbl">Setujui</span></button>
+      </div>
+    </div>`, { kecil: true });
+  ov.querySelector('.modal-box').classList.add('sap-box');
+  ov.querySelector('[data-x="tolak"]').onclick = () => { ov.remove(); formTolakStok(m); };
+  ov.querySelector('[data-x="batal"]').onclick = () => ov.remove();
+  const btn = ov.querySelector('[data-x="ya"]');
+  btn.onclick = () => withSubmitGuard(btn, btn.querySelector('.lbl'), 'Menyetujui...', 'Setujui', release => {
+    ov._sibuk = true;
+    google.script.run.withSuccessHandler(res => {
+      release(); ov._sibuk = false;
+      if (!res || !res.success) { stkKabar('Gagal menyetujui', (res && res.message) || 'Coba lagi.', 'error'); return; }
+      ov.remove();
+      stkKabar('Pengambilan disetujui', 'Surat Jalan & Berita Acara sedang dibuat.');
+      setTimeout(() => { try { google.script.run.withSuccessHandler(() => {}).withFailureHandler(() => {}).siapkanDokumenStok(m.id, currentUser); } catch (e) {} }, 300);
+      stkSegarkan();
+    }).withFailureHandler(err => { release(); ov._sibuk = false; stkKabar('Gagal menyetujui', err.message, 'error'); })
+      .reviewMutasiStok(m.id, 'SETUJU', '', currentUser);
+  });
 }
 
 // ---------- Master gudang & barang (superadmin) ----------
@@ -8338,6 +8531,7 @@ function _pgGo(key, colSpan, val, isNext) {
   else if (key === 'log') renderLogTable();
   else if (key === 'pengajuan') renderPengajuanTable();
   else if (key === 'stkMASUK' || key === 'stkKELUAR') renderStkTabelRows(key);
+  else if (key === 'stkAPV') renderStkApvRows();
 }
 
 // ============================================================
