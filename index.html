@@ -2786,6 +2786,13 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
   .d-brand,.d-user-box{flex-shrink:0;}
   .d-main{height:100vh;max-height:100vh;overscroll-behavior:contain;}
 }
+
+/* Monitoring Stock (web superadmin): pakai font yang sama dengan halaman lain (Inter), bukan font mobile. */
+@media (min-width:901px){
+  .stk-page .mu-scope,.stk-ew-box .mu-scope,
+  .stk-page .mu-scope *,.stk-ew-box .mu-scope *{font-family:var(--font) !important;}
+  .stk-page .stk-lap-f :is(input,select){font-size:14px !important;font-weight:500 !important;}
+}
 </style>
 </head>
 <body>
