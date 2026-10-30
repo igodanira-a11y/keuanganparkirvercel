@@ -4808,24 +4808,35 @@ function renderPanelMutasi(el, jenis){
   };
   const lst = el.querySelector('.stk-lst');
   const filter = { jenis, status: keluar ? _stk.statusKeluar : '' };
+  // Web (superadmin, layar lebar): tabel data seperti Riwayat Transaksi.
+  // Tabel (header + baris) langsung tampil, termasuk saat memuat / kosong / gagal.
+  const pakaiTabel = currentUser.role === 'superadmin' && !(window.matchMedia && window.matchMedia('(max-width:900px)').matches);
+  if (pakaiTabel) renderStkTabel(lst, jenis, [], 'Memuat data...');
+  const gagal = pesan => {
+    if (pakaiTabel) renderStkTabel(lst, jenis, [], 'Gagal memuat: ' + pesan, true);
+    else lst.innerHTML = `<div class="stk-kosong"><b>Gagal memuat</b><span>${escapeHtml(pesan)}</span></div>`;
+  };
   google.script.run.withSuccessHandler(res => {
     if (!lst.isConnected) return;
-    if (!res || !res.success) { lst.innerHTML = `<div class="stk-kosong"><b>Gagal memuat</b><span>${escapeHtml((res && res.message) || '')}</span></div>`; return; }
+    if (!res || !res.success) { gagal((res && res.message) || ''); return; }
     if (typeof res.menunggu === 'number') setStkBadge(res.menunggu);
     const data = res.data || [];
-    // Web (superadmin, layar lebar): tabel data seperti Riwayat Transaksi.
-    if (currentUser.role === 'superadmin' && !(window.matchMedia && window.matchMedia('(max-width:900px)').matches)) { renderStkTabel(lst, jenis, data); return; }
+    if (pakaiTabel) { renderStkTabel(lst, jenis, data); return; }
     lst.innerHTML = data.length ? `<div class="apv-list">${data.map(kartuMutasi).join('')}</div>`
       : `<div class="stk-kosong">${stkSvg(keluar ? 'out' : 'in')}<b>${keluar ? 'Belum ada stok keluar' : 'Belum ada stok masuk'}</b><span>${keluar ? 'Pengambilan barang beserta statusnya tampil di sini.' : 'Catatan barang masuk & stok awal tampil di sini.'}</span></div>`;
     pasangKartuMutasi(lst, data);
-  }).withFailureHandler(err => { lst.innerHTML = `<div class="stk-kosong"><b>Gagal memuat</b><span>${escapeHtml(err.message)}</span></div>`; })
+  }).withFailureHandler(err => { if (lst.isConnected) gagal(err.message); })
     .getMutasiStok(filter, currentUser);
 }
 // ---------- Tabel Stok Masuk / Keluar (web) ----------
-function renderStkTabel(lst, jenis, data){
+function renderStkTabel(lst, jenis, data, pesan, error){
   const keluar = jenis === 'KELUAR', key = 'stk' + jenis;
   const st = _pgState[key] = _pgState[key] || { page: 1, pageSize: 25, data: [] };
   st.data = data; st.page = 1;
+  // Pesan baris kosong: status memuat/gagal, atau teks "belum ada data" sesuai menu.
+  const filterNama = keluar && _stk.statusKeluar ? (STK_STATUS_FILTER.find(f => f[0] === _stk.statusKeluar) || [])[1] : '';
+  st.kosong = pesan || (keluar ? (filterNama ? `Tidak ada pengambilan berstatus ${filterNama.toLowerCase()}.` : 'Belum ada data stok keluar.') : 'Belum ada data stok masuk.');
+  st.kosongError = !!error;
   const kol = keluar
     ? ['No. Pengambilan', 'Tanggal', 'Gudang', 'Perusahaan', 'Lokasi', 'Keterangan', 'Dibuat oleh', 'Status', 'Aksi']
     : ['No. Masuk', 'Tanggal', 'Gudang', 'Keterangan', 'Dibuat oleh', 'Aksi'];
@@ -4869,6 +4880,11 @@ function renderStkTabelRows(key){
       ${aksi}
     </tr>`;
   });
+  const st = _pgState[key];
+  if (st && !st.data.length) {
+    const tb = document.getElementById(key + 'Tbody');
+    if (tb) tb.innerHTML = `<tr><td colspan="${keluar ? 9 : 6}" class="empty-state"${st.kosongError ? ' style="color:var(--alert);"' : ''}>${escapeHtml(st.kosong || 'Tidak ada data.')}</td></tr>`;
+  }
 }
 function stkCari(key, id){ return ((_pgState[key] || {}).data || []).find(x => x.id === id); }
 function stkLihat(key, id){
@@ -4944,7 +4960,8 @@ function renderLaporanStok(el){
 function tampilLaporanStok(isi){
   const L = _stk.lap, res = L.data;
   const rows = res.rows || [];
-  if (!rows.length) { isi.innerHTML = `<div class="stk-kosong">${stkSvg('box')}<b>Belum ada data stok</b><span>Tambahkan barang di Master, lalu catat stok masuk.</span></div>`; return; }
+  const sempit0 = window.matchMedia && window.matchMedia('(max-width:700px)').matches;
+  if (!rows.length && sempit0) { isi.innerHTML = `<div class="stk-kosong">${stkSvg('box')}<b>Belum ada data stok</b><span>Tambahkan barang di Master, lalu catat stok masuk.</span></div>`; return; }
   const sum = k => rows.reduce((a, r) => a + (Number(r[k]) || 0), 0);
   const tipis = rows.filter(r => r.akhir <= 0 || (r.min > 0 && r.akhir - r.diajukan <= r.min)).length;
   const status = r => r.akhir <= 0 ? '<span class="stk-tag habis">Habis</span>' : (r.min > 0 && r.akhir - r.diajukan <= r.min) ? '<span class="stk-tag tipis">Menipis</span>' : '<span class="stk-tag aman">Aman</span>';
@@ -4964,8 +4981,7 @@ function tampilLaporanStok(isi){
       </div>`).join('')}</div>`
     : `<div class="panel stk-rtbl-wrap"><table class="stk-rtbl">
       <thead><tr><th>Barang</th><th>Satuan</th><th class="n">Stok awal</th><th class="n">Masuk</th><th class="n">Keluar</th><th class="n">Stok akhir</th><th class="n">Diajukan</th><th>Status</th></tr></thead>
-      <tbody>${rows.map(r => `<tr><td><b>${escapeHtml(r.nama)}</b><small>${escapeHtml(r.kode)}</small></td><td>${escapeHtml(r.satuan)}</td><td class="n">${stkAngka(r.awal)}</td><td class="n in">${stkPlus(r.masuk)}</td><td class="n out">${stkMinus(r.keluar)}</td><td class="n"><b>${stkAngka(r.akhir)}</b></td><td class="n">${r.diajukan ? stkAngka(r.diajukan) : '-'}</td><td>${status(r)}</td></tr>`).join('')}</tbody>
-      <tfoot><tr><td colspan="2">Total</td><td class="n">${stkAngka(sum('awal'))}</td><td class="n in">${stkPlus(sum('masuk'))}</td><td class="n out">${stkMinus(sum('keluar'))}</td><td class="n">${stkAngka(sum('akhir'))}</td><td class="n">${stkAngka(sum('diajukan')) || '-'}</td><td></td></tr></tfoot>
+      <tbody>${rows.length ? '' : '<tr><td colspan="8" class="empty-state">Belum ada data stok pada periode ini.</td></tr>'}${rows.map(r => `<tr><td><b>${escapeHtml(r.nama)}</b><small>${escapeHtml(r.kode)}</small></td><td>${escapeHtml(r.satuan)}</td><td class="n">${stkAngka(r.awal)}</td><td class="n in">${stkPlus(r.masuk)}</td><td class="n out">${stkMinus(r.keluar)}</td><td class="n"><b>${stkAngka(r.akhir)}</b></td><td class="n">${r.diajukan ? stkAngka(r.diajukan) : '-'}</td><td>${status(r)}</td></tr>`).join('')}</tbody>
     </table></div>`}
     <div class="stk-lap-note">Stok akhir = stok awal + masuk − keluar (yang sudah disetujui) sampai tanggal "Sampai". "Diajukan" = pengambilan yang masih menunggu persetujuan.</div>`;
 }
