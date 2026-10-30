@@ -4940,9 +4940,36 @@ function renderLaporanStok(el){
   const L = _stk.lap = _stk.lap || { gudangId: '', dari: stkTglLokal(new Date(now.getFullYear(), now.getMonth(), 1)), sampai: stkTglLokal(now), cari: '', data: null };
   const gudang = (_stk.master && _stk.master.gudang || []).filter(g => g.aktif !== false);
   if (!_stk.master) { el.innerHTML = '<div class="stk-kosong"><span class="stk-load"></span><span>Memuat…</span></div>'; muatStokMaster(() => renderLaporanStok(el)); return; }
-  el.innerHTML = `
+  // Web superadmin: 4 kartu ringkasan di atas, lalu filter & Export (gaya Riwayat Transaksi), lalu tabel.
+  L.web = currentUser.role === 'superadmin' && !(window.matchMedia && window.matchMedia('(max-width:900px)').matches);
+  const gaya = 'width:100%;height:38px;box-sizing:border-box;padding:0 12px;font-family:inherit;color:var(--ink);border:1.5px solid var(--line);border-radius:7px;font-size:13px;background:var(--paper);';
+  const lbl = t => `<label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">${t}</label>`;
+  if (L.barangId === undefined) L.barangId = '';
+  if (L.status === undefined) L.status = '';
+  const barang = ((_stk.master && _stk.master.barang) || []).slice().sort((a, b) => String(a.nama).localeCompare(String(b.nama)));
+  const optBarang = `<option value="">Semua barang</option>${barang.map(b => `<option value="${escapeHtml(b.id)}"${b.id === L.barangId ? ' selected' : ''}>${escapeHtml(b.nama)}${b.kode ? ' (' + escapeHtml(b.kode) + ')' : ''}</option>`).join('')}`;
+  const optStatus = STK_STATUS_STOK.map(([v, t]) => `<option value="${v}"${v === L.status ? ' selected' : ''}>${t}</option>`).join('');
+  const selGaya = gaya + "appearance:none;-webkit-appearance:none;padding-right:34px;cursor:pointer;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;background-size:14px;";
+  if (L.web) el.innerHTML = `
+    <div class="stk-lap-top">${stkSumHtml(null)}</div>
+    <div class="panel" style="margin-bottom:12px;padding:14px 16px;">
+      <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:end;">
+        ${gudang.length > 1 ? `<div>${lbl('Gudang')}<select data-lf="gudangId" style="${gaya}appearance:none;-webkit-appearance:none;padding-right:34px;cursor:pointer;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;background-size:14px;"><option value="">Semua gudang</option>${gudang.map(g => `<option value="${escapeHtml(g.id)}"${g.id === L.gudangId ? ' selected' : ''}>${escapeHtml(g.nama)}</option>`).join('')}</select></div>` : ''}
+        <div>${lbl('Barang')}<select data-lf="barangId" style="${selGaya}">${optBarang}</select></div>
+        <div>${lbl('Status')}<select data-lf="status" style="${selGaya}">${optStatus}</select></div>
+        <div>${lbl('Dari Tanggal')}<input type="date" data-lf="dari" value="${L.dari}" style="${gaya}"></div>
+        <div>${lbl('Sampai Tanggal')}<input type="date" data-lf="sampai" value="${L.sampai}" style="${gaya}"></div>
+      </div>
+    </div>
+    <div class="toolbar-actions">
+      <button type="button" class="btn-sm btn-outline" data-lx="xlsx" title="Export laporan stok ke Excel"><i class="fi fi-rr-file-export"></i> Export Excel</button>
+    </div>
+    <div class="stk-lap-isi"><div class="stk-kosong"><span class="stk-load"></span><span>Menyusun laporan…</span></div></div>`;
+  else el.innerHTML = `
     <div class="stk-lap-f mu-scope">
       ${gudang.length > 1 ? `<div class="m-field"><label>Gudang</label><div class="mu-sel"><select data-lf="gudangId"><option value="">Semua gudang</option>${gudang.map(g => `<option value="${escapeHtml(g.id)}"${g.id === L.gudangId ? ' selected' : ''}>${escapeHtml(g.nama)}</option>`).join('')}</select></div></div>` : ''}
+      <div class="m-field"><label>Barang</label><div class="mu-sel"><select data-lf="barangId">${optBarang}</select></div></div>
+      <div class="m-field"><label>Status</label><div class="mu-sel"><select data-lf="status">${optStatus}</select></div></div>
       <div class="m-field"><label>Dari</label><div class="m-date-input has-value"><input type="date" data-lf="dari" value="${L.dari}"><span>dd/mm/tttt</span></div></div>
       <div class="m-field"><label>Sampai</label><div class="m-date-input has-value"><input type="date" data-lf="sampai" value="${L.sampai}"><span>dd/mm/tttt</span></div></div>
       <div class="stk-lap-btn"><button type="button" class="btn-sm btn-outline" data-lx="xlsx">Export Excel</button></div>
@@ -4950,6 +4977,8 @@ function renderLaporanStok(el){
     <div class="stk-lap-isi"><div class="stk-kosong"><span class="stk-load"></span><span>Menyusun laporan…</span></div></div>`;
   el.querySelectorAll('[data-lf]').forEach(inp => inp.onchange = () => {
     L[inp.dataset.lf] = inp.value;
+    // Barang & status disaring di browser — tidak perlu memanggil server lagi.
+    if (inp.dataset.lf === 'barangId' || inp.dataset.lf === 'status') { const i = el.querySelector('.stk-lap-isi'); if (L.data && i) tampilLaporanStok(i); return; }
     if (L.dari && L.sampai && L.dari > L.sampai) { stkKabar('Periode tidak valid', 'Tanggal "Dari" tidak boleh setelah "Sampai".', 'error'); return; }
     renderLaporanStok(el);
   });
@@ -4964,22 +4993,39 @@ function renderLaporanStok(el){
   }).withFailureHandler(err => { isi.innerHTML = `<div class="stk-kosong"><b>Laporan belum bisa dibuat</b><span>${escapeHtml(err.message)}</span></div>`; })
     .getLaporanStok({ gudangId: L.gudangId, dari: L.dari, sampai: L.sampai }, currentUser);
 }
+const STK_STATUS_STOK = [['', 'Semua status'], ['AMAN', 'Aman'], ['MENIPIS', 'Menipis'], ['HABIS', 'Habis']];
+function stkStatusStok(r){ return r.akhir <= 0 ? 'HABIS' : (r.min > 0 && r.akhir - r.diajukan <= r.min) ? 'MENIPIS' : 'AMAN'; }
+// Baris laporan setelah filter barang & status (dipakai tabel, kartu ringkasan, dan export).
+function stkRowsTersaring(){
+  const L = _stk.lap; if (!L || !L.data) return [];
+  return (L.data.rows || []).filter(r => (!L.barangId || r.barangId === L.barangId) && (!L.status || stkStatusStok(r) === L.status));
+}
+function stkSumHtml(v){
+  const x = v || {};
+  const n = (k, f) => v ? f(x[k]) : '-';
+  return `<div class="stk-sum">
+      <div><small>Jenis barang</small><b>${n('jenis', a => a)}</b></div>
+      <div><small>Stok masuk</small><b class="in">${n('masuk', stkPlus)}</b></div>
+      <div><small>Stok keluar</small><b class="out">${n('keluar', stkMinus)}</b></div>
+      <div><small>Menipis / habis</small><b class="${v && x.tipis ? 'warn' : ''}">${n('tipis', a => a)}</b></div>
+    </div>`;
+}
 function tampilLaporanStok(isi){
   const L = _stk.lap, res = L.data;
-  const rows = res.rows || [];
+  const rows = stkRowsTersaring();
+  const adaFilter = !!(L.barangId || L.status);
   const sempit0 = window.matchMedia && window.matchMedia('(max-width:700px)').matches;
+  if (!rows.length && sempit0 && adaFilter) { isi.innerHTML = `<div class="stk-kosong">${stkSvg('box')}<b>Tidak ada barang yang sesuai</b><span>Coba ubah filter barang atau status.</span></div>`; return; }
   if (!rows.length && sempit0) { isi.innerHTML = `<div class="stk-kosong">${stkSvg('box')}<b>Belum ada data stok</b><span>Tambahkan barang di Master, lalu catat stok masuk.</span></div>`; return; }
   const sum = k => rows.reduce((a, r) => a + (Number(r[k]) || 0), 0);
   const tipis = rows.filter(r => r.akhir <= 0 || (r.min > 0 && r.akhir - r.diajukan <= r.min)).length;
   const status = r => r.akhir <= 0 ? '<span class="stk-tag habis">Habis</span>' : (r.min > 0 && r.akhir - r.diajukan <= r.min) ? '<span class="stk-tag tipis">Menipis</span>' : '<span class="stk-tag aman">Aman</span>';
   const sempit = window.matchMedia && window.matchMedia('(max-width:700px)').matches;
+  const ringkas = stkSumHtml({ jenis: rows.length, masuk: sum('masuk'), keluar: sum('keluar'), tipis });
+  const atas = L.web && isi.parentElement && isi.parentElement.querySelector('.stk-lap-top');
+  if (atas) atas.innerHTML = ringkas;
   isi.innerHTML = `
-    <div class="stk-sum">
-      <div><small>Jenis barang</small><b>${rows.length}</b></div>
-      <div><small>Stok masuk</small><b class="in">${stkPlus(sum('masuk'))}</b></div>
-      <div><small>Stok keluar</small><b class="out">${stkMinus(sum('keluar'))}</b></div>
-      <div><small>Menipis / habis</small><b class="${tipis ? 'warn' : ''}">${tipis}</b></div>
-    </div>
+    ${atas ? '' : ringkas}
     <div class="stk-lap-ket">${escapeHtml(res.gudangLabel)} · ${escapeHtml(fmtTglIndo(res.dari))} – ${escapeHtml(fmtTglIndo(res.sampai))}</div>
     ${sempit ? `<div class="stk-list">${rows.map(r => `
       <div class="stk-item${r.akhir <= 0 ? ' habis' : (r.min > 0 && r.akhir - r.diajukan <= r.min) ? ' tipis' : ''}">
@@ -4988,7 +5034,7 @@ function tampilLaporanStok(isi){
       </div>`).join('')}</div>`
     : `<div class="panel stk-rtbl-wrap"><table class="stk-rtbl">
       <thead><tr><th>Barang</th><th>Satuan</th><th class="n">Stok awal</th><th class="n">Masuk</th><th class="n">Keluar</th><th class="n">Stok akhir</th><th class="n">Diajukan</th><th>Status</th></tr></thead>
-      <tbody>${rows.length ? '' : '<tr><td colspan="8" class="empty-state">Belum ada data stok pada periode ini.</td></tr>'}${rows.map(r => `<tr><td><b>${escapeHtml(r.nama)}</b><small>${escapeHtml(r.kode)}</small></td><td>${escapeHtml(r.satuan)}</td><td class="n">${stkAngka(r.awal)}</td><td class="n in">${stkPlus(r.masuk)}</td><td class="n out">${stkMinus(r.keluar)}</td><td class="n"><b>${stkAngka(r.akhir)}</b></td><td class="n">${r.diajukan ? stkAngka(r.diajukan) : '-'}</td><td>${status(r)}</td></tr>`).join('')}</tbody>
+      <tbody>${rows.length ? '' : `<tr><td colspan="8" class="empty-state">${adaFilter ? 'Tidak ada barang yang sesuai filter.' : 'Belum ada data stok pada periode ini.'}</td></tr>`}${rows.map(r => `<tr><td><b>${escapeHtml(r.nama)}</b><small>${escapeHtml(r.kode)}</small></td><td>${escapeHtml(r.satuan)}</td><td class="n">${stkAngka(r.awal)}</td><td class="n in">${stkPlus(r.masuk)}</td><td class="n out">${stkMinus(r.keluar)}</td><td class="n"><b>${stkAngka(r.akhir)}</b></td><td class="n">${r.diajukan ? stkAngka(r.diajukan) : '-'}</td><td>${status(r)}</td></tr>`).join('')}</tbody>
     </table></div>`}
     <div class="stk-lap-note">Stok akhir = stok awal + masuk − keluar (yang sudah disetujui) sampai tanggal "Sampai". "Diajukan" = pengambilan yang masih menunggu persetujuan.</div>`;
 }
@@ -4997,9 +5043,12 @@ function exportLaporanStok(){
   if (!L || !L.data) { stkKabar('Laporan belum siap', 'Tunggu laporan selesai dimuat.', 'warning'); return; }
   muatPustaka('xlsx').then(() => {
     const res = L.data;
-    const ws1 = XLSX.utils.json_to_sheet((res.rows || []).map(r => ({ 'Kode': r.kode, 'Barang': r.nama, 'Satuan': r.satuan, 'Stok Awal': r.awal, 'Masuk': r.masuk, 'Keluar': r.keluar, 'Stok Akhir': r.akhir, 'Diajukan': r.diajukan, 'Stok Minimum': r.min })));
-    ws1['!cols'] = [{ wch: 12 }, { wch: 28 }, { wch: 10 }, { wch: 11 }, { wch: 10 }, { wch: 10 }, { wch: 11 }, { wch: 10 }, { wch: 13 }];
-    const ws2 = XLSX.utils.json_to_sheet((res.detail || []).map(d => ({ 'Tanggal': d.tanggal, 'No.': d.id, 'Jenis': d.jenis === 'MASUK' ? 'Masuk' : 'Keluar', 'Gudang': d.gudang, 'Tujuan': d.lokasi || '', 'Perusahaan': d.perusahaan || '', 'Kode': d.kode, 'Barang': d.nama, 'Qty': d.qty, 'Satuan': d.satuan, 'Dibuat Oleh': d.oleh, 'Disetujui Oleh': d.penyetuju || '', 'Keterangan': d.keterangan || '' })));
+    const rowsX = stkRowsTersaring();
+    const kodeX = new Set(rowsX.map(r => r.kode));
+    const detailX = (res.detail || []).filter(d => kodeX.has(d.kode));
+    const ws1 = XLSX.utils.json_to_sheet(rowsX.map(r => ({ 'Kode': r.kode, 'Barang': r.nama, 'Satuan': r.satuan, 'Stok Awal': r.awal, 'Masuk': r.masuk, 'Keluar': r.keluar, 'Stok Akhir': r.akhir, 'Diajukan': r.diajukan, 'Stok Minimum': r.min, 'Status': ({ AMAN: 'Aman', MENIPIS: 'Menipis', HABIS: 'Habis' })[stkStatusStok(r)] })));
+    ws1['!cols'] = [{ wch: 12 }, { wch: 28 }, { wch: 10 }, { wch: 11 }, { wch: 10 }, { wch: 10 }, { wch: 11 }, { wch: 10 }, { wch: 13 }, { wch: 10 }];
+    const ws2 = XLSX.utils.json_to_sheet(detailX.map(d => ({ 'Tanggal': d.tanggal, 'No.': d.id, 'Jenis': d.jenis === 'MASUK' ? 'Masuk' : 'Keluar', 'Gudang': d.gudang, 'Tujuan': d.lokasi || '', 'Perusahaan': d.perusahaan || '', 'Kode': d.kode, 'Barang': d.nama, 'Qty': d.qty, 'Satuan': d.satuan, 'Dibuat Oleh': d.oleh, 'Disetujui Oleh': d.penyetuju || '', 'Keterangan': d.keterangan || '' })));
     ws2['!cols'] = [{ wch: 11 }, { wch: 18 }, { wch: 8 }, { wch: 18 }, { wch: 22 }, { wch: 22 }, { wch: 10 }, { wch: 24 }, { wch: 7 }, { wch: 8 }, { wch: 18 }, { wch: 18 }, { wch: 30 }];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws1, 'Ringkasan Stok');
