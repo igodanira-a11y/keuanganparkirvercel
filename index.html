@@ -2793,6 +2793,15 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
   .stk-page .mu-scope *,.stk-ew-box .mu-scope *{font-family:var(--font) !important;}
   .stk-page .stk-lap-f :is(input,select){font-size:14px !important;font-weight:500 !important;}
 }
+
+/* Stock Report (web): filter Gudang / Dari / Sampai / Cari barang */
+.stk-lapw-f{margin-bottom:12px;padding:18px 20px !important;}
+.stk-lapw-grid{display:grid;grid-template-columns:1.45fr 1fr 1fr 2.2fr;gap:14px;align-items:end;}
+.stk-lapw-grid.tanpa-gd{grid-template-columns:1fr 1fr 2.2fr;}
+.stk-lapw-grid :is(input,select):focus{border-color:var(--brand,#05592d) !important;box-shadow:0 0 0 3px rgba(5,89,45,.12);}
+.stk-lapw-grid input::placeholder{color:#94a3b8;font-weight:500;}
+.stk-lap-cari{grid-column:1/-1;}
+.stk-lap-f .stk-lap-btn{grid-column:1/-1;}
 </style>
 </head>
 <body>
@@ -4942,23 +4951,18 @@ function renderLaporanStok(el){
   if (!_stk.master) { el.innerHTML = '<div class="stk-kosong"><span class="stk-load"></span><span>Memuat…</span></div>'; muatStokMaster(() => renderLaporanStok(el)); return; }
   // Web superadmin: 4 kartu ringkasan di atas, lalu filter & Export (gaya Riwayat Transaksi), lalu tabel.
   L.web = currentUser.role === 'superadmin' && !(window.matchMedia && window.matchMedia('(max-width:900px)').matches);
-  const gaya = 'width:100%;height:38px;box-sizing:border-box;padding:0 12px;font-family:inherit;color:var(--ink);border:1.5px solid var(--line);border-radius:7px;font-size:13px;background:var(--paper);';
-  const lbl = t => `<label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;">${t}</label>`;
-  if (L.barangId === undefined) L.barangId = '';
-  if (L.status === undefined) L.status = '';
-  const barang = ((_stk.master && _stk.master.barang) || []).slice().sort((a, b) => String(a.nama).localeCompare(String(b.nama)));
-  const optBarang = `<option value="">Semua barang</option>${barang.map(b => `<option value="${escapeHtml(b.id)}"${b.id === L.barangId ? ' selected' : ''}>${escapeHtml(b.nama)}${b.kode ? ' (' + escapeHtml(b.kode) + ')' : ''}</option>`).join('')}`;
-  const optStatus = STK_STATUS_STOK.map(([v, t]) => `<option value="${v}"${v === L.status ? ' selected' : ''}>${t}</option>`).join('');
+  const gaya = 'width:100%;height:46px;box-sizing:border-box;padding:0 14px;font-family:inherit;color:var(--ink);border:1px solid var(--line);border-radius:8px;font-size:14px;font-weight:500;background:#fff;outline:none;';
+  const lbl = t => `<label style="display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">${t}</label>`;
+  L.barangId = ''; L.status = '';
   const selGaya = gaya + "appearance:none;-webkit-appearance:none;padding-right:34px;cursor:pointer;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;background-size:14px;";
   if (L.web) el.innerHTML = `
     <div class="stk-lap-top">${stkSumHtml(null)}</div>
-    <div class="panel" style="margin-bottom:12px;padding:14px 16px;">
-      <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;align-items:end;">
-        ${gudang.length > 1 ? `<div>${lbl('Gudang')}<select data-lf="gudangId" style="${gaya}appearance:none;-webkit-appearance:none;padding-right:34px;cursor:pointer;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;background-size:14px;"><option value="">Semua gudang</option>${gudang.map(g => `<option value="${escapeHtml(g.id)}"${g.id === L.gudangId ? ' selected' : ''}>${escapeHtml(g.nama)}</option>`).join('')}</select></div>` : ''}
-        <div>${lbl('Barang')}<select data-lf="barangId" style="${selGaya}">${optBarang}</select></div>
-        <div>${lbl('Status')}<select data-lf="status" style="${selGaya}">${optStatus}</select></div>
-        <div>${lbl('Dari Tanggal')}<input type="date" data-lf="dari" value="${L.dari}" style="${gaya}"></div>
-        <div>${lbl('Sampai Tanggal')}<input type="date" data-lf="sampai" value="${L.sampai}" style="${gaya}"></div>
+    <div class="panel stk-lapw-f">
+      <div class="stk-lapw-grid${gudang.length > 1 ? '' : ' tanpa-gd'}">
+        ${gudang.length > 1 ? `<div>${lbl('Gudang')}<select data-lf="gudangId" style="${selGaya}"><option value="">Semua gudang</option>${gudang.map(g => `<option value="${escapeHtml(g.id)}"${g.id === L.gudangId ? ' selected' : ''}>${escapeHtml(g.nama)}</option>`).join('')}</select></div>` : ''}
+        <div>${lbl('Dari')}<input type="date" data-lf="dari" value="${L.dari}" style="${gaya}"></div>
+        <div>${lbl('Sampai')}<input type="date" data-lf="sampai" value="${L.sampai}" style="${gaya}"></div>
+        <div>${lbl('Cari barang')}<input type="search" data-lc="cari" value="${escapeHtml(L.cari || '')}" placeholder="Kode / nama barang / gudang" autocomplete="off" style="${gaya}"></div>
       </div>
     </div>
     <div class="toolbar-actions">
@@ -4968,10 +4972,9 @@ function renderLaporanStok(el){
   else el.innerHTML = `
     <div class="stk-lap-f mu-scope">
       ${gudang.length > 1 ? `<div class="m-field"><label>Gudang</label><div class="mu-sel"><select data-lf="gudangId"><option value="">Semua gudang</option>${gudang.map(g => `<option value="${escapeHtml(g.id)}"${g.id === L.gudangId ? ' selected' : ''}>${escapeHtml(g.nama)}</option>`).join('')}</select></div></div>` : ''}
-      <div class="m-field"><label>Barang</label><div class="mu-sel"><select data-lf="barangId">${optBarang}</select></div></div>
-      <div class="m-field"><label>Status</label><div class="mu-sel"><select data-lf="status">${optStatus}</select></div></div>
       <div class="m-field"><label>Dari</label><div class="m-date-input has-value"><input type="date" data-lf="dari" value="${L.dari}"><span>dd/mm/tttt</span></div></div>
       <div class="m-field"><label>Sampai</label><div class="m-date-input has-value"><input type="date" data-lf="sampai" value="${L.sampai}"><span>dd/mm/tttt</span></div></div>
+      <div class="m-field stk-lap-cari"><label>Cari barang</label><input type="search" data-lc="cari" value="${escapeHtml(L.cari || '')}" placeholder="Kode / nama barang / gudang" autocomplete="off"></div>
       <div class="stk-lap-btn"><button type="button" class="btn-sm btn-outline" data-lx="xlsx">Export Excel</button></div>
     </div>
     <div class="stk-lap-isi"><div class="stk-kosong"><span class="stk-load"></span><span>Menyusun laporan…</span></div></div>`;
@@ -4983,6 +4986,11 @@ function renderLaporanStok(el){
     renderLaporanStok(el);
   });
   el.querySelector('[data-lx="xlsx"]').onclick = () => exportLaporanStok();
+  let tCari;
+  el.querySelectorAll('[data-lc="cari"]').forEach(inp => inp.oninput = () => {
+    clearTimeout(tCari);
+    tCari = setTimeout(() => { L.cari = inp.value; const i = el.querySelector('.stk-lap-isi'); if (L.data && i) tampilLaporanStok(i); }, 200);
+  });
   const isi = el.querySelector('.stk-lap-isi');
   google.script.run.withSuccessHandler(res => {
     if (!isi.isConnected) return;
@@ -4998,7 +5006,12 @@ function stkStatusStok(r){ return r.akhir <= 0 ? 'HABIS' : (r.min > 0 && r.akhir
 // Baris laporan setelah filter barang & status (dipakai tabel, kartu ringkasan, dan export).
 function stkRowsTersaring(){
   const L = _stk.lap; if (!L || !L.data) return [];
-  return (L.data.rows || []).filter(r => (!L.barangId || r.barangId === L.barangId) && (!L.status || stkStatusStok(r) === L.status));
+  const q = String(L.cari || '').trim().toLowerCase();
+  // Gudang: barang cocok kalau punya mutasi di gudang yang namanya sesuai kata kunci.
+  const kodeGd = new Set();
+  if (q) (L.data.detail || []).forEach(d => { if (String(d.gudang || '').toLowerCase().includes(q)) kodeGd.add(d.kode); });
+  return (L.data.rows || []).filter(r => (!L.barangId || r.barangId === L.barangId) && (!L.status || stkStatusStok(r) === L.status)
+    && (!q || String(r.kode || '').toLowerCase().includes(q) || String(r.nama || '').toLowerCase().includes(q) || kodeGd.has(r.kode)));
 }
 function stkSumHtml(v){
   const x = v || {};
@@ -5013,9 +5026,9 @@ function stkSumHtml(v){
 function tampilLaporanStok(isi){
   const L = _stk.lap, res = L.data;
   const rows = stkRowsTersaring();
-  const adaFilter = !!(L.barangId || L.status);
+  const adaFilter = !!(L.barangId || L.status || String(L.cari || '').trim());
   const sempit0 = window.matchMedia && window.matchMedia('(max-width:700px)').matches;
-  if (!rows.length && sempit0 && adaFilter) { isi.innerHTML = `<div class="stk-kosong">${stkSvg('box')}<b>Tidak ada barang yang sesuai</b><span>Coba ubah filter barang atau status.</span></div>`; return; }
+  if (!rows.length && sempit0 && adaFilter) { isi.innerHTML = `<div class="stk-kosong">${stkSvg('box')}<b>Tidak ada barang yang sesuai</b><span>Coba kata kunci lain.</span></div>`; return; }
   if (!rows.length && sempit0) { isi.innerHTML = `<div class="stk-kosong">${stkSvg('box')}<b>Belum ada data stok</b><span>Tambahkan barang di Master, lalu catat stok masuk.</span></div>`; return; }
   const sum = k => rows.reduce((a, r) => a + (Number(r[k]) || 0), 0);
   const tipis = rows.filter(r => r.akhir <= 0 || (r.min > 0 && r.akhir - r.diajukan <= r.min)).length;
