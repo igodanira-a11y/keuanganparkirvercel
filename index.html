@@ -1038,6 +1038,11 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
 .user-table-actions button[data-action="pdf"]:hover{background:var(--blue-soft);color:var(--blue);}
 .user-table-actions button[data-action="delete"]{color:var(--alert);}
 .user-table-actions button[data-action="delete"]:hover{background:var(--alert-soft);color:var(--alert);}
+.pl-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700;line-height:1.4;white-space:nowrap;text-transform:none;letter-spacing:0;}
+.pl-badge.pl-profit{background:#e3f4ea;color:#11734b;}
+.pl-badge.pl-loss{background:#fde8e8;color:#c0262d;}
+.pl-badge.pl-impas{background:#eef0f2;color:#5b6470;}
+.stat-card .label .pl-badge{margin:-4px 0;}
 .badge-active{color:var(--signal);font-weight:600;font-size:12px;}
 .badge-inactive{color:var(--muted);font-weight:600;font-size:12px;}
 
@@ -1689,15 +1694,16 @@ tbody tr:hover{background:var(--signal-soft) !important;transition:background .1
   #logTbody td:nth-child(6){grid-area:kt;font-size:13px;color:var(--ink) !important;}
 
   /* Rekap per lokasi (laporan) */
-  #lapLokasiTbody tr{grid-template-columns:repeat(3,minmax(0,1fr)) !important;grid-template-areas:"lok lok lok" "per per per" "in out sal";gap:2px 10px !important;}
+  #lapLokasiTbody tr{grid-template-columns:repeat(3,minmax(0,1fr)) !important;grid-template-areas:"lok lok st" "per per per" "in out sal";gap:2px 10px !important;}
+  #lapLokasiTbody td:nth-child(9){grid-area:st;text-align:right !important;align-self:start;}
   #lapLokasiTbody td:nth-child(-n+3){display:none !important;}
   #lapLokasiTbody td:nth-child(4){grid-area:per;font-size:12.5px;color:var(--muted);font-weight:400 !important;margin-bottom:8px;}
   #lapLokasiTbody td:nth-child(5){grid-area:lok;font-size:15px;font-weight:600;}
-  #lapLokasiTbody td:nth-child(n+6){font-size:13px;font-weight:600;}
+  #lapLokasiTbody td:nth-child(n+6):not(:nth-child(9)){font-size:13px;font-weight:600;}
   #lapLokasiTbody td:nth-child(6){grid-area:in;}
   #lapLokasiTbody td:nth-child(7){grid-area:out;}
   #lapLokasiTbody td:nth-child(8){grid-area:sal;text-align:right !important;}
-  #lapLokasiTbody td:nth-child(n+6)::before{content:attr(data-label);display:block;font-size:11.5px;font-weight:400;color:var(--muted);}
+  #lapLokasiTbody td:nth-child(n+6):not(:nth-child(9))::before{content:attr(data-label);display:block;font-size:11.5px;font-weight:400;color:var(--muted);}
 
   /* Pagination */
   .pagination-bar{flex-direction:column;align-items:stretch;gap:10px;padding:12px 16px;border-top:1px solid var(--m-line);}
@@ -3597,8 +3603,8 @@ body .m-ntoast .t-bar{background:#a4f3cb;opacity:.7;}
       <div class="panel" style="padding:0;overflow-x:auto;">
         <div style="padding:14px 16px;font-weight:700;font-size:14px;border-bottom:1px solid var(--line);">Rekap per Lokasi</div>
         <table>
-          <thead><tr><th style="width:44px;">No</th><th>Bulan</th><th>Tahun</th><th>Perusahaan</th><th>Lokasi</th><th style="text-align:right;">Pendapatan</th><th style="text-align:right;">Pengeluaran</th><th style="text-align:right;">Saldo</th></tr></thead>
-          <tbody id="lapLokasiTbody"><tr><td colspan="8" class="empty-state">Pilih bulan dan tahun untuk memuat data.</td></tr></tbody>
+          <thead><tr><th style="width:44px;">No</th><th>Bulan</th><th>Tahun</th><th>Perusahaan</th><th>Lokasi</th><th style="text-align:right;">Pendapatan</th><th style="text-align:right;">Pengeluaran</th><th style="text-align:right;">Saldo</th><th style="text-align:center;">Status</th></tr></thead>
+          <tbody id="lapLokasiTbody"><tr><td colspan="9" class="empty-state">Pilih bulan dan tahun untuk memuat data.</td></tr></tbody>
         </table>
       </div>
     </div>
@@ -8668,7 +8674,7 @@ function fetchLaporanBulanan(){
   const filterPerusahaan = document.getElementById('lapFilterPerusahaan').value;
   const filterLokasi = document.getElementById('lapFilterLokasi').value;
 
-  document.getElementById('lapLokasiTbody').innerHTML = '<tr><td colspan="8" class="empty-state">Memuat data...</td></tr>';
+  document.getElementById('lapLokasiTbody').innerHTML = '<tr><td colspan="9" class="empty-state">Memuat data...</td></tr>';
   document.getElementById('lapStatRow').innerHTML = '';
 
   // Key hanya per bulan (+ user): filter perusahaan/lokasi dikerjakan di
@@ -8679,7 +8685,7 @@ function fetchLaporanBulanan(){
     { stale: 60, persist: false }, res => {
     if (seq !== _lapFetchSeq) return;
     if (!res || res.error) {
-      document.getElementById('lapLokasiTbody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--alert);">${escapeHtml((res && res.error) || 'Data kosong')}</td></tr>`;
+      document.getElementById('lapLokasiTbody').innerHTML = `<tr><td colspan="9" class="empty-state" style="color:var(--alert);">${escapeHtml((res && res.error) || 'Data kosong')}</td></tr>`;
       return;
     }
     // Filter sisi klien berdasarkan perusahaan & lokasi
@@ -8699,7 +8705,7 @@ function fetchLaporanBulanan(){
     renderLaporanBulanan(res);
   }, err => {
     if (seq !== _lapFetchSeq) return;
-    document.getElementById('lapLokasiTbody').innerHTML = `<tr><td colspan="8" class="empty-state" style="color:var(--alert);">Gagal memuat laporan: ${escapeHtml(err.message)}</td></tr>`;
+    document.getElementById('lapLokasiTbody').innerHTML = `<tr><td colspan="9" class="empty-state" style="color:var(--alert);">Gagal memuat laporan: ${escapeHtml(err.message)}</td></tr>`;
   });
 }
 
@@ -8708,6 +8714,23 @@ function _lapGrowthBadge(pct){
   const color = positive ? 'var(--signal)' : 'var(--alert)';
   const arrow = positive ? '&#9650;' : '&#9660;';
   return `<span style="font-size:11.5px;font-weight:700;color:${color};">${arrow} ${Math.abs(pct)}%</span>`;
+}
+
+// Status profit/loss dari saldo (pendapatan - pengeluaran).
+function _lapStatus(saldo){
+  const v = Number(saldo) || 0;
+  return v > 0 ? 'Profit' : v < 0 ? 'Loss' : 'Impas';
+}
+function _lapStatusBadge(saldo){
+  const st = _lapStatus(saldo);
+  const ar = st === 'Profit' ? '&#9650;' : st === 'Loss' ? '&#9660;' : '&#8226;';
+  return `<span class="pl-badge pl-${st.toLowerCase()}">${ar} ${st}</span>`;
+}
+function _lapRingkasStatus(list){
+  if (!list.length) return 'Lokasi aktif pada periode ini';
+  let p = 0, l = 0, i = 0;
+  list.forEach(x => { const st = _lapStatus(x.saldo); if (st === 'Profit') p++; else if (st === 'Loss') l++; else i++; });
+  return `<span style="color:var(--signal);font-weight:600;">${p} profit</span> · <span style="color:var(--alert);font-weight:600;">${l} loss</span>` + (i ? ` · ${i} impas` : '');
 }
 
 function renderLaporanBulanan(res){
@@ -8728,21 +8751,21 @@ function renderLaporanBulanan(res){
       <div class="sub">${_lapGrowthBadge(s.growthPengeluaran)} vs bulan lalu</div>
     </div>
     <div class="stat-card saldo">
-      <div class="label">Saldo Bersih</div>
-      <div class="value">${fmtRupiah(s.saldo)}</div>
+      <div class="label" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">Saldo Bersih ${_lapStatusBadge(s.saldo)}</div>
+      <div class="value" style="${s.saldo < 0 ? 'color:var(--alert);' : ''}">${fmtRupiah(s.saldo)}</div>
       <div class="sub">${_lapGrowthBadge(s.growthSaldo)} vs bulan lalu</div>
     </div>
     <div class="stat-card neutral">
       <div class="label">Jumlah Lokasi</div>
       <div class="value">${jumlahLokasi}</div>
-      <div class="sub">Lokasi aktif pada periode ini</div>
+      <div class="sub">${_lapRingkasStatus(res.byLokasi)}</div>
     </div>
   `;
 
   // Per lokasi
   const lokasiTbody = document.getElementById('lapLokasiTbody');
   if (!res.byLokasi.length) {
-    lokasiTbody.innerHTML = '<tr><td colspan="8" class="empty-state">Tidak ada data untuk periode ini.</td></tr>';
+    lokasiTbody.innerHTML = '<tr><td colspan="9" class="empty-state">Tidak ada data untuk periode ini.</td></tr>';
   } else {
     const bulan = document.getElementById('lapBulan').selectedOptions[0]?.text || res.bulanKey.slice(5, 7);
     const tahun = res.bulanKey.slice(0, 4);
@@ -8755,7 +8778,8 @@ function renderLaporanBulanan(res){
         <td>${escapeHtml(x.lokasi)}</td>
         <td style="text-align:right;color:var(--signal);">${fmtRupiah(x.pendapatan)}</td>
         <td style="text-align:right;color:var(--alert);">${fmtRupiah(x.pengeluaran)}</td>
-        <td style="text-align:right;font-weight:600;">${fmtRupiah(x.saldo)}</td>
+        <td style="text-align:right;font-weight:600;${x.saldo < 0 ? 'color:var(--alert);' : ''}">${fmtRupiah(x.saldo)}</td>
+        <td style="text-align:center;">${_lapStatusBadge(x.saldo)}</td>
       </tr>`).join('');
   }
 }
@@ -8776,7 +8800,10 @@ function __exportLaporanBulananXlsx_(){
     { Keterangan: 'Total Pendapatan', Nilai: s.totalPendapatan },
     { Keterangan: 'Total Pengeluaran', Nilai: s.totalPengeluaran },
     { Keterangan: 'Saldo Bersih', Nilai: s.saldo },
-    { Keterangan: 'Jumlah Lokasi', Nilai: res.byLokasi.length }
+    { Keterangan: 'Status', Nilai: _lapStatus(s.saldo) },
+    { Keterangan: 'Jumlah Lokasi', Nilai: res.byLokasi.length },
+    { Keterangan: 'Lokasi Profit', Nilai: res.byLokasi.filter(x => _lapStatus(x.saldo) === 'Profit').length },
+    { Keterangan: 'Lokasi Loss', Nilai: res.byLokasi.filter(x => _lapStatus(x.saldo) === 'Loss').length }
   ], { header: ['Keterangan', 'Nilai'] });
   wsRingkasan['!cols'] = [{ wch: 26 }, { wch: 24 }];
 
@@ -8784,9 +8811,9 @@ function __exportLaporanBulananXlsx_(){
   const tahunExport = res.bulanKey.slice(0, 4);
   const wsLokasi = XLSX.utils.json_to_sheet(res.byLokasi.map(x => ({
     Bulan: bulanExport, Tahun: tahunExport, Perusahaan: x.perusahaan, Lokasi: x.lokasi,
-    Pendapatan: x.pendapatan, Pengeluaran: x.pengeluaran, Saldo: x.saldo
-  })), { header: ['Bulan', 'Tahun', 'Perusahaan', 'Lokasi', 'Pendapatan', 'Pengeluaran', 'Saldo'] });
-  wsLokasi['!cols'] = [{ wch: 14 }, { wch: 10 }, { wch: 26 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 16 }];
+    Pendapatan: x.pendapatan, Pengeluaran: x.pengeluaran, Saldo: x.saldo, Status: _lapStatus(x.saldo)
+  })), { header: ['Bulan', 'Tahun', 'Perusahaan', 'Lokasi', 'Pendapatan', 'Pengeluaran', 'Saldo', 'Status'] });
+  wsLokasi['!cols'] = [{ wch: 14 }, { wch: 10 }, { wch: 26 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 10 }];
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, wsRingkasan, 'Ringkasan');
