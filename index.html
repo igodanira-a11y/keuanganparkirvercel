@@ -4951,15 +4951,15 @@ function renderLaporanStok(el){
   if (!_stk.master) { el.innerHTML = '<div class="stk-kosong"><span class="stk-load"></span><span>Memuat…</span></div>'; muatStokMaster(() => renderLaporanStok(el)); return; }
   // Web superadmin: 4 kartu ringkasan di atas, lalu filter & Export (gaya Riwayat Transaksi), lalu tabel.
   L.web = currentUser.role === 'superadmin' && !(window.matchMedia && window.matchMedia('(max-width:900px)').matches);
-  const gaya = 'width:100%;height:46px;box-sizing:border-box;padding:0 14px;font-family:inherit;color:var(--ink);border:1px solid var(--line);border-radius:8px;font-size:14px;font-weight:500;background:#fff;outline:none;';
+  const gaya = 'width:100%;height:46px;box-sizing:border-box;padding:0 14px;font-family:inherit;color:var(--ink);border:1px solid var(--line);border-radius:8px;font-size:14px;font-weight:600;background:#fff;outline:none;';
   const lbl = t => `<label style="display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">${t}</label>`;
   L.barangId = ''; L.status = '';
   const selGaya = gaya + "appearance:none;-webkit-appearance:none;padding-right:34px;cursor:pointer;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;background-size:14px;";
   if (L.web) el.innerHTML = `
     <div class="stk-lap-top">${stkSumHtml(null)}</div>
     <div class="panel stk-lapw-f">
-      <div class="stk-lapw-grid${gudang.length > 1 ? '' : ' tanpa-gd'}">
-        ${gudang.length > 1 ? `<div>${lbl('Gudang')}<select data-lf="gudangId" style="${selGaya}"><option value="">Semua gudang</option>${gudang.map(g => `<option value="${escapeHtml(g.id)}"${g.id === L.gudangId ? ' selected' : ''}>${escapeHtml(g.nama)}</option>`).join('')}</select></div>` : ''}
+      <div class="stk-lapw-grid">
+        ${true ? `<div>${lbl('Gudang')}<select data-lf="gudangId" style="${selGaya}"><option value="">Semua gudang</option>${gudang.map(g => `<option value="${escapeHtml(g.id)}"${g.id === L.gudangId ? ' selected' : ''}>${escapeHtml(g.nama)}</option>`).join('')}</select></div>` : ''}
         <div>${lbl('Dari')}<input type="date" data-lf="dari" value="${L.dari}" style="${gaya}"></div>
         <div>${lbl('Sampai')}<input type="date" data-lf="sampai" value="${L.sampai}" style="${gaya}"></div>
         <div>${lbl('Cari barang')}<input type="search" data-lc="cari" value="${escapeHtml(L.cari || '')}" placeholder="Kode / nama barang / gudang" autocomplete="off" style="${gaya}"></div>
